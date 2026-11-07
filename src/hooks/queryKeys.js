@@ -2,4 +2,10 @@
 export const QK = {
   session: ['session'],
   demoState: ['demo', 'state'],
+  today: ['today'],
+  onboarding: ['onboarding'],
+  calendar: ['onboarding', 'calendar'],
+  materials: ['materials'],
+  units: (subjectId) => ['units', subjectId],
+  planDraft: ['plan', 'draft'],
 };
