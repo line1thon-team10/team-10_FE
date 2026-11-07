@@ -1,0 +1,7 @@
+# Windows에서 줄바꿈(CRLF) 때문에 서식 검사가 실패하지 않게 LF로 고정
+* text=auto eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.png binary
+*.jpg binary
+*.pdf binary
