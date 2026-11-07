@@ -10,3 +10,13 @@ export async function fail(code, message, status = 400) {
   await delay(200);
   return HttpResponse.json({ success: false, error: { code, message } }, { status });
 }
+
+// logic.js의 MockError를 실패 응답으로 바꿔요
+export async function run(fn, ms) {
+  try {
+    return await ok(await fn(), ms);
+  } catch (e) {
+    if (e?.code) return fail(e.code, e.message, e.status);
+    throw e;
+  }
+}

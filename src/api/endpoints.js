@@ -6,6 +6,7 @@ export const EP = {
   demoState: '/api/demo/state', // 데모 날짜와 첫 시험 (헤더 D-day)
   demoNextDay: '/api/demo/next-day', // 다음 날로: 자정 판정 실행 (NF-08)
   demoReset: '/api/demo/reset', // 시드 초기화 (NF-09)
+  demoSeed: '/api/demo/seed', // 시드 불러오기: empty · day9 · overdue (NF-09)
 
   // 온보딩 (최초 1회)
   onboarding: '/api/onboarding', // S1 대화 상태 · 정리된 과목·일정
@@ -24,4 +25,10 @@ export const EP = {
   today: '/api/today', // 오늘 할 일 · 진행률 · 퀴즈 열림 · 시험까지 · 최근 7일 책
   records: '/api/records', // 공부 기록 저장 (HM-02, HM-03)
   recordInterpret: '/api/records/interpret', // 말로 한 기록 → 페이지 (HM-04, AI)
+  replan: '/api/plan/replan', // 분배안 적용 (RC-04)
+
+  // 퀴즈 · 책 쌓기
+  quizToday: '/api/quiz/today', // 과목별 오늘의 퀴즈 · 열림 여부 (QZ-02)
+  quiz: '/api/quiz', // /:subjectId 문항 · /:subjectId/submit 제출 · /:subjectId/result 결과
+  books: '/api/books', // 과목별 단원 책 더미 · 준비도 (BK-01~05, KP-01)
 };

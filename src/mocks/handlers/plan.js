@@ -103,8 +103,9 @@ export const planHandlers = [
     return ok(unitsView(subjectId));
   }),
   http.get(EP.planDraft, () => ok(draftView(), 400)),
+  // 승인하면 시연일(11/9 오후 5시) 시드로 넘어가요 (11/7 결정: 계획 만들기 → 시연일로 점프)
   http.post(EP.planApprove, () => {
-    setup().approved = true;
+    db.seed('day9');
     return ok({ approved: true }, 600);
   }),
 ];

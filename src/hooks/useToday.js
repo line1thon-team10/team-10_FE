@@ -1,15 +1,25 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { getToday, postInterpret, postRecord } from '@/api/today.js';
+import { getToday, postInterpret, postRecord, postReplan } from '@/api/today.js';
 import { QK } from './queryKeys.js';
 
-export const useToday = () => useQuery({ queryKey: QK.today, queryFn: getToday });
+export const useToday = () =>
+  useQuery({
+    queryKey: QK.today,
+    queryFn: getToday,
+    retry: (n, e) => e?.code !== 'NO_PLAN' && n < 1,
+  });
 
-export function useRecord() {
+// 기록하면 오늘 할 일 · 책 쌓기 · 퀴즈 열림이 같이 바뀌어요
+function useTodayMutation(fn) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: postRecord,
-    onSuccess: () => qc.invalidateQueries({ queryKey: QK.today }),
+    mutationFn: fn,
+    onSuccess: () =>
+      ['today', 'books', 'quiz'].forEach((k) => qc.invalidateQueries({ queryKey: [k] })),
   });
 }
+
+export const useRecord = () => useTodayMutation(postRecord);
+export const useReplan = () => useTodayMutation(postReplan);
 
 export const useInterpret = () => useMutation({ mutationFn: postInterpret });

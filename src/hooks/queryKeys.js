@@ -8,4 +8,8 @@ export const QK = {
   materials: ['materials'],
   units: (subjectId) => ['units', subjectId],
   planDraft: ['plan', 'draft'],
+  quizToday: ['quiz', 'today'],
+  quizSet: (subjectId) => ['quiz', 'set', subjectId],
+  quizResult: (subjectId) => ['quiz', 'result', subjectId],
+  books: ['books'],
 };

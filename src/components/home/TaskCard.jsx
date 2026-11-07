@@ -14,6 +14,7 @@ export default function TaskCard({ task, subject, onRecord }) {
       <div className="flex min-w-0 flex-col gap-1">
         <h3 className="font-semibold">
           <span style={{ color: subject.color }}>{subject.name}</span> · {task.title}
+          {task.carried && <span className="badge ml-2 align-middle">어제에서 이월</span>}
         </h3>
         <p className="num text-[12.5px] text-fg-2">
           p.{task.from}–{task.to} · {task.minutes}분
@@ -22,7 +23,7 @@ export default function TaskCard({ task, subject, onRecord }) {
           )}
           {task.status === 'none' && <span className="ml-2 text-fg">· 못 했어요</span>}
         </p>
-        {task.reason && (
+        {task.reason && !task.carried && (
           <p className="flex items-center gap-1.5 text-xs text-fg-2">
             <span className="ai-chip">AI</span>
             {task.reason}

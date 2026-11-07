@@ -21,7 +21,42 @@ export const toTask = (raw) => ({
   status: raw.status, // todo | partial | done | none
   donePages: raw.donePages,
   doneTo: raw.doneTo ?? null, // 부분 완료면 어디까지 했는지
+  carried: Boolean(raw.carried), // 어제에서 이월된 태스크 (S6-2)
 });
+
+// 다음 접속 때 보여줄 안내 (S6-2 이월 · 분배안 적용 뒤)
+const toNotice = (raw) =>
+  raw && {
+    type: raw.type, // carry | replanned
+    planKey: raw.key ?? null,
+    items: (raw.items ?? []).map((i) => ({
+      subjectId: i.subjectId,
+      from: i.from,
+      to: i.to,
+      pages: i.pages,
+      dailyAvg: i.dailyAvg,
+      ratio: i.ratio,
+    })),
+  };
+
+// 분배안 (P2, RC-02·03). 기준을 넘었을 때만 와요
+const toReplan = (raw) =>
+  raw && {
+    date: raw.date,
+    totalPages: raw.totalPages,
+    overdue: raw.overdue.map((o) => ({
+      subjectId: o.subjectId,
+      pages: o.pages,
+      dailyAvg: o.dailyAvg,
+    })),
+    keepNote: raw.keepNote,
+    options: raw.options.map((o) => ({
+      key: o.key,
+      lines: o.lines,
+      effect: o.effect,
+      preview: o.preview,
+    })),
+  };
 
 export const toToday = (raw) => ({
   date: raw.date,
@@ -47,6 +82,8 @@ export const toToday = (raw) => ({
     blocks: d.blocks.map((b) => ({ state: b.state, taskId: b.taskId ?? null })),
   })),
   streakDays: raw.streakDays,
+  notice: toNotice(raw.notice),
+  replan: toReplan(raw.replan),
 });
 
 // 기록 저장 결과: 어떤 연출을 띄울지 (BK-03). box = 박스 팝업(P1), toast = 가벼운 알림(P1-1)
@@ -57,6 +94,7 @@ export const toRecordResult = (raw) => ({
         reason: raw.event.reason,
         message: raw.event.message,
         rate: raw.event.rate,
+        planKey: raw.event.planKey ?? null, // 회복 박스: 적용한 분배안
       }
     : null,
 });

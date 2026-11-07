@@ -1,6 +1,9 @@
 import { Outlet, useLocation } from 'react-router';
 import { SCREENS, SETUP_STEPS } from '@/app/screens.js';
+import { MockBadge } from '@/components/common/Badge.jsx';
 import { APP_NAME } from '@/config/app.js';
+import { ENV } from '@/config/env.js';
+import DemoMenu from './DemoMenu.jsx';
 import RootGate from './RootGate.jsx';
 
 // 최초 1회 온보딩 틀: 서비스 이름 + 5단계 진행 표시
@@ -13,6 +16,8 @@ export default function SetupLayout() {
         <header className="flex items-center gap-3 border-b border-line px-6 py-3">
           <strong className="text-[15px]">{APP_NAME}</strong>
           <span className="ml-auto text-xs text-fg-2">처음 한 번만 설정해요</span>
+          {ENV.useMock && <MockBadge />}
+          <DemoMenu />
         </header>
         <ol
           className="flex flex-wrap gap-1.5 border-b border-line px-6 py-3"
