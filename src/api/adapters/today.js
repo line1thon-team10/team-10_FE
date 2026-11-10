@@ -81,7 +81,6 @@ export const toToday = (raw) => ({
     date: d.date,
     blocks: d.blocks.map((b) => ({ state: b.state, taskId: b.taskId ?? null })),
   })),
-  streakDays: raw.streakDays,
   notice: toNotice(raw.notice),
   replan: toReplan(raw.replan),
 });

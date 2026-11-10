@@ -246,7 +246,9 @@ export const SEED = {
   },
 
   // 오늘의 퀴즈 문항 수 (어제 오답 전부 + 오늘 공부한 단원당 5문항) — 날짜별. 데이터 세트 4장은 11/9만 있어요.
-  quizCounts: { '2026-11-09': { ds: 7, os: 6, net: 5 } },
+  // 운영체제 13 = 3단원 새 문제 5 · 어제 취약 7 · 3일 만에 다시 보는 문제 1 (정의서 v2 · 와이어 S8-1)
+  // TODO(확인필요): [기획 확인] 컴퓨터네트워크 문항 수는 데이터 세트 v2를 받으면 맞춰요 (지금 5는 v1 값)
+  quizCounts: { '2026-11-09': { ds: 7, os: 13, net: 5 } },
 
   // 과목별 하루 평균 계획 페이지 (밀림 기준, 4-8). 자료구조·컴퓨터네트워크는 데이터 세트 4장,
   // 운영체제는 데이터 세트에 없어서 2주 계획 표로 계산한 mock 값이에요.
@@ -262,26 +264,26 @@ export const SEED = {
     { date: '2026-11-07', blocks: ['stable', 'risk'] }, // 자료구조 3단원 앞부분 · 운영체제 2단원
     { date: '2026-11-08', blocks: ['shaky', 'risk', 'stable'] }, // 자료구조 1·2단원 오답 복습 · 운영체제 2단원 · 컴퓨터네트워크 1단원
   ],
-  streakDays: 7,
 
   // 책 쌓기 (BK-01): 단원 = 책 더미, 책 1권 = 태스크 1개. 'done'은 끝난 태스크, 'planned'는 남은 계획,
   // { taskId }는 오늘(이후) 할 일과 연결된 책이에요. 끝난 책의 색은 그 단원 등급을 따라요 (4-5).
   // mock: 단원별 권 수는 데이터 세트에 없어서 과목 태스크 수(18·15·12)와 참고 이미지 6의 권 수(9/18·7/15·3/12)에 맞췄어요.
-  // mock: 점수가 데이터 세트에 없는 단원(운영체제 1·2단원, 컴퓨터네트워크 1단원)은 등급 구간 안의 임의 값이에요.
+  // 단원 점수 (정의서 v2 · 와이어 P3): 자료구조 1단원 96 · 2단원 69 · 3단원 83, 운영체제 2단원 40 (11/9 보충)
+  // mock: 점수가 데이터 세트에 없는 단원(운영체제 1단원, 컴퓨터네트워크 1단원)은 등급 구간 안의 임의 값이에요.
   bookshelf: {
     ds: [
-      { unitNo: 1, grade: 'stable', score: 92, blocks: ['done', 'done', 'done'] },
+      { unitNo: 1, grade: 'stable', score: 96, blocks: ['done', 'done', 'done'] },
       {
         unitNo: 2,
         grade: 'shaky',
-        score: 68,
+        score: 69,
         note: '어제 오답 2개가 오늘 퀴즈에 다시 나와요',
         blocks: ['done', 'done', 'done', 'done'],
       },
       {
         unitNo: 3,
         grade: 'stable',
-        score: null,
+        score: 83,
         blocks: ['done', { taskId: 't1' }, 'planned', 'planned'],
       },
       {
@@ -293,11 +295,11 @@ export const SEED = {
       { unitNo: 5, grade: null, score: null, blocks: ['planned', 'planned', 'planned'] },
     ],
     os: [
-      { unitNo: 1, grade: 'stable', score: 86, blocks: ['done', 'done'] },
+      { unitNo: 1, grade: 'stable', score: 86, blocks: ['done', 'done'] }, // mock: 점수
       {
         unitNo: 2,
         grade: 'risk',
-        score: 45,
+        score: 40,
         note: '어제 이해도가 낮아 오늘 보충 학습이 붙었어요',
         blocks: ['done', 'done', 'done', { taskId: 't3', supplement: true }],
       },
@@ -315,25 +317,40 @@ export const SEED = {
       },
     ],
     net: [
-      { unitNo: 1, grade: 'stable', score: 88, blocks: ['done', 'done'] },
+      { unitNo: 1, grade: 'stable', score: 88, blocks: ['done', 'done'] }, // mock: 점수
       { unitNo: 2, grade: null, score: null, blocks: [{ taskId: 't4' }, 'planned', 'planned'] },
       { unitNo: 3, grade: null, score: null, blocks: ['planned', 'planned', 'planned', 'planned'] },
       { unitNo: 4, grade: null, score: null, blocks: ['planned', 'planned', 'planned'] },
     ],
   },
 
-  // 시험 준비도 (KP-01, KP-02) — 데이터 세트 4장. 계산식(예상 완료율 × 숙달도)은 자료구조만 있어요.
+  // 시험 준비도 (KP-01, KP-02) — 정의서 v2. 준비도 = 진도율 × 숙달도, 숙달도는 자료구조만 있어요.
+  // 진도율 = 공부한 페이지 ÷ 범위 (자료구조 88/140 · 운영체제 67/120 · 컴퓨터네트워크 36/100)
   readiness: [
     {
       subjectId: 'ds',
-      readiness: 71,
+      readiness: 51,
       target: 90,
       targetLabel: 'A+',
-      expectedCompletion: 80,
-      mastery: 89,
+      progressRate: 62.9,
+      mastery: 80.7,
     },
-    { subjectId: 'os', readiness: 65, target: 80, targetLabel: 'B+' },
-    { subjectId: 'net', readiness: 42, target: 60, targetLabel: '통과' },
+    {
+      subjectId: 'os',
+      readiness: 33,
+      target: 80,
+      targetLabel: 'B+',
+      progressRate: 55.8,
+      mastery: null,
+    },
+    {
+      subjectId: 'net',
+      readiness: 34,
+      target: 60,
+      targetLabel: '통과',
+      progressRate: 36.0,
+      mastery: null,
+    },
   ],
 
   // 오답 노트 6건
@@ -491,16 +508,16 @@ export const SEED = {
             mockFilled: ['options', 'explanation', 'page'],
           },
         ],
-        // 퀴즈 후 단원 이해도 변화 (와이어프레임 S8-2 값). 계산은 서버(LV-01) 몫이라 mock은 고정값이에요.
+        // 퀴즈 후 단원 이해도 변화 (정의서 v2 · 와이어 P3). 계산은 서버(LV-01) 몫이라 mock은 고정값이에요.
         unitChanges: [
           {
             unitNo: 2,
-            before: 68,
-            after: 73,
+            before: 69,
+            after: 70,
             grade: 'shaky',
             note: '2단원은 회복 중이라 하루 최대 +5점까지만 올라요. 재학습 + 문제 뽑기를 하면 최대 +15점',
           },
-          { unitNo: 3, before: null, after: 71, grade: 'shaky' },
+          { unitNo: 3, before: 83, after: 73, grade: 'shaky' },
         ],
       },
     },
@@ -524,7 +541,7 @@ export const SEED = {
     ],
   },
 
-  // 분배안 (P2, RC-03) — 와이어프레임 P2 문구 · 데이터 세트 4장
+  // 분배안 (P2, RC-03) — 와이어프레임 P2 문구 · 데이터 세트 4장 · B안은 결정 로그 6장
   replanKeepNote: '운영체제 2단원 보충 학습은 미루지 않고 그대로 둬요',
   plans: [
     {
@@ -535,10 +552,13 @@ export const SEED = {
     },
     {
       key: 'B',
-      lines: ['자료구조 5단원 힙 정렬(6p) 제외', '네트워크 1단원 부록(4p) 제외'],
+      lines: [
+        '자료구조 5단원 힙 정렬(p.135–140, 6p) 제외',
+        '운영체제 4단원 세그멘테이션 사례(p.103–106, 4p) 제외',
+      ],
       effect: '시간 유지 · 10p 제외',
       preview:
-        '자료구조 5단원 힙 정렬(6p)과 네트워크 1단원 부록(4p)을 계획에서 빼요 · 적용하면 회복 박스 팝업',
+        '자료구조 5단원 힙 정렬(6p)과 운영체제 4단원 세그멘테이션 사례(4p)를 계획에서 빼요 · 적용하면 회복 박스 팝업',
     }, // mock: 미리보기 문구
     {
       key: 'C',
@@ -568,7 +588,7 @@ export const SEED = {
       from: 72,
       to: 95,
       minutes: 60,
-      reason: '분배안 B · 힙 정렬·부록 범위를 뺀 자리에 넣었어요',
+      reason: '분배안 B · 힙 정렬·세그멘테이션 사례 범위를 뺀 자리에 넣었어요', // mock: 문구
     },
     C: {
       id: 'tC',

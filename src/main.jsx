@@ -1,6 +1,11 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css';
+import '@fontsource/black-han-sans';
+import '@fontsource/ibm-plex-sans-kr/400.css';
+import '@fontsource/ibm-plex-sans-kr/500.css';
+import '@fontsource/ibm-plex-sans-kr/600.css';
+import '@fontsource/ibm-plex-sans-kr/700.css';
+import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css'; // 대체 글꼴
 import './styles/index.css';
 import App from './App.jsx';
 import { ENV } from './config/env.js';

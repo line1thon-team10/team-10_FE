@@ -24,7 +24,7 @@ export const toBooks = (raw) => ({
     readiness: r.readiness,
     target: r.target,
     targetLabel: r.targetLabel,
-    expectedCompletion: r.expectedCompletion ?? null,
-    mastery: r.mastery ?? null,
+    progressRate: r.progressRate ?? null, // 진도율(%) = 공부한 페이지 ÷ 범위 (v2: 예상 완료율 → 진도율)
+    mastery: r.mastery ?? null, // 숙달도(%), 없으면 null → 화면에 식을 안 보여요
   })),
 });

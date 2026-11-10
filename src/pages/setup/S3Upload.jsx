@@ -7,6 +7,7 @@ import AiBox from '@/components/common/AiBox.jsx';
 import Button from '@/components/common/Button.jsx';
 import Card from '@/components/common/Card.jsx';
 import { ErrorState, LoadingState } from '@/components/common/StateView.jsx';
+import AiWait from '@/components/common/AiWait.jsx';
 import StepProgress from '@/components/common/StepProgress.jsx';
 import { useAiWait } from '@/hooks/useAiWait.js';
 import { useJob, useMaterials, useUpload } from '@/hooks/usePlan.js';
@@ -142,16 +143,13 @@ function JobPanel({ jobId, subjectName, startedAt }) {
               ? '저장해 둔 분석 결과를 다시 썼어요'
               : '한 번 분석한 파일은 저장해 두고 다시 쓰지 않아요'}
           </p>
-          {wait === 'slow' && (
-            <p className="text-xs">
-              조금 오래 걸리고 있어요. 쪽수가 많으면 1분 정도 걸릴 수 있어요.
-            </p>
-          )}
-          {wait === 'retry' && (
-            <p className="text-xs text-st-risk">
-              응답이 30초 넘게 없어요. 잠시 뒤 같은 파일을 다시 올려 주세요. 저장된 결과가 있으면
-              바로 불러와요.
-            </p>
+          {job.status === 'running' && (
+            <AiWait
+              phase={wait}
+              label="AI가 PDF를 읽고 있어요"
+              lines={false}
+              retryNote="응답이 30초 넘게 없어요. 잠시 뒤 같은 파일을 다시 올려 주세요. 저장된 결과가 있으면 바로 불러와요."
+            />
           )}
         </>
       )}

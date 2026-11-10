@@ -19,23 +19,27 @@ export class MockError extends Error {
 }
 
 // ── 책 상태 ─────────────────────────────────────────────
+const quizKey = (s, subjectId) => `${s.today.date}:${subjectId}`;
 const findTask = (s, id) => [...s.today.tasks, ...s.pastTasks].find((t) => t.id === id);
 const unitOf = (s, subjectId, unitNo) => s.bookshelf[subjectId]?.find((u) => u.unitNo === unitNo);
 
-// 끝난 책은 단원 등급 색, 등급이 없으면 '완료(퀴즈 전)' (4-5)
+// 끝난 책은 단원 등급 색, 등급이 없으면 '완료(퀴즈 전)' (4-5).
+// 오늘 끝낸 책은 그 과목 오늘 퀴즈를 내기 전까지 '완료(퀴즈 전)' 회색이에요 (와이어 P3)
+const beforeQuiz = (t, s) => s.today.tasks.includes(t) && !s.quizResults[quizKey(s, t.subjectId)];
+
+function taskBlockState(t, s) {
+  if (t.status === 'partial') return 'doing';
+  if (t.status !== 'done') return 'planned';
+  if (beforeQuiz(t, s)) return 'done';
+  return unitOf(s, t.subjectId, t.unitNo)?.grade ?? 'done';
+}
+
 function blockState(b, unit, s) {
   if (b === 'planned') return 'planned';
   if (b === 'done') return unit.grade ?? 'done';
   const t = findTask(s, b.taskId);
   if (!t || t.status === 'todo' || t.status === 'none') return 'planned';
-  if (t.status === 'partial') return 'doing';
-  return unit.grade ?? 'done';
-}
-
-function taskBlockState(t, s) {
-  if (t.status === 'partial') return 'doing';
-  if (t.status !== 'done') return 'planned';
-  return unitOf(s, t.subjectId, t.unitNo)?.grade ?? 'done';
+  return taskBlockState(t, s);
 }
 
 // ── 오늘 ────────────────────────────────────────────────
@@ -93,7 +97,6 @@ export function buildToday() {
         blocks: tasks.map((t) => ({ state: taskBlockState(t, s), taskId: t.id })),
       },
     ],
-    streakDays: s.streakDays,
     notice: s.notice,
     replan: s.replan && {
       ...s.replan,
@@ -230,7 +233,6 @@ export function booksView() {
 }
 
 // ── 오늘의 퀴즈 (S8 · S8-2) ─────────────────────────────
-const quizKey = (s, subjectId) => `${s.today.date}:${subjectId}`;
 
 export function quizTodayView() {
   const s = db.get();

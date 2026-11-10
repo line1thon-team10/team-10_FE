@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import { ROUTES } from '@/app/screens.js';
 import BookBlock from '@/components/book/BookBlock.jsx';
+import Shelf from '@/components/book/Shelf.jsx';
 import Button from '@/components/common/Button.jsx';
 import Card from '@/components/common/Card.jsx';
 import ProgressBar from '@/components/common/ProgressBar.jsx';
@@ -183,9 +184,7 @@ function RecentBooksCard({ today }) {
     <Card className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-2">
         <h2 className="font-semibold">최근 7일 쌓은 책</h2>
-        <span className="badge">
-          오늘 {todayBooks}권 · {today.streakDays}일 연속
-        </span>
+        <span className="badge">오늘 {todayBooks}권</span>
       </div>
       <div
         className="flex items-end justify-between gap-1.5"
@@ -196,19 +195,21 @@ function RecentBooksCard({ today }) {
           const isToday = i === today.recentDays.length - 1;
           return (
             <div key={d.date} className="flex min-w-0 flex-1 flex-col items-center gap-1.5">
-              <div
-                className={`flex min-h-16 w-full max-w-11 flex-col-reverse gap-[2px] border-b-[3px] border-line px-0.5 pb-0.5 ${isToday ? 'rounded-t-sm bg-surface-2' : ''}`}
-              >
-                {d.blocks.map((b, k) => (
-                  <BookBlock
-                    key={k}
-                    state={b.state}
-                    seed={i * 2 + k}
-                    className="blk-mini"
-                    drop={b.taskId != null && b.taskId === dropped}
-                  />
-                ))}
-              </div>
+              <Shelf thin className="w-full max-w-11">
+                <div
+                  className={`flex min-h-16 w-full flex-col-reverse gap-[2px] px-0.5 pb-0.5 ${isToday ? 'rounded-t-sm bg-brand-tint' : ''}`}
+                >
+                  {d.blocks.map((b, k) => (
+                    <BookBlock
+                      key={k}
+                      state={b.state}
+                      seed={i * 2 + k}
+                      className="blk-mini"
+                      drop={b.taskId != null && b.taskId === dropped}
+                    />
+                  ))}
+                </div>
+              </Shelf>
               <span className={`text-xs ${isToday ? 'font-bold' : 'text-fg-3'}`}>
                 {isToday ? '오늘' : toDay(d.date).format('dd')}
               </span>

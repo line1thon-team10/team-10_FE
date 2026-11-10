@@ -3,10 +3,11 @@
 // 과목 색은 단원 이름표에만 쓰고 책에는 쓰지 않아요.
 import { useState } from 'react';
 import BookBlock from '@/components/book/BookBlock.jsx';
+import WoodShelf from '@/components/book/Shelf.jsx';
 import { MockBadge } from '@/components/common/Badge.jsx';
 import Card from '@/components/common/Card.jsx';
 import { ErrorState, LoadingState } from '@/components/common/StateView.jsx';
-import { BLOCK_STATE, GRADE } from '@/config/labels.js';
+import { BLOCK_STATE, GRADE, READINESS_PART } from '@/config/labels.js';
 import { useBooks } from '@/hooks/useBooks.js';
 
 const LEGEND = [
@@ -66,27 +67,29 @@ function Shelf({ subject, picked, onPick }) {
       <div className="flex gap-4 overflow-x-auto pb-1">
         {subject.units.map((u) => (
           <div key={u.no} className="flex w-[112px] flex-none flex-col gap-1.5">
-            <div
-              className="flex min-h-[132px] flex-col-reverse gap-[3px] border-b-4 border-line pb-1"
-              role="group"
-              aria-label={`${u.no}단원 책 더미`}
-            >
-              {u.blocks.map((b, i) => (
-                <BookBlock
-                  key={i}
-                  state={b.state}
-                  seed={u.no * 3 + i}
-                  tag={b.supplement ? '보충' : undefined}
-                  label={`${u.no}단원 ${i + 1}번째 책 · ${BLOCK_STATE[b.state].label}`}
-                  selected={
-                    picked?.subjectId === subject.subjectId &&
-                    picked?.unitNo === u.no &&
-                    picked?.index === i
-                  }
-                  onClick={() => onPick({ subjectId: subject.subjectId, unitNo: u.no, index: i })}
-                />
-              ))}
-            </div>
+            <WoodShelf>
+              <div
+                className="flex min-h-[132px] flex-col-reverse gap-[3px] px-1 pb-1"
+                role="group"
+                aria-label={`${u.no}단원 책 더미`}
+              >
+                {u.blocks.map((b, i) => (
+                  <BookBlock
+                    key={i}
+                    state={b.state}
+                    seed={u.no * 3 + i}
+                    tag={b.supplement ? '보충' : undefined}
+                    label={`${u.no}단원 ${i + 1}번째 책 · ${BLOCK_STATE[b.state].label}`}
+                    selected={
+                      picked?.subjectId === subject.subjectId &&
+                      picked?.unitNo === u.no &&
+                      picked?.index === i
+                    }
+                    onClick={() => onPick({ subjectId: subject.subjectId, unitNo: u.no, index: i })}
+                  />
+                ))}
+              </div>
+            </WoodShelf>
             <div className="text-xs leading-snug">
               <span className="font-semibold" style={{ color: subject.color }}>
                 {u.no}단원
@@ -177,9 +180,10 @@ export default function S9Books() {
                       title={`목표 ${r.target}%`}
                     />
                   </div>
-                  {r.expectedCompletion != null && (
+                  {r.mastery != null && (
                     <span className="num text-xs text-fg-2">
-                      = 예상 완료율 {r.expectedCompletion}% × 숙달도 {r.mastery}%
+                      = {READINESS_PART.progressRate} {r.progressRate}% × {READINESS_PART.mastery}{' '}
+                      {r.mastery}%
                     </span>
                   )}
                   <span className="text-xs text-fg-2">
