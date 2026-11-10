@@ -151,7 +151,9 @@ function ReplanReminder({ today }) {
       aria-label="분배안 안내"
     >
       <div className="flex flex-col gap-0.5">
-        <strong className="text-[13px]">어제 {today.replan.totalPages}p가 밀렸어요</strong>
+        <strong className="text-[13px]">
+          {today.replan.title ?? `어제 ${today.replan.totalPages}p가 밀렸어요`}
+        </strong>
         <span className="text-[12px] text-fg-2">
           남은 일정을 다시 짠 안 3개 중 하나를 골라 주세요.
         </span>
@@ -261,6 +263,14 @@ export default function S6Home() {
   const openModal = useUiStore((s) => s.openModal);
   const replanShownOn = useUiStore((s) => s.replanShownOn);
   const markReplanShown = useUiStore((s) => s.markReplanShown);
+
+  // 속도 보정 알림(P4): 홈에 들어올 때 서버가 paceAlert를 주면 (과목당 하루 한 번, 서버 판정)
+  // TODO(확인필요): [기획 확인] 분배안(P2)과 같은 날이면 순서 — 지금은 P2 먼저, 분배안이 없을 때 P4
+  // 다른 팝업(P2 · 회복 박스 등)이 떠 있으면 닫힌 뒤에 띄워요
+  const modal = useUiStore((s) => s.modal);
+  useEffect(() => {
+    if (today?.paceAlert && !today.replan && !modal) openModal('P4');
+  }, [today?.paceAlert, today?.replan, modal, openModal]);
 
   // 분배안은 밀린 분량이 기준을 넘었을 때만, 다음 접속 시 한 번 자동으로 떠요 (정의서 3장)
   useEffect(() => {

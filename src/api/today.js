@@ -16,5 +16,8 @@ export const patchRecord = async ({ taskId, toPage }) =>
 export const postInterpret = async ({ taskId, text }) =>
   toInterpret(await http.post(EP.recordInterpret, { taskId, text }));
 
+// 속도 보정 [반영] · [그대로] → { applied, overDays, replan }
+export const postPace = async ({ subjectId, apply }) => http.post(EP.pace, { subjectId, apply });
+
 // 분배안 적용 (RC-04) → 회복 박스 연출 정보
 export const postReplan = async (key) => toRecordResult(await http.post(EP.replan, { key }));

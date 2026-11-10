@@ -6,6 +6,7 @@ import { onboardingHandlers } from './onboarding.js';
 import { planHandlers } from './plan.js';
 import { quizHandlers } from './quiz.js';
 import { reviewHandlers } from './review.js';
+import { scheduleHandlers } from './schedule.js';
 import { sessionHandlers } from './session.js';
 import { studyHandlers } from './study.js';
 import { todayHandlers } from './today.js';
@@ -21,6 +22,7 @@ export const handlers = [
   ...quizHandlers,
   ...booksHandlers,
   ...reviewHandlers,
+  ...scheduleHandlers,
   ...studyHandlers,
   ...tutorHandlers,
 ];

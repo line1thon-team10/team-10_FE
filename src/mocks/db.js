@@ -54,6 +54,10 @@ function build(name) {
     dayClosedOn: null, // 하루 마무리 박스(P1)를 띄운 날 — 하루 한 번
     customSets: {}, // 문제 뽑기로 만든 퀴즈 세트 { c1: { subjectId, questions … } }
     tutorPairs: [], // AI 튜터 질문·답 한 쌍씩 (TU-01 · TU-02)
+    scheduleEdits: { skips: [], untils: {}, added: [] }, // 고정 일정 이번만 삭제 · 앞으로 모두 삭제 · 말로 추가 (ON-06·07)
+    pendingEmpty: null, // 삭제로 생긴 빈 시간 (P5 적용 전)
+    pendingVoice: null, // 말로 일정 추가 미리보기 (S6-4 적용 전)
+    paceDecided: {}, // 속도 보정 알림을 보여 준 날 { 'YYYY-MM-DD:과목': 'apply' | 'keep' } — 과목당 하루 한 번
     studySessions: {}, // 집중 모드 측정 { s1: { taskId, startedAt, pausedMs, … } } (HM-07·08)
     dailyGain: {}, // 다시 풀기로 오른 점수 { 'YYYY-MM-DD:과목:단원': 점수 } (회복 모드 상한)
   };

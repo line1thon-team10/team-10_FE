@@ -1,7 +1,7 @@
 import { http } from 'msw';
 import { EP } from '@/api/endpoints.js';
 import { db } from '../db.js';
-import { applyReplan, buildToday, fixRecord, MockError, recordTask } from '../logic.js';
+import { applyReplan, buildToday, decidePace, fixRecord, MockError, recordTask } from '../logic.js';
 import { run } from './respond.js';
 
 export const todayHandlers = [
@@ -30,6 +30,12 @@ export const todayHandlers = [
           : { to: task.to, label: task.title };
       return { from: task.from, to: demo.to, label: demo.label };
     }, 700);
+  }),
+
+  // PL-07 속도 보정: [반영] · [그대로]
+  http.post(EP.pace, async ({ request }) => {
+    const { subjectId, apply } = await request.json();
+    return run(() => decidePace(subjectId, Boolean(apply)), 500);
   }),
 
   // RC-04: 분배안 적용

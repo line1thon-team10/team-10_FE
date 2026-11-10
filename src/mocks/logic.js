@@ -1,5 +1,6 @@
 import dayjs from 'dayjs';
 import { db } from './db.js';
+import { parseSchedule } from './parseSchedule.js';
 
 // mock: 서버가 할 계산을 흉내 내요. 실제 규칙은 백엔드 A·B가 정의서 4장대로 구현해요.
 // (진행률 · 퀴즈 열림 · 자정 판정 · 이월 · 분배안 · 책 상태 · 퀴즈 채점)
@@ -107,6 +108,7 @@ export function buildToday() {
     ],
     notice: s.notice,
     tutorSuggestions: s.tutorSuggestions, // AI 튜터 추천 질문 칩 (mock)
+    paceAlert: paceAlertView(s), // 속도 보정 알림 (PL-07 · P4)
     replan: s.replan && {
       ...s.replan,
       totalPages: s.replan.overdue.reduce((n, o) => n + o.pages, 0),
@@ -141,6 +143,7 @@ export function advanceDay() {
     .filter((t) => t.status === 'done' || t.status === 'partial')
     .map((t) => taskBlockState(t, s));
   s.recentDays = [...s.recentDays, { date: s.today.date, blocks: yBlocks }].slice(-6);
+  for (const t of s.today.tasks) t.date = s.today.date; // 캘린더에서 지난 날 블록을 그려요
   s.pastTasks.push(...s.today.tasks);
   s.today = { date: next, tasks: structuredClone(plan) };
   s.demo.today = next;
@@ -1037,4 +1040,442 @@ export function tutorBackup(kind = 'basic') {
     saved: true,
     mockFilled: ['answer'],
   };
+}
+
+// ── 캘린더 (S11 · ON-04·06·07) · 빈 시간 (P5 · ON-08) · 말로 일정 추가 (S6-4) ──────────
+// 일정을 지워도 공부 블록은 지우지 않아요. 계획 변경은 미리보기 → 확인 → 적용 (4-12)
+// mock: 데이터 세트에 시각이 없어서 블록 시각은 규칙으로 놓아요 (11/10 결정 A) —
+//   저녁 고정 일정(알바·약속)이 없는 날은 19:00부터, 있는 날은 수업이 끝난 뒤(12시면 13:00, 15시면 15:30, 없으면 14:00)부터 이어 붙여요.
+//   기준은 원래 주간 일정이라, 일정을 '이번만' 지워도 그날 블록은 그대로예요
+const toMin = (hm) => {
+  const [h, m] = hm.split(':').map(Number);
+  return h * 60 + m;
+};
+const toHM = (n) =>
+  `${String(Math.floor(n / 60)).padStart(2, '0')}:${String(n % 60).padStart(2, '0')}`;
+const dow = (date) => ((dayjs(date).day() + 6) % 7) + 1; // 1=월 … 7=일
+const md = (date) => dayjs(date).format('M/D (dd)');
+const KIND_TITLE = { class: '수업', job: '알바', meet: '약속', other: '일정' };
+// 받침이 있으면 '을', 없으면 '를' (스터디를 · 조모임을)
+const objParticle = (word) => {
+  const c = word.charCodeAt(word.length - 1) - 0xac00;
+  return c >= 0 && c <= 11171 && c % 28 ? '을' : '를';
+};
+
+// 그날의 고정 일정 (원래 주간 일정 / 지금 일정)
+function fixedOn(s, date, { original = false } = {}) {
+  const ed = s.scheduleEdits;
+  const out = s.fixedSchedules
+    .map((f, i) => ({ ...f, id: `fx${i}` }))
+    .filter((f) => f.days.includes(dow(date)))
+    .filter(
+      (f) =>
+        original ||
+        (!ed.skips.some((k) => k.id === f.id && k.date === date) &&
+          !(ed.untils[f.id] && date >= ed.untils[f.id])),
+    )
+    .map((f) => ({
+      id: `${f.id}@${date}`,
+      scheduleId: f.id,
+      kind: f.kind,
+      title: KIND_TITLE[f.kind],
+      date,
+      start: f.start,
+      end: f.end,
+      repeat: true,
+    }));
+  if (original) return out;
+  const added = ed.added
+    .filter((e) => (e.days ? e.days.includes(dow(date)) && date >= e.date : e.date === date))
+    .map((e) => ({ ...e, id: `${e.id}@${date}`, scheduleId: e.id, date, repeat: Boolean(e.days) }));
+  return [...out, ...added];
+}
+
+function baseStart(s, date) {
+  const orig = fixedOn(s, date, { original: true });
+  const evening = orig.some((f) => toMin(f.start) >= 17 * 60);
+  if (!evening) return 19 * 60;
+  const cls = orig.find((f) => f.kind === 'class');
+  if (!cls) return 14 * 60;
+  return cls.end === '12:00' ? 13 * 60 : toMin(cls.end) + 30;
+}
+
+// 그날 태스크 목록 (지난 날 · 오늘 · 다음 날 · 이번 주 계획). 바꿀 수 있는 원본 배열을 돌려줘요
+function dayList(s, date) {
+  if (date === s.today.date) return s.today.tasks;
+  if (date < s.today.date) return s.pastTasks.filter((t) => t.date === date);
+  if (s.nextDayTasks[date]) return s.nextDayTasks[date];
+  return (s.weekPlan[date] ??= []);
+}
+
+// 블록 시각: 정해 둔 시각(옮긴 블록)은 그대로, 나머지는 기준 시각부터 이어 붙여요
+function placeDay(s, date) {
+  let cursor = baseStart(s, date);
+  return dayList(s, date).map((t) => {
+    const start = t.start ? toMin(t.start) : cursor;
+    const end = start + t.minutes;
+    if (!t.start) cursor = end;
+    return { task: t, date, start, end };
+  });
+}
+
+const blockView = (s, b) => {
+  const sub = s.subjects.find((x) => x.id === b.task.subjectId);
+  return {
+    id: b.task.id,
+    subjectId: sub.id,
+    subjectName: sub.name,
+    color: sub.color,
+    title: b.task.title,
+    from: b.task.from ?? null,
+    to: b.task.to ?? null,
+    date: b.date,
+    start: toHM(b.start),
+    end: toHM(b.end),
+    minutes: b.task.minutes,
+    reason: b.task.reason ?? null,
+    supplement: Boolean(b.task.supplement),
+    status: b.task.status ?? 'todo',
+    moved: Boolean(b.task.start), // 옮겨 둔 블록
+  };
+};
+
+const datesBetween = (from, to) => {
+  const out = [];
+  for (let d = dayjs(from); !d.isAfter(dayjs(to)); d = d.add(1, 'day'))
+    out.push(d.format('YYYY-MM-DD'));
+  return out;
+};
+
+export function weekCalendarView(from, to) {
+  const s = db.get();
+  const dates = datesBetween(from, to);
+  const study = dates.flatMap((d) => placeDay(s, d).map((b) => blockView(s, b)));
+  const summary = s.subjects.map((x) => {
+    const mine = study.filter((b) => b.subjectId === x.id);
+    return {
+      subjectId: x.id,
+      name: x.name,
+      color: x.color,
+      minutes: mine.reduce((n, b) => n + b.minutes, 0),
+      count: mine.length,
+    };
+  });
+  return {
+    from,
+    to,
+    today: s.demo.today,
+    exams: s.subjects
+      .filter((x) => dates.includes(x.examDate))
+      .map((x) => ({ subjectId: x.id, name: x.name, color: x.color, date: x.examDate })),
+    fixed: dates.flatMap((d) => fixedOn(s, d)),
+    study,
+    summary,
+  };
+}
+
+// 빈 시간 안 3개 (P5): ① 쉬기 ② 밀린 분량 당겨오기 ③ 다음 태스크 앞당기기(보충 먼저)
+function emptyTimeView(s, slot) {
+  const overdue = s.today.tasks.find((t) => t.carried && t.status === 'todo');
+  const later = datesBetween(
+    dayjs(slot.date).add(1, 'day').format('YYYY-MM-DD'),
+    dayjs(slot.date).add(14, 'day').format('YYYY-MM-DD'),
+  )
+    .filter((d) => d >= s.today.date)
+    .flatMap((d) => placeDay(s, d))
+    .filter((b) => (b.task.status ?? 'todo') === 'todo');
+  const next = later.find((b) => b.task.supplement) ?? later[0];
+  const fits = next && next.task.minutes <= toMin(slot.end) - toMin(slot.start);
+  const subOf = (t) => s.subjects.find((x) => x.id === t.subjectId);
+  const range = (t) => (t.from ? ` p.${t.from}–${t.to}` : '');
+  const exam = next && subOf(next.task).examDate;
+  return {
+    emptyTime: { ...slot, label: `${md(slot.date)} ${slot.start}–${slot.end}이 비었어요` },
+    options: [
+      {
+        key: 'rest',
+        title: '그대로 쉬기',
+        desc: '계획은 그대로 두고 쉬어요',
+        enabled: true,
+        default: true,
+      },
+      {
+        key: 'pull',
+        title: '밀린 분량 당겨오기',
+        desc: overdue
+          ? `${subOf(overdue).name} ${overdue.title}${range(overdue)}을 이 시간에 넣어요`
+          : '밀린 분량이 없어요',
+        enabled: Boolean(overdue),
+      },
+      {
+        key: 'advance',
+        title: next?.task.supplement ? '보충 학습 앞당기기' : '다음 태스크 앞당기기',
+        desc: fits
+          ? `${md(next.date)} ${subOf(next.task).name} ${next.task.title}${range(next.task)} (${next.task.minutes}분)을 ${slot.start}–${toHM(toMin(slot.start) + next.task.minutes)}으로 앞당겨요`
+          : '앞당길 태스크가 없어요',
+        reason: fits
+          ? `${subOf(next.task).name} 시험(${dayjs(exam).format('M/D')}) 전에 하루 여유가 생겨요`
+          : null, // mock: AI 이유 문구
+        enabled: Boolean(fits),
+      },
+    ],
+  };
+}
+
+// 일정 삭제 (ON-07): once 이번만 · future 앞으로 모두. 공부 블록은 지우지 않아요 → 빈 시간 안 (P5)
+export function deleteSchedule(occurrenceId, scope = 'once') {
+  const s = db.get();
+  const [scheduleId, date] = occurrenceId.split('@');
+  const ed = s.scheduleEdits;
+  const occ = fixedOn(s, date).find((f) => f.scheduleId === scheduleId);
+  if (!occ) throw new MockError('SCHEDULE_NOT_FOUND', '일정을 찾지 못했어요', 404);
+  const added = ed.added.find((e) => e.id === scheduleId);
+  if (added && (!added.days || scope === 'future')) ed.added = ed.added.filter((e) => e !== added);
+  else if (scope === 'future') ed.untils[scheduleId] = date;
+  else ed.skips.push({ id: scheduleId, date });
+  s.pendingEmpty = { date, start: occ.start, end: occ.end };
+  return emptyTimeView(s, s.pendingEmpty);
+}
+
+function moveTask(s, task, fromDate, toDate, start) {
+  const src = dayList(s, fromDate);
+  src.splice(src.indexOf(task), 1);
+  task.start = start;
+  dayList(s, toDate).push(task);
+}
+
+export function applyEmptyTime(option) {
+  const s = db.get();
+  const slot = s.pendingEmpty;
+  if (!slot) throw new MockError('NO_EMPTY_TIME', '적용할 빈 시간이 없어요');
+  const view = emptyTimeView(s, slot);
+  const opt = view.options.find((o) => o.key === option);
+  if (!opt?.enabled) throw new MockError('BAD_OPTION', '고를 수 없는 안이에요');
+  let moved = null;
+  if (option === 'pull') {
+    const t = s.today.tasks.find((x) => x.carried && x.status === 'todo');
+    moveTask(s, t, s.today.date, slot.date, slot.start);
+    moved = t.id;
+  }
+  if (option === 'advance') {
+    const later = datesBetween(
+      dayjs(slot.date).add(1, 'day').format('YYYY-MM-DD'),
+      dayjs(slot.date).add(14, 'day').format('YYYY-MM-DD'),
+    )
+      .filter((d) => d >= s.today.date)
+      .flatMap((d) => placeDay(s, d))
+      .filter((b) => (b.task.status ?? 'todo') === 'todo');
+    const next = later.find((b) => b.task.supplement) ?? later[0];
+    moveTask(s, next.task, next.date, slot.date, slot.start);
+    moved = next.task.id;
+  }
+  s.pendingEmpty = null;
+  return { option, movedTaskId: moved };
+}
+
+// 말로 일정 추가 (ON-06 · S6-4): "목요일 저녁에 조모임 생겼어" → 미리보기 → 적용
+// 문장 해석은 parseSchedule.js (S2와 같은 함수). 요일이 없으면 지금처럼 해석 실패
+function parseVoiceEvent(s, text) {
+  const r = parseSchedule(text);
+  if (!r.days.length) return null;
+  // 오늘 이후 가장 가까운 그 요일 (반복이면 고른 요일 중 가장 가까운 날부터)
+  let d = dayjs(s.demo.today);
+  while (!r.days.includes(dow(d.format('YYYY-MM-DD')))) d = d.add(1, 'day');
+  return {
+    title: r.title,
+    date: d.format('YYYY-MM-DD'),
+    start: r.start ?? '19:00', // 시각도 때도 없으면 저녁 기본값 (지금 규칙)
+    end: r.end ?? '21:00',
+    days: r.repeat ? r.days : null,
+  };
+}
+
+// 겹치는 블록은 반으로 나눠 다음 공부일 이틀에 하나씩, 그날 마지막 블록 뒤로 (11/10 결정 A, 데이터 세트 '조모임')
+function planMoves(s, ev) {
+  const lastDay = dayjs(s.demo.today).add(6, 'day').format('YYYY-MM-DD');
+  const dates = datesBetween(ev.date, lastDay).filter((d) =>
+    ev.days ? ev.days.includes(dow(d)) : d === ev.date,
+  );
+  const moves = [];
+  for (const d of dates) {
+    for (const b of placeDay(s, d)) {
+      if (!(b.start < toMin(ev.end) && b.end > toMin(ev.start))) continue;
+      if ((b.task.status ?? 'todo') !== 'todo') continue;
+      const targets = datesBetween(
+        dayjs(d).add(1, 'day').format('YYYY-MM-DD'),
+        dayjs(d).add(7, 'day').format('YYYY-MM-DD'),
+      )
+        .filter((x) => dayList(s, x).length)
+        .slice(0, 2);
+      if (targets.length < 2) continue;
+      const t = b.task;
+      const half = Math.ceil(t.minutes / 2);
+      const mid = t.from ? t.from + Math.ceil((t.to - t.from + 1) / 2) - 1 : null;
+      const pieces = targets.map((x, i) => {
+        const last = placeDay(s, x).at(-1);
+        return {
+          date: x,
+          start: toHM(last.end),
+          end: toHM(last.end + (i === 0 ? half : t.minutes - half)),
+          minutes: i === 0 ? half : t.minutes - half,
+          from: t.from ? (i === 0 ? t.from : mid + 1) : null,
+          to: t.from ? (i === 0 ? mid : t.to) : null,
+        };
+      });
+      moves.push({ taskId: t.id, date: d, block: blockView(s, b), pieces });
+    }
+  }
+  return moves;
+}
+
+export function previewVoiceEvent(text) {
+  const s = db.get();
+  const ev = parseVoiceEvent(s, String(text ?? ''));
+  if (!ev)
+    throw new MockError(
+      'PARSE_FAILED',
+      '요일을 찾지 못했어요. "목요일 저녁에 조모임 생겼어"처럼 말해 주세요',
+    );
+  const moves = planMoves(s, ev);
+  const exam = s.subjects.find((x) => x.examDate === ev.date);
+  s.pendingVoice = { ev, moves };
+  return {
+    event: {
+      ...ev,
+      label: `${md(ev.date)} ${ev.start}–${ev.end} ${ev.title}${objParticle(ev.title)} 추가할게요`,
+      repeat: Boolean(ev.days),
+    },
+    moves,
+    note: moves.length
+      ? `${exam ? `${md(ev.date)}은 ${exam.name} 시험 당일이라 ` : ''}겹치는 공부를 다음 공부일 이틀로 나눠 옮겨요. 기록·퀴즈 점수·쌓인 책은 그대로예요.`
+      : '겹치는 공부가 없어서 일정만 추가해요.',
+  };
+}
+
+export function applyVoiceEvent() {
+  const s = db.get();
+  const p = s.pendingVoice;
+  if (!p) throw new MockError('NO_PREVIEW', '적용할 미리보기가 없어요');
+  s.scheduleEdits.added.push({
+    id: `ad${s.scheduleEdits.added.length + 1}`,
+    kind: 'other',
+    ...p.ev,
+    added: true,
+  });
+  for (const m of p.moves) {
+    const src = dayList(s, m.date);
+    const t = src.find((x) => x.id === m.taskId);
+    src.splice(src.indexOf(t), 1);
+    m.pieces.forEach((pc, i) => {
+      dayList(s, pc.date).push({
+        ...t,
+        id: `${t.id}-${i + 1}`,
+        from: pc.from,
+        to: pc.to,
+        minutes: pc.minutes,
+        start: pc.start,
+        reason: `${md(m.date)} 일정과 겹쳐서 나눠 옮겼어요`,
+      });
+    });
+  }
+  s.pendingVoice = null;
+  return { added: p.ev, moved: p.moves.length };
+}
+
+// ── 속도 보정 (PL-07 · P4) ────────────────────────────────
+// 과목별 최근 3일 집중 모드 1p당 시간이 예상과 20% 넘게 다르면 홈 접속 때 알림. 과목당 하루 한 번.
+// mock: 11/9 기본 시드에서 '다음 날로' 한 11/10에만 자료구조 1.4배 (값은 MOCK)
+// TODO(확인필요): [기획 확인] 분배안(P2)과 같은 날 겹칠 때 어느 쪽이 먼저인지 (지금은 P2 먼저)
+const PACE_DIFF = 0.2;
+const DAY_WINDOW = [8 * 60, 23 * 60]; // 하루 공부 가능 시간 = 08–23시에서 고정 일정을 뺀 시간 (11/10 결정 A, S2 요약과 같은 기준)
+
+function freeMinutes(s, date) {
+  const busy = fixedOn(s, date).reduce(
+    (n, f) =>
+      n +
+      Math.max(0, Math.min(toMin(f.end), DAY_WINDOW[1]) - Math.max(toMin(f.start), DAY_WINDOW[0])),
+    0,
+  );
+  return DAY_WINDOW[1] - DAY_WINDOW[0] - busy;
+}
+
+function paceRows(s, m) {
+  const dates = datesBetween(s.today.date, dayjs(s.today.date).add(6, 'day').format('YYYY-MM-DD'));
+  return dates.flatMap((d) =>
+    dayList(s, d)
+      .filter((t) => t.subjectId === m.subjectId && (t.status ?? 'todo') === 'todo')
+      .map((t) => ({
+        taskId: t.id,
+        date: d,
+        title: t.title,
+        from: t.from ?? null,
+        to: t.to ?? null,
+        now: t.minutes,
+        // 페이지 기준이 아닌 태스크(총복습 등)는 그대로
+        after: t.from ? Math.round(((t.to - t.from + 1) * m.perPage) / 5) * 5 : null,
+      })),
+  );
+}
+
+// 반영하면 하루 공부 가능 시간을 넘는 날
+function overDays(s, rows) {
+  const byDate = {};
+  for (const r of rows) byDate[r.date] = (byDate[r.date] ?? 0) + ((r.after ?? r.now) - r.now);
+  return Object.entries(byDate)
+    .map(([date, extra]) => {
+      const total = dayList(s, date).reduce((n, t) => n + t.minutes, 0) + extra;
+      return { date, total, free: freeMinutes(s, date), over: total - freeMinutes(s, date) };
+    })
+    .filter((d) => d.over > 0);
+}
+
+function paceAlertView(s) {
+  const m = s.paceMock;
+  if (!m || s.today.date !== m.date || s.seedName !== m.seed) return null;
+  if (s.paceDecided[`${s.today.date}:${m.subjectId}`]) return null;
+  if (Math.abs(m.ratio - 1) < PACE_DIFF) return null;
+  const sub = s.subjects.find((x) => x.id === m.subjectId);
+  const rows = paceRows(s, m);
+  return {
+    subjectId: m.subjectId,
+    subjectName: sub.name,
+    ratio: m.ratio,
+    perPage: m.perPage,
+    expectedPerPage: m.expectedPerPage,
+    days: m.days,
+    sessions: m.sessions,
+    rows,
+    overDays: overDays(s, rows),
+    mockFilled: ['ratio', 'perPage', 'sessions'],
+  };
+}
+
+// [반영] 남은 태스크 시간 늘리기 · [그대로] 아무것도 바꾸지 않음. 넘는 날이 생기면 분배안(P2)으로
+export function decidePace(subjectId, apply) {
+  const s = db.get();
+  const alert = paceAlertView(s);
+  if (!alert || alert.subjectId !== subjectId)
+    throw new MockError('NO_PACE', '지금은 속도 보정 알림이 없어요');
+  s.paceDecided[`${s.today.date}:${subjectId}`] = apply ? 'apply' : 'keep';
+  if (!apply) return { applied: false, overDays: [], replan: false };
+  for (const r of alert.rows) {
+    if (r.after == null) continue;
+    const t = dayList(s, r.date).find((x) => x.id === r.taskId);
+    if (t) t.minutes = r.after;
+  }
+  const over = alert.overDays;
+  if (over.length) {
+    // mock: P2 틀에 머리만 바꿔요. 안 A/B/C 문구는 기존 mock (11/10 결정 A)
+    // TODO(확인필요): [기획 확인] 속도 보정으로 넘는 날의 분배안 문구
+    const d = over[0];
+    s.replan = {
+      kind: 'pace',
+      date: s.today.date,
+      title: `속도를 반영하니 ${md(d.date)}에 ${d.over}분이 넘어요`,
+      overdue: [],
+      keepNote: s.replanKeepNote,
+      options: s.plans,
+    };
+  }
+  return { applied: true, overDays: over, replan: over.length > 0 };
 }

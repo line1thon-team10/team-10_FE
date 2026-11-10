@@ -29,11 +29,17 @@ export const EP = {
   sessions: '/api/study/sessions', // 집중 모드: POST 시작 · /active · /:id · /:id/pause · /resume · /end (HM-07~09)
   recordInterpret: '/api/records/interpret', // 말로 한 기록 → 페이지 (HM-04, AI)
   replan: '/api/plan/replan', // 분배안 적용 (RC-04)
+  pace: '/api/plan/pace', // 속도 보정 { subjectId, apply } (PL-07)
 
   // 퀴즈 · 책 쌓기
   quizToday: '/api/quiz/today', // 과목별 오늘의 퀴즈 · 열림 여부 (QZ-02)
   quiz: '/api/quiz', // /:subjectId 문항 · /:subjectId/submit 제출 · /:subjectId/result 결과
   books: '/api/books', // 과목별 단원 책 더미 · 준비도 (BK-01~05, KP-01)
+
+  // 캘린더 (S11) · 빈 시간 (P5) · 말로 일정 추가 (S6-4)
+  weekCalendar: '/api/calendar', // ?from&to 고정 일정 · 공부 블록 · 시험 (ON-04)
+  schedules: '/api/schedules', // DELETE /:id?scope=once|future → 빈 시간 (ON-07) · POST /voice 미리보기 · /voice/apply (ON-06)
+  emptyTime: '/api/plan/empty-time', // 빈 시간 안 적용 { option: rest|pull|advance } (ON-08)
 
   // 복습·오답 (S10)
   reviewNotes: '/api/review/notes', // ?group=date|unit|count · /:id/question 다시 풀 문항 · POST /:id/retry (RV-01)

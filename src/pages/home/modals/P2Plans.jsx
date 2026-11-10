@@ -2,6 +2,7 @@
 // 밀린 분량이 기준(하루 평균의 50%)을 넘었을 때만 다음 접속 시 떠요. 고른 안만 확인 후 적용해요 (RC-02~04).
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { MockBadge } from '@/components/common/Badge.jsx';
 import Button from '@/components/common/Button.jsx';
 import Modal from '@/components/common/Modal.jsx';
 import { EmptyState } from '@/components/common/StateView.jsx';
@@ -41,7 +42,7 @@ export default function P2Plans({ onClose }) {
 
   return (
     <Modal
-      title={`어제 ${replan.totalPages}p가 밀렸어요`}
+      title={replan.title ?? `어제 ${replan.totalPages}p가 밀렸어요`}
       wide
       onClose={onClose}
       footer={
@@ -53,10 +54,17 @@ export default function P2Plans({ onClose }) {
         </>
       }
     >
-      <p className="-mt-2 text-[12.5px] text-fg-2">
-        {overdueText} · {replan.overdue.length > 1 ? '두 과목 모두 ' : ''}하루 평균 계획의 50%를
-        넘어서 남은 일정을 다시 짜 봤어요. {replan.keepNote}
-      </p>
+      {replan.kind === 'pace' ? (
+        <p className="-mt-2 flex flex-wrap items-center gap-2 text-[12.5px] text-fg-2">
+          속도 보정을 반영해서 남은 일정을 다시 짜 봤어요. {replan.keepNote}
+          <MockBadge />
+        </p>
+      ) : (
+        <p className="-mt-2 text-[12.5px] text-fg-2">
+          {overdueText} · {replan.overdue.length > 1 ? '두 과목 모두 ' : ''}하루 평균 계획의 50%를
+          넘어서 남은 일정을 다시 짜 봤어요. {replan.keepNote}
+        </p>
+      )}
       <fieldset className="flex flex-col gap-2">
         <legend className="mb-2 flex items-center gap-1.5 text-[13px] font-semibold">
           <span className="ai-chip">AI</span>

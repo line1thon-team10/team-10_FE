@@ -690,6 +690,93 @@ export const SEED = {
     ],
   },
 
+  // 이번 주 남은 계획 (S11 캘린더) — 데이터 세트 3장 11/11~11/15. '다음 날로'는 11/10까지라 캘린더에만 써요 (11/10 결정 A)
+  // mock: 배치 이유 문구 · 총복습 범위(자료구조)는 데이터 세트에 없어서 채운 값이에요
+  weekPlan: {
+    '2026-11-11': [
+      {
+        id: 'w11a',
+        subjectId: 'ds',
+        unitNo: 5,
+        title: '5단원 정렬',
+        from: 121,
+        to: 140,
+        minutes: 50,
+        reason: '자료구조 시험 전날 · 마지막 단원',
+      },
+      {
+        id: 'w11b',
+        subjectId: 'ds',
+        unitNo: null,
+        title: '총복습',
+        from: null,
+        to: null,
+        minutes: 60,
+        reason: '시험 전날에는 총복습을 넣어요',
+      },
+    ],
+    '2026-11-12': [
+      {
+        id: 'w12a',
+        subjectId: 'os',
+        unitNo: 3,
+        title: '3단원 CPU 스케줄링',
+        from: 68,
+        to: 85,
+        minutes: 45,
+        reason: '자료구조 시험 뒤 운영체제로 넘어가요',
+      },
+    ],
+    '2026-11-13': [
+      {
+        id: 'w13a',
+        subjectId: 'os',
+        unitNo: 4,
+        title: '4단원 메모리 관리',
+        from: 86,
+        to: 100,
+        minutes: 40,
+        reason: '알바 있는 날이라 짧게',
+      },
+    ],
+    '2026-11-14': [
+      {
+        id: 'w14a',
+        subjectId: 'os',
+        unitNo: 4,
+        title: '4단원 메모리 관리',
+        from: 101,
+        to: 120,
+        minutes: 50,
+        reason: '약속 전 오후 빈 시간',
+      },
+    ],
+    '2026-11-15': [
+      {
+        id: 'w15a',
+        subjectId: 'net',
+        unitNo: null,
+        title: '총복습 2·3단원',
+        from: 37,
+        to: 60,
+        minutes: 120,
+        reason: '일요일이라 길게 · 컴퓨터네트워크 시험(11/18) 전 총복습',
+      },
+    ],
+  },
+
+  // 속도 보정 (PL-07 · P4) — mock: 11/9 기본 시드에서 '다음 날로' 한 11/10에만 자료구조 1.4배 알림
+  paceMock: {
+    date: '2026-11-10',
+    seed: 'day9',
+    subjectId: 'ds',
+    ratio: 1.4,
+    perPage: 3.5,
+    expectedPerPage: 2.5,
+    days: 3,
+    sessions: 3,
+  },
+
   // 분배안 (P2, RC-03) — 와이어프레임 P2 문구 · 데이터 세트 4장 · B안은 결정 로그 6장
   replanKeepNote: '운영체제 2단원 보충 학습은 미루지 않고 그대로 둬요',
   plans: [

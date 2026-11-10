@@ -42,9 +42,34 @@ const toNotice = (raw) =>
     })),
   };
 
+// 속도 보정 알림 (PL-07 · P4). 예상과 20% 넘게 다를 때만, 과목당 하루 한 번 와요
+const toPaceAlert = (raw) =>
+  raw && {
+    subjectId: raw.subjectId,
+    subjectName: raw.subjectName,
+    ratio: raw.ratio, // 예상보다 몇 배
+    perPage: raw.perPage, // 1페이지당 실제 분
+    expectedPerPage: raw.expectedPerPage,
+    days: raw.days,
+    sessions: raw.sessions, // 최근 N일 집중 모드 기록 수
+    rows: raw.rows.map((r) => ({
+      taskId: r.taskId,
+      date: r.date,
+      title: r.title,
+      from: r.from,
+      to: r.to,
+      now: r.now,
+      after: r.after, // null이면 그대로 (페이지 기준이 아닌 태스크)
+    })),
+    overDays: raw.overDays, // 반영하면 하루 공부 가능 시간을 넘는 날 [{ date, total, free, over }]
+    mockFilled: raw.mockFilled ?? [],
+  };
+
 // 분배안 (P2, RC-02·03). 기준을 넘었을 때만 와요
 const toReplan = (raw) =>
   raw && {
+    kind: raw.kind ?? 'overdue', // overdue 밀림 · pace 속도 보정으로 넘는 날
+    title: raw.title ?? null,
     date: raw.date,
     totalPages: raw.totalPages,
     overdue: raw.overdue.map((o) => ({
@@ -86,6 +111,7 @@ export const toToday = (raw) => ({
   })),
   notice: toNotice(raw.notice),
   tutorSuggestions: raw.tutorSuggestions ?? [],
+  paceAlert: toPaceAlert(raw.paceAlert),
   replan: toReplan(raw.replan),
 });
 

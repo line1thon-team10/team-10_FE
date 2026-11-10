@@ -387,3 +387,177 @@
 
 - 응답이 30초 넘게 없거나 실패했을 때만 써요. 요청 `{ question, history }`에는 필드를 더하지 않아요 (11/10 결정 A)
 - 시연 백업: "AVL 트리 회전은 언제 해?"의 기본 답(`basic`)과 쉬운 설명(`easy`). 응답 모양은 위와 같고 `saved: true`
+
+## 캘린더 S11 · P5 · S6-4 (11/10 · 지시문 10)
+
+재배치 계산은 서버 (mock은 `src/mocks/logic.js` 캘린더 부분). 일정을 지워도 공부 블록은 지우지 않고, 계획 변경은 미리보기 → 확인 → 적용 (4-12).
+
+### 주간 캘린더 — `GET /api/calendar?from=2026-11-09&to=2026-11-15` (ON-04)
+
+```json
+{
+  "today": "2026-11-09",
+  "exams": [{ "subjectId": "ds", "name": "자료구조", "date": "2026-11-12" }],
+  "fixed": [
+    {
+      "id": "fx2@2026-11-13",
+      "scheduleId": "fx2",
+      "kind": "job",
+      "title": "알바",
+      "date": "2026-11-13",
+      "start": "18:00",
+      "end": "22:00",
+      "repeat": true
+    }
+  ],
+  "study": [
+    {
+      "id": "w12a",
+      "subjectId": "os",
+      "subjectName": "운영체제",
+      "color": "#2563EB",
+      "title": "3단원 CPU 스케줄링",
+      "from": 68,
+      "to": 85,
+      "date": "2026-11-12",
+      "start": "19:00",
+      "end": "19:45",
+      "minutes": 45,
+      "reason": "자료구조 시험 뒤 운영체제로 넘어가요",
+      "moved": false
+    }
+  ],
+  "summary": [{ "subjectId": "os", "name": "운영체제", "minutes": 180, "count": 5 }]
+}
+```
+
+- 11/11~11/15 계획은 데이터 세트 3장 (캘린더 표시용, '다음 날로'는 11/10까지)
+- mock 블록 시각 규칙 (11/10 결정 A): 저녁 고정 일정이 없는 날은 19:00부터, 있는 날은 수업 끝난 뒤(12시면 13:00, 15시면 15:30, 없으면 14:00)부터. 기준은 원래 주간 일정이라 '이번만' 지워도 그날 블록은 그대로
+- 고정 일정 `id` = `일정id@날짜`. `repeat: true`면 삭제 범위를 물어봐요
+
+### 일정 삭제 — `DELETE /api/schedules/:id?scope=once|future` (ON-07) → 빈 시간 안 (P5)
+
+```json
+{
+  "emptyTime": {
+    "date": "2026-11-13",
+    "start": "18:00",
+    "end": "22:00",
+    "label": "11/13 (금) 18:00–22:00이 비었어요"
+  },
+  "options": [
+    { "key": "rest", "title": "그대로 쉬기", "enabled": true, "default": true },
+    {
+      "key": "pull",
+      "title": "밀린 분량 당겨오기",
+      "desc": "밀린 분량이 없어요",
+      "enabled": false
+    },
+    {
+      "key": "advance",
+      "title": "다음 태스크 앞당기기",
+      "desc": "11/14 (토) 운영체제 4단원 … (50분)을 18:00–18:50으로 앞당겨요",
+      "reason": "운영체제 시험(11/16) 전에 하루 여유가 생겨요",
+      "enabled": true
+    }
+  ]
+}
+```
+
+- `pull`: 어제에서 이월된 태스크가 있을 때만. `advance`: 빈 시간 뒤 첫 공부 블록(보충이 있으면 보충 먼저)
+- 과목을 뺄 때(S14)도 같은 모양으로 돌려주면 같은 팝업을 써요
+
+### 빈 시간 안 적용 — `POST /api/plan/empty-time` `{ option: "rest" | "pull" | "advance" }` (ON-08)
+
+- 응답 `{ option, movedTaskId }`. 서버가 직전 삭제로 생긴 빈 시간을 기억해요
+
+### 말로 일정 추가 — `POST /api/schedules/voice` `{ text }` → 미리보기 · `POST /api/schedules/voice/apply` (ON-06)
+
+```json
+{
+  "event": {
+    "title": "조모임",
+    "date": "2026-11-12",
+    "start": "19:00",
+    "end": "21:00",
+    "repeat": false,
+    "label": "11/12 (목) 19:00–21:00 조모임을 추가할게요"
+  },
+  "moves": [
+    {
+      "taskId": "w12a",
+      "block": {
+        "subjectName": "운영체제",
+        "title": "3단원 CPU 스케줄링",
+        "date": "2026-11-12",
+        "start": "19:00",
+        "end": "19:45",
+        "minutes": 45
+      },
+      "pieces": [
+        {
+          "date": "2026-11-13",
+          "start": "14:40",
+          "end": "15:03",
+          "minutes": 23,
+          "from": 68,
+          "to": 76
+        },
+        {
+          "date": "2026-11-14",
+          "start": "14:50",
+          "end": "15:12",
+          "minutes": 22,
+          "from": 77,
+          "to": 85
+        }
+      ]
+    }
+  ],
+  "note": "11/12 (목)은 자료구조 시험 당일이라 겹치는 공부를 다음 공부일 이틀로 나눠 옮겨요. …"
+}
+```
+
+- mock 옮기는 규칙 (11/10 결정 A, 데이터 세트 '조모임'): 겹치는 블록을 반으로 나눠 다음 공부일 이틀에 하나씩, 그날 마지막 블록 뒤로
+- '매주 …'처럼 반복이면 `repeat: true`, `days` + 남은 기간 겹침을 한 목록에
+- 적용은 서버가 기억한 미리보기를 그대로 반영 (`{ added, moved }`)
+
+## 말로 일정 해석 · 속도 보정 P4 (11/10 · 지시문 11)
+
+### 말로 일정 해석은 목업 규칙이에요
+
+- `POST /api/onboarding/events/voice`(S2)와 `POST /api/schedules/voice`(S6-4)는 같은 목업 함수 `src/mocks/parseSchedule.js`로 문장을 해석해요. 실제 해석은 AI(김현민) 몫이고, 응답 모양은 그대로예요
+- 순서: ① 기간 ② 시각 범위 ③ 시각('시간'의 '시'는 시각 아님) ④ 때(오후·저녁·밤은 12 미만이면 +12) ⑤ 요일·반복(수요일 · 월수금 · 매주 · 매일 · 평일 · 주말)
+- 끝 시간: 범위 → 시작 + 기간 → 기본 2시간. 시각 없이 때만 있으면 때 기본 범위(저녁 19–21 등)
+- 요일이 없으면 지금처럼 해석 실패 (S2 "요일과 시간을 찾지 못했어요", S6-4 "요일을 찾지 못했어요")
+- S2에서 반복 문장(월수금 · 매주 …)이면 매주 일정(`days`)으로 들어가요
+
+### 속도 보정 — `GET /api/today`의 `paceAlert` · `POST /api/plan/pace` (PL-07)
+
+```json
+"paceAlert": {
+  "subjectId": "ds",
+  "subjectName": "자료구조",
+  "ratio": 1.4,
+  "perPage": 3.5,
+  "expectedPerPage": 2.5,
+  "days": 3,
+  "sessions": 3,
+  "rows": [
+    { "taskId": "t5", "date": "2026-11-10", "title": "4단원 그래프", "from": 96, "to": 120, "now": 60, "after": 90 },
+    { "taskId": "w11b", "date": "2026-11-11", "title": "총복습", "from": null, "to": null, "now": 60, "after": null }
+  ],
+  "overDays": []
+}
+```
+
+- 예상과 20% 이상 차이 날 때만, 과목당 하루 한 번 (`paceAlert`가 없으면 `null`)
+- `after: null` = 페이지 기준이 아닌 태스크라 그대로. `after` = 쪽수 × `perPage` (5분 단위)
+- `overDays`: 반영하면 하루 공부 가능 시간(08–23시에서 고정 일정을 뺀 시간, 11/10 결정 A)을 넘는 날 `[{ date, total, free, over }]`
+- mock: 11/9 기본 시드에서 '다음 날로' 한 11/10에만 자료구조 1.4배 (값은 MOCK)
+
+`POST /api/plan/pace` `{ subjectId, apply }` → `{ applied, overDays, replan }`
+
+- `apply: false` [그대로]: 아무것도 바꾸지 않고 그날은 다시 안 떠요 (팝업을 닫아도 같아요)
+- `apply: true` [반영]: 남은 태스크 시간을 늘려요. 넘는 날이 생기면 `replan: true` → 오늘 응답의 `replan`이 `{ kind: "pace", title: "속도를 반영하니 11/11에 N분이 넘어요", options }`로 와서 P2를 띄워요 (안 문구는 mock, TODO 기획 확인)
+- P2와 같은 날이면 P2 먼저, 팝업이 다 닫힌 뒤 P4 (TODO 기획 확인)

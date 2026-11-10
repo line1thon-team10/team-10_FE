@@ -1,5 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { getToday, patchRecord, postInterpret, postRecord, postReplan } from '@/api/today.js';
+import {
+  getToday,
+  patchRecord,
+  postInterpret,
+  postPace,
+  postRecord,
+  postReplan,
+} from '@/api/today.js';
 import { QK } from './queryKeys.js';
 
 export const useToday = () =>
@@ -22,5 +29,6 @@ function useTodayMutation(fn) {
 export const useRecord = () => useTodayMutation(postRecord);
 export const useFixRecord = () => useTodayMutation(patchRecord);
 export const useReplan = () => useTodayMutation(postReplan);
+export const usePace = () => useTodayMutation(postPace);
 
 export const useInterpret = () => useMutation({ mutationFn: postInterpret });
