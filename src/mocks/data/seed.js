@@ -287,6 +287,7 @@ export const SEED = {
         unitNo: 2,
         grade: 'shaky',
         score: 69,
+        round: 2, // 11/8 보충 완료 → 2회독 (정의서 4-2)
         note: '어제 오답 2개가 오늘 퀴즈에 다시 나와요',
         blocks: ['done', 'done', 'done', 'done'],
       },
@@ -310,6 +311,7 @@ export const SEED = {
         unitNo: 2,
         grade: 'risk',
         score: 40,
+        round: 2, // 11/9 보충 완료 → 2회독 (정의서 4-2)
         note: '어제 이해도가 낮아 오늘 보충 학습이 붙었어요',
         blocks: ['done', 'done', 'done', { taskId: 't3', supplement: true }],
       },
@@ -369,55 +371,78 @@ export const SEED = {
     },
   ],
 
-  // 오답 노트 6건
+  // 오답 노트 (RV-01) — 데이터 세트 오답 6건 중 11/9 오늘 퀴즈 오답 2건(편향 트리·BST 삭제)은 빼고,
+  // 오늘 퀴즈를 제출하면 오답·애매 정답이 여기에 생겨요 (11/10 결정 A).
+  // result: sureWrong 확실 오답 · unsureWrong 애매 오답 · unsureRight 애매 정답 · resolved 해결 (서술형은 score)
+  // mock: 지난 오답의 확실/애매는 데이터 세트에 없어서 '확실 오답'으로 넣었어요 (mockFilled: confidence)
+  // questionId: 오늘의 퀴즈 문항과 같은 문제 (다시 풀기에 써요). concept: 단원 개념 목록 기준 (mock)
   wrongNotes: [
     {
       id: 'w1',
       subjectId: 'ds',
+      unitNo: 2,
+      concept: '스택',
+      questionId: 'q2',
       question: '빈 스택에서 pop',
       page: 40,
       type: 'choice',
-      status: '오답 2회 (11/5, 11/8)',
+      wrongCount: 2,
+      lastDate: '2026-11-08',
+      result: 'sureWrong',
+      history: [
+        { date: '2026-11-05', result: 'sureWrong' },
+        { date: '2026-11-08', result: 'sureWrong' },
+      ],
+      mockFilled: ['confidence'],
     },
     {
       id: 'w2',
       subjectId: 'ds',
+      unitNo: 2,
+      concept: '후위 표기식',
+      questionId: 'q1',
       question: '후위 표기식 계산',
       page: 52,
       type: 'short',
-      status: '오답 1회 (11/8)',
+      wrongCount: 1,
+      lastDate: '2026-11-08',
+      result: 'sureWrong',
+      history: [{ date: '2026-11-08', result: 'sureWrong' }],
+      mockFilled: ['confidence'],
     },
     {
       id: 'w3',
       subjectId: 'ds',
+      unitNo: 3,
+      concept: '순회',
+      questionId: 'q4',
       question: '중위 순회 결과',
       page: 68,
       type: 'choice',
-      status: '해결 (11/7 오답 → 11/8 정답)',
-    },
-    {
-      id: 'w4',
-      subjectId: 'ds',
-      question: '편향 트리 탐색 복잡도',
-      page: 79,
-      type: 'choice',
-      status: '오답 1회 (11/9)',
-    },
-    {
-      id: 'w5',
-      subjectId: 'ds',
-      question: 'BST 노드 삭제 (자식 2개)',
-      page: 82,
-      type: 'essay',
-      status: '서술형 70점 · 오답 (11/9)',
+      wrongCount: 1,
+      lastDate: '2026-11-08',
+      result: 'resolved',
+      history: [
+        { date: '2026-11-07', result: 'sureWrong' },
+        { date: '2026-11-08', result: 'sureRight' },
+      ],
+      mockFilled: ['confidence'],
     },
     {
       id: 'w6',
       subjectId: 'os',
+      unitNo: 2,
+      concept: '동기화',
+      questionId: null, // 운영체제 문항 데이터가 없어서 다시 풀기는 막아 둬요
       question: '뮤텍스와 세마포어 차이',
       page: 44,
       type: 'essay',
-      status: '서술형 62점 · 오답 (11/8)',
+      score: 62,
+      wrongCount: 1,
+      lastDate: '2026-11-08',
+      result: 'sureWrong',
+      history: [{ date: '2026-11-08', result: 'sureWrong', score: 62 }],
+      mockFilled: ['confidence'],
     },
   ],
 
@@ -433,6 +458,7 @@ export const SEED = {
         questions: [
           {
             id: 'q1',
+            concept: '후위 표기식', // mock: 개념
             type: 'short',
             tag: '어제 오답',
             unitNo: 2,
@@ -444,6 +470,7 @@ export const SEED = {
           },
           {
             id: 'q2',
+            concept: '스택', // mock: 개념
             type: 'choice',
             tag: '어제 오답',
             unitNo: 2,
@@ -461,6 +488,7 @@ export const SEED = {
           },
           {
             id: 'q3',
+            concept: '이진 탐색 트리', // mock: 개념
             type: 'essay',
             tag: null,
             unitNo: 3,
@@ -473,6 +501,7 @@ export const SEED = {
           },
           {
             id: 'q4',
+            concept: '순회', // mock: 개념
             type: 'choice',
             tag: null,
             unitNo: 3,
@@ -490,6 +519,7 @@ export const SEED = {
           },
           {
             id: 'q5',
+            concept: '이진 탐색 트리', // mock: 개념
             type: 'choice',
             tag: null,
             unitNo: 3,
@@ -502,6 +532,7 @@ export const SEED = {
           },
           {
             id: 'q6',
+            concept: '이진 탐색 트리', // mock: 개념
             type: 'short',
             tag: null,
             unitNo: 3,
@@ -513,6 +544,7 @@ export const SEED = {
           },
           {
             id: 'q7',
+            concept: '이진 탐색 트리', // mock: 개념
             type: 'choice',
             tag: null,
             unitNo: 3,

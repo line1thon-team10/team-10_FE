@@ -24,7 +24,7 @@ export function useSubmitQuiz() {
     mutationFn: postQuizSubmit,
     onSuccess: (result) => {
       qc.setQueryData(QK.quizResult(result.subjectId), result);
-      ['books', 'today'].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
+      ['books', 'today', 'review'].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
       qc.invalidateQueries({ queryKey: QK.quizToday });
     },
   });

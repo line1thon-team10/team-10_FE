@@ -137,9 +137,11 @@ export default function S8_2Result() {
           <p className="text-[12.5px] text-fg-2">정답·해설은 여기서 한 번에 봐요</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button type="button" className="btn" disabled title="더 풀기는 준비 중이에요">
-            더 풀기 ({newUnit}단원 5문항)
-          </button>
+          {newUnit && (
+            <button type="button" className="btn" disabled title="더 풀기는 준비 중이에요">
+              더 풀기 ({newUnit}단원 5문항)
+            </button>
+          )}
           <Link className="btn" to={ROUTES.review}>
             오답 노트 보기
           </Link>

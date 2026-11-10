@@ -12,4 +12,5 @@ export const QK = {
   quizSet: (subjectId) => ['quiz', 'set', subjectId],
   quizResult: (subjectId) => ['quiz', 'result', subjectId],
   books: ['books'],
+  notes: (group) => ['review', 'notes', group],
 };

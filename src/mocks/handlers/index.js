@@ -5,6 +5,7 @@ import { materialsHandlers } from './materials.js';
 import { onboardingHandlers } from './onboarding.js';
 import { planHandlers } from './plan.js';
 import { quizHandlers } from './quiz.js';
+import { reviewHandlers } from './review.js';
 import { sessionHandlers } from './session.js';
 import { todayHandlers } from './today.js';
 
@@ -17,4 +18,5 @@ export const handlers = [
   ...todayHandlers,
   ...quizHandlers,
   ...booksHandlers,
+  ...reviewHandlers,
 ];

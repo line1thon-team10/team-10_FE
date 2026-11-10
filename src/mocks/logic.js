@@ -293,6 +293,7 @@ export function booksView() {
           to: meta.to,
           grade: u.grade,
           score: u.score,
+          round: u.round ?? 1, // 보충을 끝내면 2회독 (정의서 4-2)
           note: u.note ?? null,
           blocks,
         };
@@ -347,13 +348,18 @@ export function quizTodayView() {
   };
 }
 
+// 퀴즈 세트: 오늘의 퀴즈(과목 id) 또는 문제 뽑기로 만든 세트(c1, c2 …)
+const setOf = (s, id) => s.customSets[id] ?? s.quizSets[s.today.date]?.[id];
+const subjectOfSet = (s, id, set) => s.subjects.find((x) => x.id === (set.subjectId ?? id));
+
 export function quizSetView(subjectId) {
   const s = db.get();
-  const set = s.quizSets[s.today.date]?.[subjectId];
+  const set = setOf(s, subjectId);
   if (!set) throw new MockError('NO_QUIZ', '이 과목 퀴즈 문항이 아직 없어요', 404);
-  const sub = s.subjects.find((x) => x.id === subjectId);
+  const sub = subjectOfSet(s, subjectId, set);
   return {
     subjectId,
+    custom: Boolean(set.subjectId), // 문제 뽑기로 만든 세트
     name: sub.name,
     round: set.round,
     difficulty: set.difficulty,
@@ -385,12 +391,12 @@ const unitBlockStates = (s, subjectId, unitNo) => {
 // savedGrading: AI 채점이 늦거나 실패해서 저장된 채점으로 진행 (NF-10)
 export function gradeQuiz(subjectId, answers, savedGrading = false) {
   const s = db.get();
-  const set = s.quizSets[s.today.date]?.[subjectId];
+  const set = setOf(s, subjectId);
   if (!set) throw new MockError('NO_QUIZ', '이 과목 퀴즈 문항이 아직 없어요', 404);
   if (set.questions.some((q) => !answers.find((a) => a.questionId === q.id)?.confidence)) {
     throw new MockError('CONFIDENCE_REQUIRED', '모든 문항에 확실/애매를 골라 주세요'); // QZ-05
   }
-  const sub = s.subjects.find((x) => x.id === subjectId);
+  const sub = subjectOfSet(s, subjectId, set);
   const items = set.questions.map((q, i) => {
     const a = answers.find((x) => x.questionId === q.id) ?? {};
     let correct = false;
@@ -428,13 +434,15 @@ export function gradeQuiz(subjectId, answers, savedGrading = false) {
     wrong: items.filter((x) => !x.correct).length,
   };
   // P3 · BK-08: 퀴즈 전 책 더미 → 결과 반영 → 퀴즈 후 책 더미 (S9와 같은 계산)
-  const before = set.unitChanges.map((c) => ({
-    grade: unitOf(s, subjectId, c.unitNo)?.grade ?? null,
-    blocks: unitBlockStates(s, subjectId, c.unitNo),
+  // mock: 문제 뽑기 세트는 단원 점수를 바꾸지 않아요 (unitChanges 없음)
+  const changes = set.unitChanges ?? [];
+  const before = changes.map((c) => ({
+    grade: unitOf(s, sub.id, c.unitNo)?.grade ?? null,
+    blocks: unitBlockStates(s, sub.id, c.unitNo),
   }));
   s.quizResults[quizKey(s, subjectId)] = { pending: true }; // 오늘 끝낸 책도 등급 색으로
-  const unitChanges = set.unitChanges.map((c) => {
-    const unit = unitOf(s, subjectId, c.unitNo);
+  const unitChanges = changes.map((c) => {
+    const unit = unitOf(s, sub.id, c.unitNo);
     if (unit) Object.assign(unit, { grade: c.grade, score: c.after }); // LV-01·02 결과 반영 (mock 고정값)
     return { ...c, title: sub.units.find((u) => u.no === c.unitNo)?.title };
   });
@@ -442,7 +450,7 @@ export function gradeQuiz(subjectId, answers, savedGrading = false) {
     unitNo: c.unitNo,
     title: c.title,
     before: { score: c.before, grade: before[i].grade, blocks: before[i].blocks },
-    after: { score: c.after, grade: c.grade, blocks: unitBlockStates(s, subjectId, c.unitNo) },
+    after: { score: c.after, grade: c.grade, blocks: unitBlockStates(s, sub.id, c.unitNo) },
     recovering: Boolean(c.recovering),
   }));
   const result = {
@@ -458,6 +466,7 @@ export function gradeQuiz(subjectId, answers, savedGrading = false) {
       .map((x) => ({ no: x.no, reason: x.correct ? '애매 정답' : '오답' })),
   };
   s.quizResults[quizKey(s, subjectId)] = result;
+  addNotes(s, sub.id, set.questions, items); // RV-01: 오답·애매 정답은 오답 노트로
   return result;
 }
 
@@ -466,4 +475,272 @@ export function quizResultView(subjectId) {
   const r = s.quizResults[quizKey(s, subjectId)];
   if (!r) throw new MockError('NO_RESULT', '아직 푼 퀴즈가 없어요', 404);
   return r;
+}
+
+// ── 복습·오답 (S10 · RV-01~03) ──────────────────────────
+// 판정 규칙 (11/10 결정 A, mock): 틀리면 틀린 횟수 +1 · 점수 −1, 확실 정답이면 점수 +1, 확실 정답 2번이면 해결.
+// 회복 모드(80점 미만으로 떨어진 적 있는 단원)는 하루 +5, 그 범위를 재학습했으면 +15까지 (4-2)
+const RESOLVE_STREAK = 2;
+const WEAK_COUNT = 2; // 취약 개념 = 오답 2회 이상 (4-3)
+const GRADE_ORDER = ['risk', 'shaky', 'stable'];
+const gradeOfScore = (n) => (n >= 80 ? 'stable' : n >= 50 ? 'shaky' : 'risk');
+const resultOf = (correct, confidence) =>
+  correct
+    ? confidence === 'sure'
+      ? 'sureRight'
+      : 'unsureRight'
+    : confidence === 'sure'
+      ? 'sureWrong'
+      : 'unsureWrong';
+const findQuestion = (s, id) => {
+  for (const day of Object.values(s.quizSets))
+    for (const set of Object.values(day)) {
+      const q = set.questions.find((x) => x.id === id);
+      if (q) return q;
+    }
+  return null;
+};
+const conceptId = (s, subjectId, unitNo, concept) => {
+  const sub = s.subjects.find((x) => x.id === subjectId);
+  const idx = sub.units.find((u) => u.no === unitNo)?.concepts.indexOf(concept) ?? -1;
+  return idx < 0 ? concept : `${subjectId.toUpperCase()}${unitNo}-${idx + 1} ${concept}`;
+};
+
+// 퀴즈 제출 → 오답·애매 정답을 노트에 (같은 문제면 한 노트에 합쳐요)
+function addNotes(s, subjectId, questions, items) {
+  for (const it of items) {
+    const r = resultOf(it.correct, it.confidence);
+    let note = s.wrongNotes.find((n) => n.questionId === it.questionId);
+    // 다시 나온 문제를 확실로 맞히면 해제에 한 걸음 (4-3: 두 번 모두 확실이면 해제)
+    if (r === 'sureRight') {
+      if (note && note.result !== 'resolved') {
+        note.streak = (note.streak ?? 0) + 1;
+        if (note.streak >= RESOLVE_STREAK) note.result = 'resolved';
+        note.lastDate = s.today.date;
+        note.history.push({ date: s.today.date, result: r });
+      }
+      continue;
+    }
+    const q = questions.find((x) => x.id === it.questionId);
+    if (!note) {
+      note = {
+        id: `n${s.wrongNotes.length + 1}`,
+        subjectId,
+        unitNo: q.unitNo,
+        concept: q.concept ?? null,
+        questionId: q.id,
+        question: q.prompt,
+        page: Number(String(q.page).replace(/\D/g, '')) || null,
+        type: q.type,
+        wrongCount: 0,
+        history: [],
+        mockFilled: [],
+      };
+      s.wrongNotes.push(note);
+    }
+    if (!it.correct) note.wrongCount += 1;
+    Object.assign(note, {
+      result: r,
+      lastDate: s.today.date,
+      streak: 0,
+      score: it.score ?? undefined,
+    });
+    note.mockFilled = (note.mockFilled ?? []).filter((x) => x !== 'confidence'); // 실제 확실/애매 값으로 바뀜
+    note.history.push({ date: s.today.date, result: r, score: it.score ?? undefined });
+  }
+}
+
+const noteView = (s, n) => {
+  const sub = s.subjects.find((x) => x.id === n.subjectId);
+  return {
+    id: n.id,
+    subjectId: n.subjectId,
+    subjectName: sub.name,
+    unitNo: n.unitNo,
+    unitTitle: sub.units.find((u) => u.no === n.unitNo)?.title ?? '',
+    concept: n.concept ? conceptId(s, n.subjectId, n.unitNo, n.concept) : null,
+    question: n.question,
+    page: n.page,
+    type: n.type,
+    wrongCount: n.wrongCount,
+    lastDate: n.lastDate,
+    result: n.result,
+    streak: n.result === 'resolved' ? RESOLVE_STREAK : (n.streak ?? 0), // 확실 정답 연속 (2면 해결)
+    score: n.type === 'essay' ? (n.score ?? null) : null,
+    canRetry: Boolean(n.questionId && findQuestion(s, n.questionId)),
+    history: n.history,
+    mockFilled: n.mockFilled ?? [],
+  };
+};
+
+function groupNotes(s, notes, group) {
+  const by = (keyOf, labelOf, order) => {
+    const map = new Map();
+    for (const n of notes) {
+      const k = keyOf(n);
+      if (!map.has(k)) map.set(k, { key: String(k), label: labelOf(n), items: [] });
+      map.get(k).items.push(n);
+    }
+    return [...map.values()].sort(order);
+  };
+  if (group === 'unit')
+    return by(
+      (n) => `${n.subjectId}-${n.unitNo}`,
+      (n) => `${n.subjectName} · ${n.unitNo}단원 ${n.unitTitle}`,
+      (a, b) => a.key.localeCompare(b.key),
+    );
+  if (group === 'count')
+    return by(
+      (n) => n.wrongCount,
+      (n) => (n.wrongCount ? `오답 ${n.wrongCount}회` : '애매 정답 (오답 0회)'),
+      (a, b) => Number(b.key) - Number(a.key),
+    );
+  return by(
+    (n) => n.lastDate,
+    (n) => dayjs(n.lastDate).format('M/D (dd)'),
+    (a, b) => b.key.localeCompare(a.key),
+  );
+}
+
+export function reviewNotesView(group = 'date') {
+  const s = db.get();
+  const notes = s.wrongNotes.map((n) => noteView(s, n));
+  const weak = new Map();
+  for (const n of notes) {
+    if (!n.concept) continue;
+    const k = `${n.subjectId}|${n.concept}`;
+    const w = weak.get(k) ?? {
+      subjectId: n.subjectId,
+      subjectName: n.subjectName,
+      concept: n.concept,
+      count: 0,
+    };
+    w.count += n.wrongCount;
+    weak.set(k, w);
+  }
+  return {
+    group,
+    total: notes.length,
+    groups: groupNotes(s, notes, group),
+    weakConcepts: [...weak.values()].filter((w) => w.count >= WEAK_COUNT),
+  };
+}
+
+// 다시 풀기 문항 (정답은 보내지 않아요)
+export function retryQuestionView(noteId) {
+  const s = db.get();
+  const n = s.wrongNotes.find((x) => x.id === noteId);
+  const q = n?.questionId && findQuestion(s, n.questionId);
+  if (!q) throw new MockError('NO_QUESTION', '이 문제는 다시 풀 문항이 아직 없어요', 404);
+  return {
+    noteId,
+    type: q.type,
+    prompt: q.prompt,
+    options: q.options ?? null,
+    mockFilled: q.mockFilled ?? [],
+  };
+}
+
+export function retryNote(noteId, answer) {
+  const s = db.get();
+  const n = s.wrongNotes.find((x) => x.id === noteId);
+  const q = n?.questionId && findQuestion(s, n.questionId);
+  if (!q) throw new MockError('NO_QUESTION', '이 문제는 다시 풀 문항이 아직 없어요', 404);
+  if (!answer.confidence) throw new MockError('CONFIDENCE_REQUIRED', '확실/애매를 골라 주세요');
+  let correct = false;
+  let score = null;
+  if (q.type === 'choice') correct = answer.choice === q.answer;
+  if (q.type === 'short') correct = q.accepts.map(norm).includes(norm(answer.text));
+  if (q.type === 'essay') {
+    score = String(answer.text ?? '').trim() ? q.demoScore : 0; // mock: 시연 점수
+    correct = score >= 85;
+  }
+  const r = resultOf(correct, answer.confidence);
+  const beforeCount = n.wrongCount;
+  if (!correct) n.wrongCount += 1;
+  n.streak = r === 'sureRight' ? (n.streak ?? 0) + 1 : 0;
+  n.result = n.streak >= RESOLVE_STREAK ? 'resolved' : r === 'sureRight' ? n.result : r;
+  if (n.result === r) n.mockFilled = (n.mockFilled ?? []).filter((x) => x !== 'confidence');
+  if (q.type === 'essay') n.score = score;
+  n.lastDate = s.today.date;
+  n.history.push({ date: s.today.date, result: r, score: score ?? undefined, retry: true });
+
+  // 단원 점수 (mock): 확실 정답 +1 · 오답 −1, 회복 모드 하루 상한
+  const unit = unitOf(s, n.subjectId, n.unitNo);
+  let unitChange = null;
+  if (unit?.score != null) {
+    const delta = r === 'sureRight' ? 1 : correct ? 0 : -1;
+    const key = `${s.today.date}:${n.subjectId}:${n.unitNo}`;
+    const gained = s.dailyGain[key] ?? 0;
+    const cap = unit.relearnedOn === s.today.date ? 15 : 5;
+    const applied = delta > 0 && unit.score < 80 ? Math.min(delta, cap - gained) : delta;
+    const before = { score: unit.score, grade: unit.grade };
+    const next = Math.max(0, Math.min(99, unit.score + applied));
+    // 등급은 한 칸씩만 올라가요 (4-2)
+    let grade = gradeOfScore(next);
+    if (GRADE_ORDER.indexOf(grade) > GRADE_ORDER.indexOf(unit.grade) + 1)
+      grade = GRADE_ORDER[GRADE_ORDER.indexOf(unit.grade) + 1];
+    if (applied > 0) s.dailyGain[key] = gained + applied;
+    Object.assign(unit, { score: next, grade });
+    unitChange = { unitNo: n.unitNo, before, after: { score: next, grade } };
+  }
+  return {
+    note: noteView(s, n),
+    correct,
+    confidence: answer.confidence,
+    score,
+    explanation: q.explanation ?? null,
+    wrongCountBefore: beforeCount,
+    unitChange,
+  };
+}
+
+// 재학습 기록 (RV-03): 범위 전체 재학습 → 회독 +1, 그날 회복 상한 +15 (회복 점수 계산은 서버)
+export function relearnUnit(subjectId, unitNo) {
+  const s = db.get();
+  const unit = unitOf(s, subjectId, unitNo);
+  if (!unit) throw new MockError('UNIT_NOT_FOUND', '단원을 찾지 못했어요', 404);
+  if (unit.relearnedOn === s.today.date)
+    throw new MockError('ALREADY', '오늘 이미 재학습을 기록했어요');
+  unit.round = (unit.round ?? 1) + 1;
+  unit.relearnedOn = s.today.date;
+  return { subjectId, unitNo, round: unit.round, relearnedOn: unit.relearnedOn };
+}
+
+// 문제 뽑기 (RV-02): 고른 범위·난이도 밖 출제 없음. mock은 지금 있는 퀴즈 문항에서 골라요
+export function makeCustomQuiz({ subjectId, units, difficulty, count }) {
+  const s = db.get();
+  const sub = s.subjects.find((x) => x.id === subjectId);
+  if (!sub) throw new MockError('SUBJECT_NOT_FOUND', '과목을 찾지 못했어요', 404);
+  if (!units?.length) throw new MockError('NO_UNITS', '범위를 하나 이상 골라 주세요');
+  // 2회독 범위만 난이도를 고를 수 있고, 1회독 범위가 섞이면 하 (4-2 · QZ-09)
+  const allSecond = units.every((no) => (unitOf(s, subjectId, no)?.round ?? 1) >= 2);
+  const level = allSecond ? difficulty : '하';
+  const pool = Object.values(s.quizSets)
+    .flatMap((day) => day[subjectId]?.questions ?? [])
+    .filter((q) => units.includes(q.unitNo));
+  if (!pool.length)
+    throw new MockError('NO_QUESTIONS', `${sub.name} 이 범위는 목업 문항이 아직 없어요`, 404);
+  const picked = pool.slice(0, count);
+  const id = `c${Object.keys(s.customSets).length + 1}`;
+  s.customSets[id] = {
+    subjectId,
+    round: allSecond ? '2회독' : '1회독',
+    difficulty: level,
+    composition: `문제 뽑기 · ${units.map((n) => `${n}단원`).join('·')}`,
+    questions: picked.map((q) => ({
+      ...q,
+      tag: '문제 뽑기',
+      mockFilled: [...new Set([...(q.mockFilled ?? []), 'custom'])],
+    })),
+  };
+  return {
+    quizId: id,
+    count: picked.length,
+    difficulty: level,
+    note:
+      picked.length < count
+        ? `목업 문항이 ${picked.length}개뿐이라 ${picked.length}문항만 뽑았어요`
+        : null,
+  };
 }

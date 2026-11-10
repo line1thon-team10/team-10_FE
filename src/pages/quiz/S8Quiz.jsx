@@ -194,11 +194,16 @@ function Player({ subjectId }) {
     );
 
   const toResult = () => navigate(`${ROUTES.quizResult}?subject=${subjectId}`);
-  if (result) return <P3BookColor result={result} onClose={toResult} />;
+  // 문제 뽑기 세트처럼 책 색이 안 바뀌면 P3 없이 결과로
+  if (result && result.bookChanges.length)
+    return <P3BookColor result={result} onClose={toResult} />;
 
   const send = (savedGrading = false) => {
     setStartedAt(Date.now());
-    submit.mutate({ subjectId, answers, savedGrading }, { onSuccess: setResult });
+    submit.mutate(
+      { subjectId, answers, savedGrading },
+      { onSuccess: (r) => (r.bookChanges.length ? setResult(r) : toResult()) },
+    );
   };
   if (startedAt)
     return (

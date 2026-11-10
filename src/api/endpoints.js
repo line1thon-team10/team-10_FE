@@ -32,4 +32,9 @@ export const EP = {
   quizToday: '/api/quiz/today', // 과목별 오늘의 퀴즈 · 열림 여부 (QZ-02)
   quiz: '/api/quiz', // /:subjectId 문항 · /:subjectId/submit 제출 · /:subjectId/result 결과
   books: '/api/books', // 과목별 단원 책 더미 · 준비도 (BK-01~05, KP-01)
+
+  // 복습·오답 (S10)
+  reviewNotes: '/api/review/notes', // ?group=date|unit|count · /:id/question 다시 풀 문항 · POST /:id/retry (RV-01)
+  customQuiz: '/api/review/custom-quiz', // 문제 뽑기 (RV-02) → /quiz?subject=만든 세트 id
+  relearn: '/api/review/relearn', // 범위 전체 재학습 완료 (RV-03)
 };

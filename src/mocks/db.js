@@ -52,6 +52,8 @@ function build(name) {
     replan: null, // 다음 접속 때 띄울 분배안 (P2)
     quizResults: {}, // { 'YYYY-MM-DD:subjectId': 결과 }
     dayClosedOn: null, // 하루 마무리 박스(P1)를 띄운 날 — 하루 한 번
+    customSets: {}, // 문제 뽑기로 만든 퀴즈 세트 { c1: { subjectId, questions … } }
+    dailyGain: {}, // 다시 풀기로 오른 점수 { 'YYYY-MM-DD:과목:단원': 점수 } (회복 모드 상한)
   };
   if (name === 'empty') s.demo.today = s.onboardingDate;
   if (name === 'overdue') {

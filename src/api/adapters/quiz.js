@@ -24,6 +24,7 @@ export const toQuizToday = (raw) => ({
 
 export const toQuizSet = (raw) => ({
   subjectId: raw.subjectId,
+  custom: Boolean(raw.custom), // 문제 뽑기로 만든 세트 (RV-02)
   name: raw.name,
   round: raw.round, // 1회독 · 2회독 …
   difficulty: raw.difficulty, // 1회독은 하 고정 (QZ-09)

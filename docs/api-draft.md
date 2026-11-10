@@ -190,3 +190,84 @@
 
 - `blocks`: 책 상태 (아래 → 위). 오늘 끝낸 책은 퀴즈 전 `done`(회색) → 퀴즈 후 단원 등급. `doing`(부분 완료)·`planned`(예정)는 그대로
 - `recovering`: '흔들림 유지 · 회복 중' 표시
+
+## 복습·오답 S10 (11/10 · 지시문 7)
+
+판정(틀린 횟수 · 해결 · 이해도 · 취약 개념)은 서버. mock은 `src/mocks/logic.js`의 복습·오답 부분이에요.
+
+### 오답 노트 — `GET /api/review/notes?group=date|unit|count` (RV-01)
+
+```json
+{
+  "group": "date",
+  "total": 6,
+  "groups": [
+    {
+      "key": "2026-11-09",
+      "label": "11/9 (월)",
+      "items": [
+        {
+          "id": "w1",
+          "subjectId": "ds",
+          "unitNo": 2,
+          "concept": "DS2-1 스택",
+          "question": "빈 스택에서 pop",
+          "page": 40,
+          "type": "choice",
+          "wrongCount": 2,
+          "lastDate": "2026-11-09",
+          "result": "sureWrong",
+          "score": null,
+          "streak": 1,
+          "canRetry": true
+        }
+      ]
+    }
+  ],
+  "weakConcepts": [{ "subjectId": "ds", "concept": "DS2-1 스택", "count": 2 }]
+}
+```
+
+- `result`: `sureWrong` 확실 오답 · `unsureWrong` 애매 오답 · `unsureRight` 애매 정답 · `resolved` 해결. 서술형은 `score`
+- 퀴즈를 제출하면 오답·애매 정답이 노트에 생겨요 (같은 문제는 한 노트에 합침). 다시 나온 문제를 확실로 맞히면 `streak` +1
+- `weakConcepts`: 오답이 2회 이상 쌓인 개념 (4-3). 문제 뽑기 기본 범위
+
+### 다시 풀기 — `GET /api/review/notes/:id/question` · `POST /api/review/notes/:id/retry`
+
+```json
+// 요청
+{ "choice": 1, "text": null, "confidence": "sure" }
+// 응답 data
+{
+  "correct": false,
+  "confidence": "sure",
+  "explanation": "꺼낼 값이 없어서 스택 언더플로가 나요.",
+  "wrongCountBefore": 2,
+  "note": { "id": "w1", "wrongCount": 3, "result": "sureWrong", "streak": 0 },
+  "unitChange": {
+    "unitNo": 2,
+    "before": { "score": 70, "grade": "shaky" },
+    "after": { "score": 69, "grade": "shaky" }
+  }
+}
+```
+
+- mock 규칙 (11/10 결정 A): 틀리면 틀린 횟수 +1 · 단원 점수 −1, 확실 정답이면 +1, 확실 정답 2번이면 해결. 회복 모드 하루 +5 (그 범위를 재학습했으면 +15), 등급은 한 칸씩만 올라감
+
+### 문제 뽑기 — `POST /api/review/custom-quiz` (RV-02)
+
+```json
+// 요청
+{ "subjectId": "ds", "units": [2, 3], "difficulty": "하", "count": 5, "weight": "even" }
+// 응답 data
+{ "quizId": "c1", "count": 5, "difficulty": "하", "note": null }
+```
+
+- 2회독한 범위만 난이도를 고를 수 있고, 1회독 범위가 섞이면 서버가 `하`로 정해요
+- 만든 세트는 오늘의 퀴즈와 같은 경로로 풀어요: `GET /api/quiz/c1`, `POST /api/quiz/c1/submit`, 결과 `/quiz/result?subject=c1` (책 색 변화가 없으면 P3 없이 결과로)
+- mock은 지금 있는 퀴즈 문항에서 골라서 문항마다 MOCK. 단원 점수는 바꾸지 않아요
+
+### 재학습 기록 — `POST /api/review/relearn` `{ subjectId, unitNo }` (RV-03)
+
+- 응답 `{ subjectId, unitNo, round, relearnedOn }`. 회독 +1, 그날 회복 상한 +15. 하루 한 번 (`ALREADY`)
+- `GET /api/books`의 `units[].round`: 회독 (보충을 끝내면 2회독, 정의서 4-2)
