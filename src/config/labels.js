@@ -22,6 +22,9 @@ export const GRADE = {
 // 시험 준비도 식의 두 항 (KP-01, v2: '예상 완료율' → '진도율')
 export const READINESS_PART = { progressRate: '진도율', mastery: '숙달도' };
 
+// S1 과목 카드 상태 (ON-02)
+export const GOAL_STATUS = { pending: '입력 전', asking: '추가 질문 중', confirmed: '정리됨' };
+
 export const RECORD_RESULT = { done: '완료', partial: '부분 완료', none: '못 함' };
 export const QUIZ_TYPE = { choice: '객관식', ox: 'OX', short: '단답형', essay: '서술형' };
 export const CONFIDENCE = { sure: '확실', unsure: '애매' };

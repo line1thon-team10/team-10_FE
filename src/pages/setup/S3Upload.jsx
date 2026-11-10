@@ -9,11 +9,17 @@ import Card from '@/components/common/Card.jsx';
 import { ErrorState, LoadingState } from '@/components/common/StateView.jsx';
 import AiWait from '@/components/common/AiWait.jsx';
 import StepProgress from '@/components/common/StepProgress.jsx';
+import SetupHead from '@/components/setup/SetupHead.jsx';
 import { useAiWait } from '@/hooks/useAiWait.js';
 import { useJob, useMaterials, useUpload } from '@/hooks/usePlan.js';
 import { useMaterialStore } from '@/stores/materialStore.js';
 
 const FILE_STATUS = { running: '분석 중', done: '분석 완료', failed: '실패' };
+// 스캔본은 글자 인식으로 분석해요 (PDF-01·07)
+const fileStatus = (f) =>
+  f.ocr
+    ? { running: '글자 읽는 중', done: '글자 인식으로 분석 완료', failed: '실패' }[f.status]
+    : FILE_STATUS[f.status];
 
 function cardStatus(files) {
   if (!files.length) return '대기';
@@ -29,7 +35,7 @@ function DropZone({ subjectId, onFile }) {
   const pick = (list) => [...(list ?? [])].forEach((f) => onFile(subjectId, f));
   return (
     <div
-      className={`grid place-items-center rounded-sm border-[1.5px] border-dashed px-3 py-5 text-center text-[13px] ${over ? 'border-fg bg-surface-2' : 'border-line text-fg-2'}`}
+      className={`grid place-items-center rounded-xl border border-dashed px-3 py-5 text-center text-[13px] ${over ? 'border-brand-line bg-brand-tint text-brand-deep' : 'border-line-2 text-fg-2'}`}
       onDragOver={(e) => {
         e.preventDefault();
         setOver(true);
@@ -63,16 +69,22 @@ function DropZone({ subjectId, onFile }) {
 
 function SubjectCard({ subject, selected, onSelect, onFile, navigate }) {
   const status = cardStatus(subject.files);
+  const quizless = subject.files.filter((f) => f.quizless && f.status === 'done');
   return (
-    <Card
-      className={`flex flex-col gap-3 ${selected ? 'outline-2 outline-fg' : ''}`}
-      onClick={onSelect}
-    >
+    <Card className={`flex flex-col gap-3 ${selected ? 'border-fg-2' : ''}`} onClick={onSelect}>
       <div className="flex items-center justify-between gap-2">
-        <h2 className="font-semibold" style={{ color: subject.color }}>
+        <h2 className="flex items-center gap-2 text-[15px]">
+          <span
+            className="h-3 w-1 rounded-full"
+            style={{ background: subject.color }}
+            aria-hidden="true"
+          />
           {subject.name}
         </h2>
-        <span className={status === '분석 완료' ? 'badge badge-strong' : 'badge'}>{status}</span>
+        <span className="flex flex-wrap justify-end gap-1">
+          {quizless.length > 0 && <span className="badge">{quizless.length}개 퀴즈 없음</span>}
+          <span className={status === '분석 완료' ? 'badge badge-strong' : 'badge'}>{status}</span>
+        </span>
       </div>
       {subject.files.map((f) =>
         f.status === 'failed' ? (
@@ -108,11 +120,24 @@ function SubjectCard({ subject, selected, onSelect, onFile, navigate }) {
             </div>
           </div>
         ) : (
-          <p key={f.id} className="num text-[12.5px] text-fg-2">
-            {f.name}
-            {f.pages ? ` · ${f.pages}페이지` : ''} · {FILE_STATUS[f.status]}
-          </p>
+          <div key={f.id} className="flex flex-col gap-1 rounded-xl bg-bg-2 px-3 py-2.5">
+            <p className="num text-[12.5px] text-fg-soft">
+              {f.name}
+              {f.pages ? ` · ${f.pages}페이지` : ''} · {fileStatus(f)}
+            </p>
+            {f.status === 'done' && (
+              <span className={`text-[11.5px] ${f.quizless ? 'text-fg-2' : 'text-brand-deep'}`}>
+                {f.quizless ? '퀴즈 없음' : '퀴즈 가능'}
+              </span>
+            )}
+          </div>
         ),
+      )}
+      {quizless.length > 0 && (
+        <p className="text-[11.5px] text-fg-2">
+          글자 인식으로 읽은 파일은 정확도가 낮을 수 있어서 이 파일 범위는 퀴즈가 나오지 않아요.
+          계획·기록·책 쌓기에는 그대로 들어가요.
+        </p>
       )}
       <div id={`drop-${subject.id}`}>
         <DropZone subjectId={subject.id} onFile={onFile} />
@@ -126,7 +151,7 @@ function JobPanel({ jobId, subjectName, startedAt }) {
   const wait = useAiWait(startedAt, job?.status === 'running');
   return (
     <AiBox label="AI">
-      <h2 className="text-sm font-semibold">{subjectName} 분석 진행</h2>
+      <h2 className="text-[15px]">{subjectName} 분석 진행</h2>
       {!job ? (
         <p className="text-sm text-fg-2">분석을 시작하고 있어요…</p>
       ) : (
@@ -188,12 +213,15 @@ export default function S3Upload() {
 
   return (
     <>
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold">과목별 강의자료를 올려 주세요</h1>
-        <p className="text-fg-2">
-          텍스트가 있는 PDF, PPT를 PDF로 바꾼 파일을 지원해요. 스캔본은 아직 지원하지 않아요.
-        </p>
-      </div>
+      <SetupHead
+        title="과목별 강의자료를 올려 주세요"
+        desc="텍스트가 있는 PDF, PPT를 PDF로 바꾼 파일을 올려 주세요. 스캔본은 글자 인식으로 읽고, 그 범위는 퀴즈 없이 계획에만 넣어요."
+      >
+        <Button onClick={() => navigate(ROUTES.s2)}>이전</Button>
+        <Button variant="primary" onClick={() => navigate(ROUTES.s4)}>
+          다음: 단원 확인
+        </Button>
+      </SetupHead>
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {data.subjects.map((s) => (
@@ -226,17 +254,11 @@ export default function S3Upload() {
             <AiBox label="AI">
               <p className="text-sm text-fg-2">
                 파일을 올리면 텍스트 읽기 → 목차 찾기 → 개념 추출 → 개념별 페이지 연결 순서로
-                분석해요.
+                분석해요. 스캔본은 첫 단계가 글자 읽는 중(글자 인식)이에요.
               </p>
             </AiBox>
           )}
         </aside>
-      </div>
-      <div className="flex justify-between gap-2">
-        <Button onClick={() => navigate(ROUTES.s2)}>이전</Button>
-        <Button variant="primary" onClick={() => navigate(ROUTES.s4)}>
-          다음: 단원 확인
-        </Button>
       </div>
     </>
   );

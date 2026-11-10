@@ -36,7 +36,8 @@ function handleMessage(text) {
       name: sub.name,
       examDate: sub.examDate,
       goal: i === 0 ? sub.goal : null,
-      goalDetail: null,
+      goalTotal: null,
+      goalEtc: null,
       target: null,
       status: i === 0 ? 'asking' : 'pending',
     }));
@@ -55,7 +56,8 @@ function handleMessage(text) {
     const ds = o.subjects[0];
     Object.assign(ds, {
       status: 'confirmed',
-      goalDetail: s.subjects[0].goalDetail,
+      goalTotal: s.subjects[0].goalTotal,
+      goalEtc: s.subjects[0].goalEtc,
       target: script.goalTargets.ds,
     });
     o.subjects.slice(1).forEach((x) => (x.status = 'asking'));
@@ -68,7 +70,8 @@ function handleMessage(text) {
       Object.assign(x, {
         status: 'confirmed',
         goal: src.goal,
-        goalDetail: src.goalDetail,
+        goalTotal: src.goalTotal,
+        goalEtc: src.goalEtc,
         target: script.goalTargets[x.id],
       });
     });

@@ -4,6 +4,7 @@ import {
   getMaterials,
   getPlanDraft,
   getUnits,
+  patchUnitExam,
   postApprove,
   postToc,
   putUnits,
@@ -64,6 +65,18 @@ export function useSaveUnits() {
     mutationFn: putUnits,
     onSuccess: (data) => {
       qc.setQueryData(QK.units(data.subjectId), data);
+      qc.invalidateQueries({ queryKey: QK.planDraft });
+    },
+  });
+}
+
+// S4 시험 범위 체크 (PDF-08): 바꾸면 단원 목록과 S5 분량을 다시 받아요
+export function useUnitExam() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: patchUnitExam,
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: QK.units(data.subjectId) });
       qc.invalidateQueries({ queryKey: QK.planDraft });
     },
   });

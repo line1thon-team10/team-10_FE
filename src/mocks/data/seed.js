@@ -17,8 +17,9 @@ export const SEED = {
       color: '#4F46E5', // Indigo (가안)
       examDate: '2026-11-12',
       goal: 'A+',
-      goalDetail:
-        '상대평가 상위 15% · 커트라인 90점 · 중간 40% · 기말 40% · 교수님 강조 3단원 트리',
+      // S1 카드 4칸: 시험 총 목표 · 기타 정보 (데이터 세트 1장 목표 문장을 두 칸으로 나눔)
+      goalTotal: '상대평가 상위 15% · 커트라인 90점',
+      goalEtc: '중간 40% · 기말 40% · 교수님 강조 3단원 트리',
       file: { name: '자료구조_강의자료.pdf', pages: 140 },
       taskCount: 18,
       units: [
@@ -70,7 +71,8 @@ export const SEED = {
       color: '#2563EB', // Blue (가안)
       examDate: '2026-11-16',
       goal: 'B+ 이상',
-      goalDetail: '80점 이상 · 기말 50%',
+      goalTotal: '80점 이상',
+      goalEtc: '기말 50%',
       file: { name: '운영체제_강의자료.pdf', pages: 120 },
       taskCount: 15,
       units: [
@@ -114,7 +116,8 @@ export const SEED = {
       color: '#7C3AED', // Purple (가안)
       examDate: '2026-11-18',
       goal: '통과',
-      goalDetail: '60점 이상 · 기말 60%',
+      goalTotal: '60점 이상',
+      goalEtc: '기말 60%',
       file: { name: '컴퓨터네트워크_강의자료.pdf', pages: 100 },
       taskCount: 12,
       units: [
@@ -154,7 +157,7 @@ export const SEED = {
     },
   ],
 
-  // 스캔본 실패 시연용 (S3-2)
+  // 스캔본 (PDF-01·07, 와이어 S3): 글자 인식으로 분석 완료 · 이 파일 범위는 퀴즈 없음. 빈 계정 S3에 미리 올라가 있어요
   scanFile: { subjectId: 'net', name: '컴퓨터네트워크_보충자료_스캔본.pdf', pages: 12 },
 
   // 고정 일정 (day: 1=월 … 7=일)
@@ -249,6 +252,13 @@ export const SEED = {
   // 운영체제 13 = 3단원 새 문제 5 · 어제 취약 7 · 3일 만에 다시 보는 문제 1 (정의서 v2 · 와이어 S8-1)
   // TODO(확인필요): [기획 확인] 컴퓨터네트워크 문항 수는 데이터 세트 v2를 받으면 맞춰요 (지금 5는 v1 값)
   quizCounts: { '2026-11-09': { ds: 7, os: 13, net: 5 } },
+  // S8-1 과목 카드 구성 줄 (와이어 S8-1 · 정의서 v2). 컴퓨터네트워크는 데이터 세트 v2 전이라 비워 둬요
+  quizLines: {
+    '2026-11-09': {
+      ds: ['3단원 새 문제 5 (p.72–88)', '어제 틀린 문제 2'],
+      os: ['3단원 새 문제 5', '어제 취약 7', '3일 만에 다시 보는 문제 1'],
+    },
+  },
 
   // 과목별 하루 평균 계획 페이지 (밀림 기준, 4-8). 자료구조·컴퓨터네트워크는 데이터 세트 4장,
   // 운영체제는 데이터 세트에 없어서 2주 계획 표로 계산한 mock 값이에요.
@@ -334,6 +344,8 @@ export const SEED = {
       targetLabel: 'A+',
       progressRate: 62.9,
       mastery: 80.7,
+      studiedPages: 88,
+      totalPages: 140,
     },
     {
       subjectId: 'os',
@@ -342,6 +354,8 @@ export const SEED = {
       targetLabel: 'B+',
       progressRate: 55.8,
       mastery: null,
+      studiedPages: 67,
+      totalPages: 120,
     },
     {
       subjectId: 'net',
@@ -350,6 +364,8 @@ export const SEED = {
       targetLabel: '통과',
       progressRate: 36.0,
       mastery: null,
+      studiedPages: 36,
+      totalPages: 100,
     },
   ],
 
@@ -510,14 +526,15 @@ export const SEED = {
         ],
         // 퀴즈 후 단원 이해도 변화 (정의서 v2 · 와이어 P3). 계산은 서버(LV-01) 몫이라 mock은 고정값이에요.
         unitChanges: [
+          { unitNo: 3, before: 83, after: 73, grade: 'shaky' },
           {
             unitNo: 2,
             before: 69,
             after: 70,
             grade: 'shaky',
+            recovering: true, // 와이어 P3 '흔들림 유지 · 회복 중'
             note: '2단원은 회복 중이라 하루 최대 +5점까지만 올라요. 재학습 + 문제 뽑기를 하면 최대 +15점',
           },
-          { unitNo: 3, before: 83, after: 73, grade: 'shaky' },
         ],
       },
     },

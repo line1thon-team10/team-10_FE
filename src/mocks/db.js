@@ -12,9 +12,24 @@ const freshOnboarding = () => ({
   chips: [],
   subjects: [],
   events: [],
-  materials: {}, // { subjectId: [{ id, name, pages, status, jobId, quizless }] }
+  // { subjectId: [{ id, name, pages, status, jobId, quizless, ocr }] } — 스캔본은 미리 분석 완료 (와이어 S3)
+  materials: {
+    [SEED.scanFile.subjectId]: [
+      {
+        id: 'mscan',
+        name: SEED.scanFile.name,
+        size: null,
+        pages: SEED.scanFile.pages,
+        status: 'done',
+        jobId: null,
+        quizless: true,
+        ocr: true,
+      },
+    ],
+  },
   jobs: {}, // { jobId: { startedAt, fail, subjectId, materialId } }
   units: {}, // { subjectId: [단원] } 사용자가 고친 결과
+  outOfExam: {}, // { subjectId: [단원 번호] } S4에서 시험 범위 체크를 뺀 단원 (PDF-08)
   approved: false,
 });
 
@@ -36,6 +51,7 @@ function build(name) {
     notice: null, // 다음 접속 때 보여줄 이월 안내 (S6-2)
     replan: null, // 다음 접속 때 띄울 분배안 (P2)
     quizResults: {}, // { 'YYYY-MM-DD:subjectId': 결과 }
+    dayClosedOn: null, // 하루 마무리 박스(P1)를 띄운 날 — 하루 한 번
   };
   if (name === 'empty') s.demo.today = s.onboardingDate;
   if (name === 'overdue') {

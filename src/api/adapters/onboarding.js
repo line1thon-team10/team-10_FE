@@ -20,8 +20,9 @@ export const toOnboarding = (raw) => ({
     id: s.id,
     name: s.name,
     examDate: s.examDate,
-    goal: s.goal,
-    goalDetail: s.goalDetail,
+    goal: s.goal, // 목표 학점 (없으면 null → 화면에 [목표 학점])
+    goalTotal: s.goalTotal, // 시험 총 목표 (커트라인·합격 기준)
+    goalEtc: s.goalEtc, // 기타 정보 (반영 비율·교수님 강조 범위)
     target: s.target, // 내부 목표 점수 (4-6)
     status: s.status, // pending | asking | confirmed
   })),

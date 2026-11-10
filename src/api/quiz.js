@@ -4,9 +4,12 @@ import { EP } from './endpoints.js';
 
 export const getQuizToday = async () => toQuizToday(await http.get(EP.quizToday));
 export const getQuizSet = async (subjectId) => toQuizSet(await http.get(`${EP.quiz}/${subjectId}`));
-export const postQuizSubmit = async ({ subjectId, answers }) =>
+export const postQuizSubmit = async ({ subjectId, answers, savedGrading = false }) =>
   toQuizResult(
-    await http.post(`${EP.quiz}/${subjectId}/submit`, { answers: fromAnswers(answers) }),
+    await http.post(`${EP.quiz}/${subjectId}/submit`, {
+      answers: fromAnswers(answers),
+      savedGrading,
+    }),
   );
 export const getQuizResult = async (subjectId) =>
   toQuizResult(await http.get(`${EP.quiz}/${subjectId}/result`));

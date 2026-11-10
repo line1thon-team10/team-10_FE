@@ -17,6 +17,7 @@ export const ROUTES = {
   books: '/books',
   review: '/review',
   calendar: '/calendar',
+  study: '/study', // S12 집중 모드 (?task=태스크 id)
   dev: '/dev',
 };
 
@@ -312,6 +313,21 @@ export const SCREENS = [
       '오답 노트: 일자별·단원별·틀린 횟수별',
       '다시 풀기',
       '새 문제 뽑기: 범위·난이도·문항 수·비중',
+    ],
+  },
+  {
+    id: 'S12',
+    name: '집중 모드',
+    kind: 'page',
+    group: 'daily',
+    path: ROUTES.study,
+    prio: 'Should',
+    features: ['HM-07', 'HM-10'],
+    due: '11/11',
+    todo: [
+      '책 펼침 화면 · 범위 · 문구 1개',
+      '[자료 열기] [잠깐 멈춤] [종료], 시간은 [시간 보기]로만',
+      '종료하면 S12-1 공부 끝 → 기록하기',
     ],
   },
   {
