@@ -9,16 +9,15 @@ import { ROUTES } from '@/app/screens.js';
 import AiBox from '@/components/common/AiBox.jsx';
 import Button from '@/components/common/Button.jsx';
 import Card from '@/components/common/Card.jsx';
-import { ErrorState, LoadingState } from '@/components/common/StateView.jsx';
+import { AiFail, AiProgress, SavedTag } from '@/components/common/AiProgress.jsx';
 import SubjectTag from '@/components/common/SubjectTag.jsx';
 import SetupHead from '@/components/setup/SetupHead.jsx';
-import { toDay } from '@/config/date.js';
+import { minutesLabel, toDay } from '@/config/date.js';
 import { useApprove, usePlanDraft } from '@/hooks/usePlan.js';
 
-const minutesLabel = (m) =>
-  m >= 60 ? `${Math.floor(m / 60)}시간${m % 60 ? ` ${m % 60}분` : ''}` : `${m}분`;
 const BAR_MAX = 150; // 막대 높이 기준(분)
 const SPLIT_SEC = 0.6; // 단원 막대가 블록으로 갈라지는 시간 (와이어 S5)
+const PLAN_STEPS = ['빈 시간 찾기', '분량 나누기', '날짜에 넣기'];
 
 // 단원 막대 하나가 위에서부터 태스크 블록으로 갈라져요. 블록은 아직 예정(회색 점선)
 function UnitSplit({ unit }) {
@@ -108,12 +107,33 @@ function FirstWeek({ draft }) {
 
 export default function S5Review() {
   const navigate = useNavigate();
-  const { data: draft, isPending, isError, refetch } = usePlanDraft();
+  const [saved, setSaved] = useState(false); // AI가 응답하지 않으면 저장된 결과 (NF-10)
+  const { data: draft, isPending, isError, refetch } = usePlanDraft(saved);
   const approve = useApprove();
   const [active, setActive] = useState(null);
 
-  if (isPending) return <LoadingState title="계획을 만들고 있어요" />;
-  if (isError) return <ErrorState title="계획을 만들지 못했어요" onRetry={refetch} />;
+  // AI 상태 (NF-05·10): 진행 단계 / 실패 / 저장된 결과
+  if (isPending)
+    return (
+      <Card className="mx-auto flex w-full max-w-[560px] flex-col gap-3">
+        <h2 className="text-[18px]">계획을 만들고 있어요</h2>
+        <AiProgress
+          steps={PLAN_STEPS}
+          label="AI가 시험까지의 계획을 만들고 있어요"
+          onSaved={() => setSaved(true)}
+        />
+      </Card>
+    );
+  if (isError)
+    return (
+      <Card className="mx-auto w-full max-w-[560px]">
+        <AiFail
+          message="계획을 만들지 못했어요 · 입력한 내용은 그대로 있어요"
+          onRetry={refetch}
+          onSaved={() => setSaved(true)}
+        />
+      </Card>
+    );
 
   const { summary } = draft;
   const subject = draft.allocation.find((a) => a.subjectId === active) ?? draft.allocation[0];
@@ -133,6 +153,7 @@ export default function S5Review() {
         title={`강의자료 ${summary.totalPages}페이지를 태스크 ${summary.taskCount}개로 나눴어요`}
         desc="단원 막대가 15~60분짜리 블록으로 쪼개져요. 승인하면 시험일까지의 계획이 확정돼요."
       >
+        {draft.saved && <SavedTag />}
         <Button onClick={() => navigate(ROUTES.s4)}>이전</Button>
         <Button onClick={() => navigate(ROUTES.s5_1)}>
           <Shuffle size={13} aria-hidden="true" />

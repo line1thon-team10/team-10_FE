@@ -1,12 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { getQuizResult, getQuizSet, getQuizToday, postQuizSubmit } from '@/api/quiz.js';
+import { getQuizResult, getQuizSet, getQuizToday, postMore, postQuizSubmit } from '@/api/quiz.js';
 import { QK } from './queryKeys.js';
 
 export const useQuizToday = () => useQuery({ queryKey: QK.quizToday, queryFn: getQuizToday });
-export const useQuizSet = (subjectId) =>
+export const useQuizSet = (subjectId, saved = false) =>
   useQuery({
-    queryKey: QK.quizSet(subjectId),
-    queryFn: () => getQuizSet(subjectId),
+    queryKey: [...QK.quizSet(subjectId), saved],
+    queryFn: () => getQuizSet(subjectId, saved),
     enabled: Boolean(subjectId),
     retry: false,
   });
@@ -24,8 +24,11 @@ export function useSubmitQuiz() {
     mutationFn: postQuizSubmit,
     onSuccess: (result) => {
       qc.setQueryData(QK.quizResult(result.subjectId), result);
-      ['books', 'today'].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
+      qc.invalidateQueries({ queryKey: ['quiz', 'result'] }); // 더 풀기는 원래 결과에 붙어요
+      ['books', 'today', 'review'].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
       qc.invalidateQueries({ queryKey: QK.quizToday });
     },
   });
 }
+
+export const useMoreQuiz = () => useMutation({ mutationFn: postMore });

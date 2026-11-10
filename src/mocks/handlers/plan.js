@@ -2,7 +2,14 @@ import dayjs from 'dayjs';
 import { http } from 'msw';
 import { EP } from '@/api/endpoints.js';
 import { db } from '../db.js';
-import { fail, ok } from './respond.js';
+import {
+  applyResplit,
+  cancelResplit,
+  requestResplit,
+  resplitMinutes,
+  resplitView,
+} from '../logic.js';
+import { aiRun, fail, ok, run } from './respond.js';
 
 // mock: 단원(S4)·분량(S5). 근거 문구는 와이어프레임 S4 문장 틀을 따라 만든 mock이에요.
 // TODO(확인필요): [백엔드 확정 필요] 근거 위치(목차 쪽·시작 쪽·좌표)는 김현민님 PDF 분해 결과 형식에 맞춰요.
@@ -107,7 +114,11 @@ function draftView() {
       goalLabel: goalLabel[x.id],
       ...alloc[x.id],
     })),
-    firstWeek: FIRST_WEEK.map(([date, minutes]) => ({ date, minutes })),
+    // 다시 나누기를 승인했으면 그 안을 더해요 (S5-2)
+    firstWeek: FIRST_WEEK.map(([date, minutes]) => ({
+      date,
+      minutes: resplitMinutes(date, minutes),
+    })),
     // 와이어프레임 S5 '이렇게 나눈 이유'
     reasons: [
       '자료구조는 시험이 가장 빠르고 목표가 높아 비중을 높였어요',
@@ -127,7 +138,20 @@ export const planHandlers = [
     setup().units[subjectId] = units;
     return ok(unitsView(subjectId));
   }),
-  http.get(EP.planDraft, () => ok(draftView(), 400)),
+  // S5 계획 생성 (AI): ?saved=1이면 미리 만든 2주 계획 (NF-10)
+  http.get(EP.planDraft, ({ request }) => {
+    const saved = new URL(request.url).searchParams.get('saved') === '1';
+    return aiRun('plan', () => ({ ...draftView(), saved }), 1800, { saved });
+  }),
+  // S5-1 다시 나누기 요청 (AI): { question } 후속 질문 1개 또는 { ready } → S5-2 비교. saved면 저장된 결과
+  http.post(EP.resplit, async ({ request }) => {
+    const body = await request.json();
+    return aiRun('plan', () => requestResplit(body), 1800, { saved: body.saved });
+  }),
+  // S5-2 기존 안 · 새 안 2주 비교
+  http.get(EP.resplit, () => run(resplitView)),
+  http.post(`${EP.resplit}/apply`, () => run(applyResplit)),
+  http.delete(EP.resplit, () => run(cancelResplit)), // 되돌리기
   // 승인하면 시연일(11/9 오후 5시) 시드로 넘어가요 (11/7 결정: 계획 만들기 → 시연일로 점프)
   http.post(EP.planApprove, () => {
     db.seed('day9');

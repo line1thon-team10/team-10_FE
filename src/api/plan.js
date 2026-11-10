@@ -3,6 +3,8 @@ import {
   toJob,
   toMaterials,
   toPlanDraft,
+  toResplit,
+  toResplitAsk,
   toTocUnits,
   toUnitExam,
   toUnits,
@@ -32,5 +34,18 @@ export const getUnits = async (subjectId) =>
 export const putUnits = async ({ subjectId, units }) =>
   toUnits(await http.put(EP.units, { subjectId, units: units.map(fromUnit) }));
 
-export const getPlanDraft = async () => toPlanDraft(await http.get(EP.planDraft));
+// saved: AI가 응답하지 않을 때 저장된 결과 (미리 만든 2주 계획, NF-10)
+export const getPlanDraft = async (saved = false) =>
+  toPlanDraft(await http.get(EP.planDraft, { params: saved ? { saved: 1 } : {} }));
 export const postApprove = async () => http.post(EP.planApprove);
+
+// 원본 PDF 파일 (QZ-13 근거 · 집중 모드 자료 열기)
+export const getMaterialFile = async (materialId) =>
+  http.get(`${EP.materials}/${materialId}/file`, { responseType: 'blob' });
+
+// 다시 나누기 (S5-1 · S5-2, PL-06)
+export const postResplit = async ({ request, answer, saved }) =>
+  toResplitAsk(await http.post(EP.resplit, { request, answer, saved }));
+export const getResplit = async () => toResplit(await http.get(EP.resplit));
+export const postResplitApply = async () => http.post(`${EP.resplit}/apply`);
+export const deleteResplit = async () => http.delete(EP.resplit);

@@ -22,6 +22,9 @@ export const toTask = (raw) => ({
   donePages: raw.donePages,
   doneTo: raw.doneTo ?? null, // 부분 완료면 어디까지 했는지
   carried: Boolean(raw.carried), // 어제에서 이월된 태스크 (S6-2)
+  measuredMinutes: raw.measuredMinutes ?? null, // 집중 모드로 잰 시간 (기록에 붙은 것)
+  pendingSessionId: raw.pendingSessionId ?? null, // 재고 아직 기록 안 한 측정 ('기록 전 · N분')
+  pendingMinutes: raw.pendingMinutes ?? null,
 });
 
 // 다음 접속 때 보여줄 안내 (S6-2 이월 · 분배안 적용 뒤)
@@ -39,9 +42,35 @@ const toNotice = (raw) =>
     })),
   };
 
-// 분배안 (P2, RC-02·03). 기준을 넘었을 때만 와요
-const toReplan = (raw) =>
+// 속도 보정 알림 (PL-07 · P4). 예상과 20% 넘게 다를 때만, 과목당 하루 한 번 와요
+const toPaceAlert = (raw) =>
   raw && {
+    subjectId: raw.subjectId,
+    subjectName: raw.subjectName,
+    ratio: raw.ratio, // 예상보다 몇 배
+    perPage: raw.perPage, // 1페이지당 실제 분
+    expectedPerPage: raw.expectedPerPage,
+    days: raw.days,
+    sessions: raw.sessions, // 최근 N일 집중 모드 기록 수
+    rows: raw.rows.map((r) => ({
+      taskId: r.taskId,
+      date: r.date,
+      title: r.title,
+      from: r.from,
+      to: r.to,
+      now: r.now,
+      after: r.after, // null이면 그대로 (페이지 기준이 아닌 태스크)
+    })),
+    overDays: raw.overDays, // 반영하면 하루 공부 가능 시간을 넘는 날 [{ date, total, free, over }]
+    mockFilled: raw.mockFilled ?? [],
+  };
+
+// 분배안 (P2, RC-02·03). 기준을 넘었을 때만 와요
+export const toReplan = (raw) =>
+  raw && {
+    kind: raw.kind ?? 'overdue', // overdue 밀림 · pace 속도 보정으로 넘는 날
+    saved: Boolean(raw.saved), // 저장된 결과 (분배안 설명, NF-10)
+    title: raw.title ?? null,
     date: raw.date,
     totalPages: raw.totalPages,
     overdue: raw.overdue.map((o) => ({
@@ -82,6 +111,8 @@ export const toToday = (raw) => ({
     blocks: d.blocks.map((b) => ({ state: b.state, taskId: b.taskId ?? null })),
   })),
   notice: toNotice(raw.notice),
+  tutorSuggestions: raw.tutorSuggestions ?? [],
+  paceAlert: toPaceAlert(raw.paceAlert),
   replan: toReplan(raw.replan),
 });
 

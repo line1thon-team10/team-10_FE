@@ -23,7 +23,10 @@ export const toQuizToday = (raw) => ({
 });
 
 export const toQuizSet = (raw) => ({
+  saved: Boolean(raw.saved), // 저장된 결과 (NF-10)
   subjectId: raw.subjectId,
+  custom: Boolean(raw.custom), // 문제 뽑기·더 풀기로 만든 세트 (RV-02 · QZ-11)
+  resultFor: raw.resultFor ?? raw.subjectId, // 풀고 나서 볼 결과 (더 풀기는 원래 퀴즈 결과)
   name: raw.name,
   round: raw.round, // 1회독 · 2회독 …
   difficulty: raw.difficulty, // 1회독은 하 고정 (QZ-09)
@@ -51,41 +54,50 @@ export const fromAnswers = (answers) =>
 
 const toBookSide = (b) => ({ score: b.score, grade: b.grade, blocks: b.blocks });
 
-export const toQuizResult = (raw) => ({
-  subjectId: raw.subjectId,
-  name: raw.name,
-  essayGrading: raw.essayGrading ?? 'ai', // ai | saved (저장된 채점, NF-10)
-  summary: raw.summary, // { total, correct, sureCorrect, unsureCorrect, wrong }
-  items: raw.items.map((i) => ({
-    questionId: i.questionId,
-    no: i.no,
-    unitNo: i.unitNo,
-    type: i.type,
-    tag: i.tag,
-    prompt: i.prompt,
-    page: i.page,
-    confidence: i.confidence,
-    correct: i.correct,
-    score: i.score, // 서술형 0~100
-    feedback: i.feedback, // 서술형 { good, miss }
-    explanation: i.explanation, // 해설 (QZ-08, v2는 모든 문항)
-    mockFilled: i.mockFilled ?? [],
-  })),
-  unitChanges: raw.unitChanges.map((c) => ({
-    unitNo: c.unitNo,
-    title: c.title,
-    before: c.before,
-    after: c.after,
-    grade: c.grade,
-    note: c.note ?? null,
-  })),
-  // P3 퀴즈 후 책 쌓기 (BK-08): 단원마다 퀴즈 전·후 책 더미. S9와 같은 값
-  bookChanges: (raw.bookChanges ?? []).map((c) => ({
-    unitNo: c.unitNo,
-    title: c.title,
-    before: toBookSide(c.before),
-    after: toBookSide(c.after),
-    recovering: c.recovering,
-  })),
-  wrongAdded: raw.wrongAdded, // 오답 노트에 들어간 문항 [{ no, reason }]
-});
+export const toMore = (raw) => ({ quizId: raw.quizId, count: raw.count });
+
+export function toQuizResult(raw) {
+  return {
+    subjectId: raw.subjectId,
+    name: raw.name,
+    essayGrading: raw.essayGrading ?? 'ai', // ai | saved (저장된 채점, NF-10)
+    summary: raw.summary, // { total, correct, sureCorrect, unsureCorrect, wrong }
+    items: raw.items.map((i) => ({
+      questionId: i.questionId,
+      no: i.no,
+      unitNo: i.unitNo,
+      type: i.type,
+      tag: i.tag,
+      prompt: i.prompt,
+      page: i.page,
+      confidence: i.confidence,
+      correct: i.correct,
+      score: i.score, // 서술형 0~100
+      feedback: i.feedback, // 서술형 { good, miss }
+      explanation: i.explanation, // 해설 (QZ-08, v2는 모든 문항)
+      evidence: i.evidence ?? null, // 근거 원본 { materialId, page, quote } (QZ-13)
+      mockFilled: i.mockFilled ?? [],
+    })),
+    unitChanges: raw.unitChanges.map((c) => ({
+      unitNo: c.unitNo,
+      title: c.title,
+      before: c.before,
+      after: c.after,
+      grade: c.grade,
+      note: c.note ?? null,
+    })),
+    // P3 퀴즈 후 책 쌓기 (BK-08): 단원마다 퀴즈 전·후 책 더미. S9와 같은 값
+    bookChanges: (raw.bookChanges ?? []).map((c) => ({
+      unitNo: c.unitNo,
+      title: c.title,
+      before: toBookSide(c.before),
+      after: toBookSide(c.after),
+      recovering: c.recovering,
+    })),
+    wrongAdded: raw.wrongAdded, // 오답 노트에 들어간 문항 [{ no, reason }]
+    // 더 풀기 결과 (QZ-11): 원래 결과에 이어 붙여요
+    unitNo: raw.unitNo ?? null,
+    moreUnitChange: raw.moreUnitChange ?? null,
+    more: (raw.more ?? []).map(toQuizResult),
+  };
+}

@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { ROUTES } from '@/app/screens.js';
 import AiBox from '@/components/common/AiBox.jsx';
 import Button from '@/components/common/Button.jsx';
+import CalEvent from '@/components/common/CalEvent.jsx';
 import Card from '@/components/common/Card.jsx';
 import SetupHead from '@/components/setup/SetupHead.jsx';
 import { ErrorState, LoadingState } from '@/components/common/StateView.jsx';
@@ -123,6 +124,9 @@ export default function S2Calendar() {
             events={data.events.map(toFc)}
             selectable
             selectMirror
+            eventContent={(arg) => <CalEvent event={arg.event} />}
+            eventMinHeight={18}
+            slotEventOverlap={false} // 실제로 시간이 겹치는 일정만 나란히
             eventClick={(info) => setEditing(data.events.find((e) => e.id === info.event.id))}
             select={(info) =>
               setEditing({

@@ -18,6 +18,7 @@ export const ROUTES = {
   review: '/review',
   calendar: '/calendar',
   study: '/study', // S12 집중 모드 (?task=태스크 id)
+  manage: '/manage', // S14 과목·계획 관리
   dev: '/dev',
 };
 
@@ -328,6 +329,22 @@ export const SCREENS = [
       '책 펼침 화면 · 범위 · 문구 1개',
       '[자료 열기] [잠깐 멈춤] [종료], 시간은 [시간 보기]로만',
       '종료하면 S12-1 공부 끝 → 기록하기',
+    ],
+  },
+  {
+    id: 'S14',
+    name: '과목·계획 관리',
+    kind: 'page',
+    group: 'daily',
+    path: ROUTES.manage,
+    prio: 'Should',
+    features: ['PL-10', 'PL-11'],
+    due: '11/12',
+    todo: [
+      '과목 카드',
+      '시험일 · 목표 바꾸기, 과목 빼기 → P5',
+      '바뀌는 것 미리보기 → 적용',
+      '오늘 계획 카드',
     ],
   },
   {

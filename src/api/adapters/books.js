@@ -15,6 +15,7 @@ export const toBooks = (raw) => ({
       to: u.to,
       grade: u.grade, // stable | shaky | risk | null (퀴즈 전)
       score: u.score, // 0~100, 없으면 null
+      round: u.round ?? 1, // 회독 (2회독부터 난이도를 고를 수 있어요)
       note: u.note,
       blocks: u.blocks.map((b) => ({ state: b.state, supplement: b.supplement, task: b.task })),
     })),

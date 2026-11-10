@@ -4,6 +4,8 @@ import { db, SEEDS } from '../db.js';
 import { advanceDay } from '../logic.js';
 import { fail, ok, run } from './respond.js';
 
+const AI_TARGETS = ['plan', 'quiz', 'grading', 'tutor', 'replan'];
+
 const demoState = (judgment = null) => {
   const s = db.get();
   return {
@@ -22,6 +24,14 @@ export const demoHandlers = [
   http.post(EP.demoReset, () => {
     db.reset();
     return ok({ ...demoState(), seeds: SEEDS });
+  }),
+  // AI 상태 재현 (/dev): { target, mode: null | slow | fail }
+  http.get(EP.demoAi, () => ok(db.get().aiSim)),
+  http.post(EP.demoAi, async ({ request }) => {
+    const { target, mode } = await request.json();
+    if (!AI_TARGETS.includes(target)) return fail('BAD_TARGET', '없는 화면이에요');
+    db.get().aiSim = { ...db.get().aiSim, [target]: mode || null };
+    return ok(db.get().aiSim);
   }),
   // NF-09: 시드 불러오기 (empty · day9 · overdue)
   http.post(EP.demoSeed, async ({ request }) => {

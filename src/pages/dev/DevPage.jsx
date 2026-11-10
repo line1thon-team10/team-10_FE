@@ -15,7 +15,7 @@ import SubjectTag from '@/components/common/SubjectTag.jsx';
 import { ENV } from '@/config/env.js';
 import { BLOCK_STATE } from '@/config/labels.js';
 import { fmtFull } from '@/config/date.js';
-import { useDemoState, useNextDay, useResetDemo } from '@/hooks/useDemo.js';
+import { useAiSim, useDemoState, useNextDay, useResetDemo, useSetAiSim } from '@/hooks/useDemo.js';
 import { useUiStore } from '@/stores/uiStore.js';
 
 const GROUPS = [
@@ -58,6 +58,56 @@ function ScreenRow({ s }) {
   );
 }
 
+// AI 상태 재현 (NF-05·10): 화면마다 보통 / 느리게(35초 → 8초 안내 · 30초 다시 시도) / 실패
+const AI_TARGETS = [
+  ['plan', 'S5 계획 생성 · S5-1 다시 나누기', '온보딩 S5 (빈 계정 → S5)'],
+  ['quiz', 'S8 퀴즈 준비', '오늘의 퀴즈 → 풀기'],
+  ['grading', 'S8-3 채점', '퀴즈 마지막 제출'],
+  ['tutor', 'S6-3 튜터', '홈 아래 AI 튜터 질문'],
+  ['replan', 'P2 분배안', '밀림 시드 → 다음 날로'],
+];
+const AI_MODES = [
+  [null, '보통'],
+  ['slow', '느리게'],
+  ['fail', '실패'],
+];
+
+function AiSimCard() {
+  const { data } = useAiSim();
+  const set = useSetAiSim();
+  return (
+    <Card className="flex flex-col gap-3">
+      <h2 className="font-semibold">AI 상태 재현</h2>
+      <p className="text-[12.5px] text-fg-2">
+        고른 화면의 AI 응답을 느리게(35초) 또는 실패로 바꿔요. 느리게는 8초에 안내, 30초에 응답이
+        끊기면 [다시 시도] · 저장된 결과, 실패는 실패 문구 + [다시 시도]가 나와요. 시드를 바꾸거나
+        초기화하면 모두 보통으로 돌아가요.
+      </p>
+      {AI_TARGETS.map(([key, name, where]) => (
+        <div key={key} className="flex flex-wrap items-center justify-between gap-2 text-[13px]">
+          <span>
+            <b className="font-semibold">{name}</b> <span className="text-fg-2">· {where}</span>
+          </span>
+          <span className="flex gap-1.5">
+            {AI_MODES.map(([mode, label]) => (
+              <button
+                key={label}
+                type="button"
+                className="chip text-[12px]"
+                aria-pressed={(data?.[key] ?? null) === mode}
+                disabled={set.isPending}
+                onClick={() => set.mutate({ target: key, mode })}
+              >
+                {label}
+              </button>
+            ))}
+          </span>
+        </div>
+      ))}
+    </Card>
+  );
+}
+
 export default function DevPage() {
   const { data } = useDemoState();
   const nextDay = useNextDay();
@@ -87,6 +137,8 @@ export default function DevPage() {
           시드 초기화
         </Button>
       </div>
+
+      <AiSimCard />
 
       <Card className="flex flex-col gap-3">
         <h2 className="font-semibold">화면 목록 · {SCREENS.length}개</h2>

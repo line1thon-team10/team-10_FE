@@ -34,6 +34,7 @@ export default function TaskCard({ task, subject, onRecord }) {
           <span>예상 {task.minutes}분</span>
           {partial && <span className="text-brand-deep">· p.{task.doneTo}까지 했어요</span>}
           {task.status === 'none' && <span className="text-fg">· 못 했어요</span>}
+          {task.measuredMinutes != null && <span>· 집중 {task.measuredMinutes}분</span>}
         </p>
         {task.reason && !task.carried && (
           <p className="flex items-center gap-1.5 text-[11.5px] text-fg-soft">
@@ -56,6 +57,11 @@ export default function TaskCard({ task, subject, onRecord }) {
             <PencilLine size={12} aria-hidden="true" />
             페이지 고치기
           </Button>
+        )}
+        {!done && !partial && task.pendingMinutes != null && (
+          <span className="badge border-brand-line text-brand-deep">
+            기록 전 · {task.pendingMinutes ? `${task.pendingMinutes}분` : '1분 미만'}
+          </span>
         )}
         {!done && !partial && (
           <>
