@@ -586,6 +586,46 @@
 .ev-meet,
 .ev-other,
 .ev-added,
+/* 캘린더 블록 (S2 · S11): 30분 칸을 키워 15분 블록에도 글자 한 줄이 들어가요. 줄은 한 줄 + 말줄임 */
+.cal-wrap .fc .fc-timegrid-slot {
+  height: 36px;
+}
+.cal-wrap .fc .fc-event-main {
+  overflow: hidden;
+}
+.cal-ev {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 1px 4px;
+  font-size: 11px;
+  line-height: 15px;
+}
+.cal-ev-line {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.cal-ev-time {
+  font-weight: 400;
+  opacity: 0.8;
+}
+
+/* S11 공부 블록: 왼쪽 띠 = 과목 색 (블록 배경은 회색) */
+.fc .ev-study {
+  border-width: 0 0 0 4px !important;
+  border-radius: 4px;
+}
+.fc .ev-study.is-picked {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 1px;
+}
+.ev-study-swatch {
+  --fc-event-bg-color: var(--color-surface-2);
+  --fc-event-border-color: var(--color-fg-2);
+  border-left-width: 4px !important;
+}
 .legend-swatch {
   --fc-event-text-color: var(--color-fg);
 }
