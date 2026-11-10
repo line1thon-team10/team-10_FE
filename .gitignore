@@ -9,3 +9,7 @@ dist-ssr
 .vscode/*
 !.vscode/extensions.json
 npm-debug.log*
+
+# 기획 원본 · 디자인 참고 코드 (저장소에 올리지 않음)
+docs/planning/
+design-ref/

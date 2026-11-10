@@ -19,23 +19,27 @@ export class MockError extends Error {
 }
 
 // ── 책 상태 ─────────────────────────────────────────────
+const quizKey = (s, subjectId) => `${s.today.date}:${subjectId}`;
 const findTask = (s, id) => [...s.today.tasks, ...s.pastTasks].find((t) => t.id === id);
 const unitOf = (s, subjectId, unitNo) => s.bookshelf[subjectId]?.find((u) => u.unitNo === unitNo);
 
-// 끝난 책은 단원 등급 색, 등급이 없으면 '완료(퀴즈 전)' (4-5)
+// 끝난 책은 단원 등급 색, 등급이 없으면 '완료(퀴즈 전)' (4-5).
+// 오늘 끝낸 책은 그 과목 오늘 퀴즈를 내기 전까지 '완료(퀴즈 전)' 회색이에요 (와이어 P3)
+const beforeQuiz = (t, s) => s.today.tasks.includes(t) && !s.quizResults[quizKey(s, t.subjectId)];
+
+function taskBlockState(t, s) {
+  if (t.status === 'partial') return 'doing';
+  if (t.status !== 'done') return 'planned';
+  if (beforeQuiz(t, s)) return 'done';
+  return unitOf(s, t.subjectId, t.unitNo)?.grade ?? 'done';
+}
+
 function blockState(b, unit, s) {
   if (b === 'planned') return 'planned';
   if (b === 'done') return unit.grade ?? 'done';
   const t = findTask(s, b.taskId);
   if (!t || t.status === 'todo' || t.status === 'none') return 'planned';
-  if (t.status === 'partial') return 'doing';
-  return unit.grade ?? 'done';
-}
-
-function taskBlockState(t, s) {
-  if (t.status === 'partial') return 'doing';
-  if (t.status !== 'done') return 'planned';
-  return unitOf(s, t.subjectId, t.unitNo)?.grade ?? 'done';
+  return taskBlockState(t, s);
 }
 
 // ── 오늘 ────────────────────────────────────────────────
@@ -93,7 +97,6 @@ export function buildToday() {
         blocks: tasks.map((t) => ({ state: taskBlockState(t, s), taskId: t.id })),
       },
     ],
-    streakDays: s.streakDays,
     notice: s.notice,
     replan: s.replan && {
       ...s.replan,
@@ -177,6 +180,85 @@ export function advanceDay() {
   return 'none';
 }
 
+// ── 기록 (HM-02·03) · 페이지 고치기 · 하루 마무리 박스 (BK-03) ─────────────
+const DAY_CLOSE_TIME = '23:30'; // 정의서 v2 4장: 다 기록했거나 23:30이 지났을 때
+
+function setDonePage(task, toPage) {
+  const to = Math.min(Math.max(Number(toPage), task.from), task.to);
+  Object.assign(task, {
+    status: to >= task.to ? 'done' : 'partial',
+    donePages: to - task.from + 1,
+    doneTo: to,
+  });
+}
+
+// 과목별로 퀴즈가 열렸는지 (전체 70% 이상이면 모두, 아니면 그 과목 70% 이상)
+const openSet = (today) =>
+  new Set(
+    today.quiz.open
+      ? Object.keys(today.subjectRates)
+      : today.quiz.openSubjects.map((o) => o.subjectId),
+  );
+
+export function recordTask(taskId, result, toPage) {
+  const s = db.get();
+  const task = s.today.tasks.find((t) => t.id === taskId);
+  if (!task) throw new MockError('TASK_NOT_FOUND', '태스크를 찾지 못했어요', 404);
+  const before = buildToday();
+  if (result === 'done') setDonePage(task, task.to);
+  if (result === 'partial') setDonePage(task, toPage);
+  if (result === 'none') Object.assign(task, { status: 'none', donePages: 0, doneTo: null });
+  const after = buildToday();
+  const rate = after.progress.rate;
+  const tasks = s.today.tasks;
+  const allRecorded = tasks.every((t) => t.status !== 'todo');
+
+  // 하루 마무리: 다 기록했거나 23:30이 지났고 70% 이상이면 하루 한 번 박스. 나머지는 가벼운 알림
+  if (
+    (allRecorded || s.demo.time >= DAY_CLOSE_TIME) &&
+    rate >= OPEN_RATE &&
+    s.dayClosedOn !== s.today.date
+  ) {
+    s.dayClosedOn = s.today.date;
+    const was = openSet(before);
+    const counts = s.quizCounts[s.today.date] ?? {};
+    return {
+      type: 'box',
+      reason: 'dayClose',
+      rate,
+      recordedCount: tasks.filter((t) => t.status !== 'todo').length,
+      totalCount: tasks.length,
+      donePages: after.progress.donePages,
+      totalPages: after.progress.totalPages,
+      opened: [...openSet(after)]
+        .filter((id) => !was.has(id))
+        .map((subjectId) => ({ subjectId, count: counts[subjectId] ?? 0 })),
+    };
+  }
+  if (result === 'none') return null;
+  const sub = s.subjects.find((x) => x.id === task.subjectId);
+  const crossed = before.progress.rate < OPEN_RATE && rate >= OPEN_RATE;
+  return {
+    type: 'toast',
+    reason: crossed ? 'rate70' : 'record',
+    rate,
+    message: `${sub.name} ${task.unitNo}단원 한 권 쌓았어요`,
+    detail: `오늘 ${rate}%${crossed ? ' · 오늘의 퀴즈가 열렸어요' : ''}`,
+  };
+}
+
+// 기록한 뒤 끝낸 페이지 고치기 → 진행률·이월(다음 날로 때 계산)이 다시 계산돼요
+export function fixRecord(taskId, toPage) {
+  const task = db.get().today.tasks.find((t) => t.id === taskId);
+  if (!task) throw new MockError('TASK_NOT_FOUND', '태스크를 찾지 못했어요', 404);
+  if (task.status !== 'done' && task.status !== 'partial')
+    throw new MockError('NOT_RECORDED', '아직 기록하지 않은 태스크예요');
+  if (!Number.isInteger(Number(toPage)) || toPage < task.from || toPage > task.to)
+    throw new MockError('BAD_PAGE', `p.${task.from}부터 p.${task.to} 사이로 적어 주세요`);
+  setDonePage(task, toPage);
+  return { taskId, status: task.status, doneTo: task.doneTo, rate: buildToday().progress.rate };
+}
+
 // RC-04: 고른 안만 적용 → 회복 박스 (BK-03)
 export function applyReplan(key) {
   const s = db.get();
@@ -230,7 +312,6 @@ export function booksView() {
 }
 
 // ── 오늘의 퀴즈 (S8 · S8-2) ─────────────────────────────
-const quizKey = (s, subjectId) => `${s.today.date}:${subjectId}`;
 
 export function quizTodayView() {
   const s = db.get();
@@ -238,14 +319,21 @@ export function quizTodayView() {
   const counts = s.quizCounts[s.today.date] ?? {};
   const sets = s.quizSets[s.today.date] ?? {};
   const ids = [...new Set(s.today.tasks.map((t) => t.subjectId))];
+  const lines = s.quizLines[s.today.date] ?? {};
   return {
     date: s.today.date,
+    rate: today.progress.rate,
     open: today.quiz.open,
     openRate: OPEN_RATE,
     subjects: ids.map((id) => {
       const sub = s.subjects.find((x) => x.id === id);
       const result = s.quizResults[quizKey(s, id)];
+      const set = sets[id];
       return {
+        lines: lines[id] ?? [],
+        round: set?.round ?? null,
+        difficulty: set?.difficulty ?? null,
+        essayCount: set ? set.questions.filter((q) => q.type === 'essay').length : null,
         subjectId: id,
         name: sub.name,
         color: sub.color,
@@ -288,7 +376,14 @@ const norm = (t) =>
     .replace(/\s+/g, '')
     .toLowerCase();
 
-export function gradeQuiz(subjectId, answers) {
+// 단원 책 더미의 상태 목록 (P3 퀴즈 전·후 비교)
+const unitBlockStates = (s, subjectId, unitNo) => {
+  const unit = unitOf(s, subjectId, unitNo);
+  return unit ? unit.blocks.map((b) => blockState(b, unit, s)) : [];
+};
+
+// savedGrading: AI 채점이 늦거나 실패해서 저장된 채점으로 진행 (NF-10)
+export function gradeQuiz(subjectId, answers, savedGrading = false) {
   const s = db.get();
   const set = s.quizSets[s.today.date]?.[subjectId];
   if (!set) throw new MockError('NO_QUIZ', '이 과목 퀴즈 문항이 아직 없어요', 404);
@@ -312,6 +407,7 @@ export function gradeQuiz(subjectId, answers) {
     return {
       questionId: q.id,
       no: i + 1,
+      unitNo: q.unitNo,
       type: q.type,
       tag: q.tag,
       prompt: q.prompt,
@@ -320,7 +416,7 @@ export function gradeQuiz(subjectId, answers) {
       correct,
       score,
       feedback,
-      explanation: correct ? null : (q.explanation ?? null),
+      explanation: q.explanation ?? null, // v2: 정답·해설은 결과 화면에서 한 번에 (QZ-08)
       mockFilled: q.mockFilled ?? [],
     };
   });
@@ -331,17 +427,32 @@ export function gradeQuiz(subjectId, answers) {
     unsureCorrect: items.filter((x) => x.correct && x.confidence === 'unsure').length,
     wrong: items.filter((x) => !x.correct).length,
   };
+  // P3 · BK-08: 퀴즈 전 책 더미 → 결과 반영 → 퀴즈 후 책 더미 (S9와 같은 계산)
+  const before = set.unitChanges.map((c) => ({
+    grade: unitOf(s, subjectId, c.unitNo)?.grade ?? null,
+    blocks: unitBlockStates(s, subjectId, c.unitNo),
+  }));
+  s.quizResults[quizKey(s, subjectId)] = { pending: true }; // 오늘 끝낸 책도 등급 색으로
   const unitChanges = set.unitChanges.map((c) => {
     const unit = unitOf(s, subjectId, c.unitNo);
     if (unit) Object.assign(unit, { grade: c.grade, score: c.after }); // LV-01·02 결과 반영 (mock 고정값)
     return { ...c, title: sub.units.find((u) => u.no === c.unitNo)?.title };
   });
+  const bookChanges = unitChanges.map((c, i) => ({
+    unitNo: c.unitNo,
+    title: c.title,
+    before: { score: c.before, grade: before[i].grade, blocks: before[i].blocks },
+    after: { score: c.after, grade: c.grade, blocks: unitBlockStates(s, subjectId, c.unitNo) },
+    recovering: Boolean(c.recovering),
+  }));
   const result = {
     subjectId,
     name: sub.name,
+    essayGrading: savedGrading ? 'saved' : 'ai',
     summary,
     items,
     unitChanges,
+    bookChanges,
     wrongAdded: items
       .filter((x) => !x.correct || x.confidence === 'unsure')
       .map((x) => ({ no: x.no, reason: x.correct ? '애매 정답' : '오답' })),

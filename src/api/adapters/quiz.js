@@ -3,6 +3,7 @@
 
 export const toQuizToday = (raw) => ({
   date: raw.date,
+  rate: raw.rate, // 오늘 계획 진행률 (S8-1 머리)
   open: raw.open, // 오늘 계획 70% 이상 → 전체 열림
   openRate: raw.openRate,
   subjects: raw.subjects.map((s) => ({
@@ -13,6 +14,10 @@ export const toQuizToday = (raw) => ({
     rate: s.rate, // 과목별 오늘 진행률
     open: s.open, // 전체 70% 또는 과목별 70%를 넘으면 열림 (QZ-02)
     hasQuestions: s.hasQuestions,
+    lines: s.lines ?? [], // 구성 줄 (예: 3단원 새 문제 5 (p.72–88))
+    round: s.round ?? null,
+    difficulty: s.difficulty ?? null,
+    essayCount: s.essayCount ?? null,
     result: s.result, // 이미 풀었으면 { correct, total }
   })),
 });
@@ -44,13 +49,17 @@ export const fromAnswers = (answers) =>
     confidence: a.confidence ?? null,
   }));
 
+const toBookSide = (b) => ({ score: b.score, grade: b.grade, blocks: b.blocks });
+
 export const toQuizResult = (raw) => ({
   subjectId: raw.subjectId,
   name: raw.name,
+  essayGrading: raw.essayGrading ?? 'ai', // ai | saved (저장된 채점, NF-10)
   summary: raw.summary, // { total, correct, sureCorrect, unsureCorrect, wrong }
   items: raw.items.map((i) => ({
     questionId: i.questionId,
     no: i.no,
+    unitNo: i.unitNo,
     type: i.type,
     tag: i.tag,
     prompt: i.prompt,
@@ -59,7 +68,7 @@ export const toQuizResult = (raw) => ({
     correct: i.correct,
     score: i.score, // 서술형 0~100
     feedback: i.feedback, // 서술형 { good, miss }
-    explanation: i.explanation, // 오답 해설 (QZ-08)
+    explanation: i.explanation, // 해설 (QZ-08, v2는 모든 문항)
     mockFilled: i.mockFilled ?? [],
   })),
   unitChanges: raw.unitChanges.map((c) => ({
@@ -69,6 +78,14 @@ export const toQuizResult = (raw) => ({
     after: c.after,
     grade: c.grade,
     note: c.note ?? null,
+  })),
+  // P3 퀴즈 후 책 쌓기 (BK-08): 단원마다 퀴즈 전·후 책 더미. S9와 같은 값
+  bookChanges: (raw.bookChanges ?? []).map((c) => ({
+    unitNo: c.unitNo,
+    title: c.title,
+    before: toBookSide(c.before),
+    after: toBookSide(c.after),
+    recovering: c.recovering,
   })),
   wrongAdded: raw.wrongAdded, // 오답 노트에 들어간 문항 [{ no, reason }]
 });

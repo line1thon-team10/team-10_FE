@@ -1,7 +1,10 @@
 import dayjs from 'dayjs';
 import { SEED } from './data/seed.js';
 
-// mock: 브라우저 메모리에만 있는 가짜 DB예요. 새로고침하면 처음 상태(11/9 오후 5시)로 돌아가요.
+// mock: 가짜 DB예요. 탭을 닫을 때까지 sessionStorage에 남아서 새로고침해도 이어져요 (11/10 Q6 A).
+// 처음으로 돌리는 건 데모 메뉴의 시드 고르기·초기화뿐이에요. 저장하는 건 익명 데모 데이터뿐이고
+// PDF 파일 원본은 여기 없어요 (materialStore 메모리에만).
+const STORE_KEY = 'mock-db';
 
 const freshOnboarding = () => ({
   stage: 0, // 0 첫 입력 전 · 1 자료구조 추가 질문 · 2 나머지 목표 질문 · 3 완료
@@ -9,9 +12,24 @@ const freshOnboarding = () => ({
   chips: [],
   subjects: [],
   events: [],
-  materials: {}, // { subjectId: [{ id, name, pages, status, jobId, quizless }] }
+  // { subjectId: [{ id, name, pages, status, jobId, quizless, ocr }] } — 스캔본은 미리 분석 완료 (와이어 S3)
+  materials: {
+    [SEED.scanFile.subjectId]: [
+      {
+        id: 'mscan',
+        name: SEED.scanFile.name,
+        size: null,
+        pages: SEED.scanFile.pages,
+        status: 'done',
+        jobId: null,
+        quizless: true,
+        ocr: true,
+      },
+    ],
+  },
   jobs: {}, // { jobId: { startedAt, fail, subjectId, materialId } }
   units: {}, // { subjectId: [단원] } 사용자가 고친 결과
+  outOfExam: {}, // { subjectId: [단원 번호] } S4에서 시험 범위 체크를 뺀 단원 (PDF-08)
   approved: false,
 });
 
@@ -33,6 +51,7 @@ function build(name) {
     notice: null, // 다음 접속 때 보여줄 이월 안내 (S6-2)
     replan: null, // 다음 접속 때 띄울 분배안 (P2)
     quizResults: {}, // { 'YYYY-MM-DD:subjectId': 결과 }
+    dayClosedOn: null, // 하루 마무리 박스(P1)를 띄운 날 — 하루 한 번
   };
   if (name === 'empty') s.demo.today = s.onboardingDate;
   if (name === 'overdue') {
@@ -43,7 +62,26 @@ function build(name) {
   return s;
 }
 
-let state = build('day9');
+function load() {
+  try {
+    const saved = sessionStorage.getItem(STORE_KEY);
+    if (saved) return JSON.parse(saved);
+  } catch {
+    // 저장소를 못 쓰면 기본 시드로 시작해요
+  }
+  return build('day9');
+}
+
+let state = load();
+
+// 응답을 만들 때마다 상태가 바뀔 수 있어서 페이지를 떠날 때 한 번 저장해요
+addEventListener('pagehide', () => {
+  try {
+    sessionStorage.setItem(STORE_KEY, JSON.stringify(state));
+  } catch {
+    // 저장 실패해도 시연은 이어져요 (새로고침하면 기본 시드)
+  }
+});
 
 export const db = {
   get: () => state,

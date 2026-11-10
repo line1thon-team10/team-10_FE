@@ -34,11 +34,13 @@ function unitsView(subjectId) {
     no: i + 1,
   }));
   const main = units.filter((u) => !u.quizless);
+  const out = setup().outOfExam[subjectId] ?? [];
   return {
     subjectId,
     file: { name: sub.file.name, pages: sub.file.pages },
     units: units.map((u) => ({
       ...u,
+      inExam: !out.includes(u.no),
       evidence: u.quizless
         ? ['목차를 직접 입력한 범위예요 (퀴즈 없음)']
         : evidenceOf(main, main.indexOf(u)),
@@ -57,6 +59,28 @@ const FIRST_WEEK = [
   ['2026-11-09', { ds: 60, os: 45, net: 30 }],
 ];
 
+// S5 분량 (PDF-05): 시험 범위에 든 단원만 더해요.
+// mock: 과목 태스크 수 = 시드 태스크 수 × 남은 쪽 ÷ 전체 쪽 (11/10 결정 A). 단원별 블록 수는 시드 책 더미 권 수
+const pagesOf = (u) => (u.from && u.to ? u.to - u.from + 1 : 0);
+function allocationOf(sub) {
+  const units = unitsView(sub.id).units.filter((u) => u.inExam && pagesOf(u) > 0);
+  const pages = units.reduce((n, u) => n + pagesOf(u), 0);
+  const perPage = sub.taskCount / sub.file.pages;
+  const shelf = db.get().bookshelf[sub.id];
+  return {
+    pages,
+    tasks: Math.round(sub.taskCount * (pages / sub.file.pages)),
+    units: units.map((u) => ({
+      no: u.no,
+      title: u.title,
+      pages: pagesOf(u),
+      tasks:
+        shelf.find((x) => x.unitNo === u.no)?.blocks.length ??
+        Math.max(1, Math.round(pagesOf(u) * perPage)),
+    })),
+  };
+}
+
 function draftView() {
   const s = db.get();
   const first = [...s.subjects].sort((a, b) => a.examDate.localeCompare(b.examDate))[0];
@@ -66,11 +90,13 @@ function draftView() {
     os: `B+ 이상 (${target.os}점)`,
     net: `통과 (${target.net}점)`,
   };
+  const alloc = Object.fromEntries(s.subjects.map((x) => [x.id, allocationOf(x)]));
+  const all = Object.values(alloc);
   return {
     today: s.onboardingDate,
     summary: {
-      totalPages: s.planSummary.totalPages,
-      taskCount: s.planSummary.taskCount,
+      totalPages: all.reduce((n, a) => n + a.pages, 0),
+      taskCount: all.reduce((n, a) => n + a.tasks, 0),
       dailyAvgMinutes: s.planSummary.dailyAvgMinutes,
       daysToFirstExam: dayjs(first.examDate).diff(dayjs(s.onboardingDate), 'day'),
     },
@@ -79,8 +105,7 @@ function draftView() {
       name: x.name,
       color: x.color,
       goalLabel: goalLabel[x.id],
-      pages: x.file.pages,
-      tasks: x.taskCount,
+      ...alloc[x.id],
     })),
     firstWeek: FIRST_WEEK.map(([date, minutes]) => ({ date, minutes })),
     // 와이어프레임 S5 '이렇게 나눈 이유'

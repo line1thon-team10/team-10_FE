@@ -1,13 +1,16 @@
-import { NavLink, Outlet, Link, useNavigate } from 'react-router';
+import { Loader2 } from 'lucide-react';
+import { NavLink, Outlet, useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import { ROUTES } from '@/app/screens.js';
 import { MockBadge } from '@/components/common/Badge.jsx';
-import { APP_NAME } from '@/config/app.js';
 import { ddayBetween, fmtFull } from '@/config/date.js';
 import { ENV } from '@/config/env.js';
 import { useDemoState, useNextDay } from '@/hooks/useDemo.js';
+import AppFooter from './AppFooter.jsx';
 import DemoMenu from './DemoMenu.jsx';
+import Logo from './Logo.jsx';
 import ModalHost from './ModalHost.jsx';
+import PlanAddButton from './PlanAddButton.jsx';
 import RootGate from './RootGate.jsx';
 
 const TABS = [
@@ -16,6 +19,31 @@ const TABS = [
   { to: ROUTES.review, label: '복습·오답' },
   { to: ROUTES.calendar, label: '캘린더' },
 ];
+
+// 다음 날로를 누르면 자정 판정이 끝날 때까지 화면을 덮어요 (디자인 DemoMenu '자정 판정 중')
+function JudgingOverlay() {
+  return (
+    <div
+      className="fixed inset-0 z-[70] grid place-items-center bg-black/60 px-4 backdrop-blur-[2px]"
+      role="status"
+      aria-live="polite"
+    >
+      <div className="flex items-center gap-3 rounded-2xl border border-line-2 bg-bg-2 px-5 py-4">
+        <span className="grid h-9 w-9 place-items-center rounded-full bg-white/[0.06]">
+          <Loader2
+            size={17}
+            className="animate-spin motion-reduce:animate-none"
+            aria-hidden="true"
+          />
+        </span>
+        <div>
+          <p className="text-[13px] font-semibold">자정 판정 중…</p>
+          <p className="mt-0.5 text-[11px] text-fg-2">어제 계획과 오늘 할 일을 다시 계산해요</p>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function AppHeader() {
   const { data } = useDemoState();
@@ -32,32 +60,56 @@ function AppHeader() {
     });
   const dday = data ? ddayBetween(data.today, data.firstExam.examDate) : null;
   return (
-    <header className="flex flex-wrap items-center gap-3 border-b border-line px-5 py-3">
-      <Link to={ROUTES.home} className="text-[15px] font-bold">
-        {APP_NAME}
-      </Link>
-      {data && (
-        <>
-          {/* D-day는 항상 첫 시험 기준 */}
-          <span className="num rounded-full bg-surface-2 px-2.5 py-0.5 text-xs font-semibold">
-            첫 시험 {data.firstExam.name} D-{dday}
+    <header className="sticky top-0 z-30 border-b border-line bg-bg/90 backdrop-blur-md">
+      <div className="mx-auto flex h-16 w-full max-w-[1280px] items-center gap-5 px-6">
+        <Logo />
+        <nav className="flex items-center gap-1" aria-label="주 메뉴">
+          {TABS.map((t) => (
+            <NavLink
+              key={t.to}
+              to={t.to}
+              end={t.end}
+              className={({ isActive }) =>
+                `rounded-full px-3.5 py-2 text-[13.5px] font-medium whitespace-nowrap transition-colors ${isActive ? 'bg-white/[0.07] text-fg' : 'text-fg-2 hover:bg-white/[0.06] hover:text-fg'}`
+              }
+            >
+              {t.label}
+            </NavLink>
+          ))}
+        </nav>
+        <span className="flex-1" />
+        {data && (
+          <span className="flex flex-col items-end leading-tight">
+            {/* D-day는 항상 첫 시험 기준 */}
+            <span className="num text-[12.5px] font-semibold whitespace-nowrap">
+              첫 시험 {data.firstExam.name} <span className="text-brand-deep">D-{dday}</span>
+            </span>
+            <span className="text-[11px] whitespace-nowrap text-fg-2">{fmtFull(data.today)}</span>
           </span>
-          <span className="text-xs text-fg-2">{fmtFull(data.today)}</span>
-        </>
-      )}
-      <span className="flex-1" />
-      {/* 목업 서버로 돌 때는 화면 전체가 목업 데이터라는 표시 */}
-      {ENV.useMock && <MockBadge />}
-      <button
-        type="button"
-        className="btn btn-sm"
-        onClick={onNextDay}
-        disabled={nextDay.isPending}
-        title="데모용: 자정 판정을 바로 실행해요 (NF-08)"
-      >
-        다음 날로 (데모용)
-      </button>
-      <DemoMenu />
+        )}
+        {/* S14 과목·계획 관리 — 지시문 12 전까지 막아 둠 */}
+        <button
+          type="button"
+          className="btn btn-sm"
+          disabled
+          title="과목·계획 관리는 준비 중이에요"
+        >
+          과목·계획 관리
+        </button>
+        {/* 목업 서버로 돌 때는 화면 전체가 목업 데이터라는 표시 */}
+        {ENV.useMock && <MockBadge />}
+        <DemoMenu />
+        <button
+          type="button"
+          className="btn btn-sm border-dashed"
+          onClick={onNextDay}
+          disabled={nextDay.isPending}
+          title="데모용: 자정 판정을 바로 실행해요 (NF-08)"
+        >
+          다음 날로 (데모)
+        </button>
+      </div>
+      {nextDay.isPending && <JudgingOverlay />}
     </header>
   );
 }
@@ -65,28 +117,13 @@ function AppHeader() {
 export default function MainLayout() {
   return (
     <RootGate>
-      <div className="mx-auto flex min-h-screen max-w-[1280px] flex-col bg-surface">
+      <div className="flex min-h-screen flex-col">
         <AppHeader />
-        <nav
-          className="flex gap-0.5 overflow-x-auto border-b border-line px-4"
-          aria-label="주 메뉴"
-        >
-          {TABS.map((t) => (
-            <NavLink
-              key={t.to}
-              to={t.to}
-              end={t.end}
-              className={({ isActive }) =>
-                `border-b-2 px-3 py-2.5 whitespace-nowrap ${isActive ? 'border-fg font-bold text-fg' : 'border-transparent font-medium text-fg-2'}`
-              }
-            >
-              {t.label}
-            </NavLink>
-          ))}
-        </nav>
-        <main className="flex flex-1 flex-col gap-4 p-5">
+        <main className="mx-auto flex w-full max-w-[1280px] flex-1 flex-col gap-4 px-6 pt-6 pb-24">
           <Outlet />
         </main>
+        <AppFooter />
+        <PlanAddButton />
         <ModalHost />
       </div>
     </RootGate>

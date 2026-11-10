@@ -81,22 +81,35 @@ export const toToday = (raw) => ({
     date: d.date,
     blocks: d.blocks.map((b) => ({ state: b.state, taskId: b.taskId ?? null })),
   })),
-  streakDays: raw.streakDays,
   notice: toNotice(raw.notice),
   replan: toReplan(raw.replan),
 });
 
 // 기록 저장 결과: 어떤 연출을 띄울지 (BK-03). box = 박스 팝업(P1), toast = 가벼운 알림(P1-1)
+// reason: dayClose(하루 마무리) · unitDone · recover(회복) | record · rate70(알림)
 export const toRecordResult = (raw) => ({
   event: raw.event
     ? {
         type: raw.event.type,
         reason: raw.event.reason,
-        message: raw.event.message,
-        rate: raw.event.rate,
+        message: raw.event.message ?? null,
+        detail: raw.event.detail ?? null,
+        rate: raw.event.rate ?? null,
         planKey: raw.event.planKey ?? null, // 회복 박스: 적용한 분배안
+        recordedCount: raw.event.recordedCount ?? null, // 하루 마무리: 기록한 태스크 수
+        totalCount: raw.event.totalCount ?? null,
+        donePages: raw.event.donePages ?? null,
+        totalPages: raw.event.totalPages ?? null,
+        opened: raw.event.opened ?? [], // 이번 기록으로 새로 열린 과목 퀴즈 [{ subjectId, count }]
       }
     : null,
+});
+
+export const toFixResult = (raw) => ({
+  taskId: raw.taskId,
+  status: raw.status,
+  doneTo: raw.doneTo,
+  rate: raw.rate,
 });
 
 export const toInterpret = (raw) => ({ from: raw.from, to: raw.to, label: raw.label });

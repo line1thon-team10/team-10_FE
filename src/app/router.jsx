@@ -9,6 +9,7 @@ import NotFound from '@/pages/NotFound.jsx';
 import QuizPage from '@/pages/quiz/S8Quiz.jsx';
 import QuizResultPage from '@/pages/quiz/S8_2Result.jsx';
 import ReviewPage from '@/pages/review/S10Review.jsx';
+import StudyPage from '@/pages/study/S12Study.jsx';
 import S1Schedule from '@/pages/setup/S1Schedule.jsx';
 import S2Calendar from '@/pages/setup/S2Calendar.jsx';
 import S3Upload from '@/pages/setup/S3Upload.jsx';
@@ -38,6 +39,7 @@ export const router = createBrowserRouter([
     element: <MainLayout />,
     children: [
       { path: ROUTES.home, element: <HomePage /> },
+      { path: ROUTES.study, element: <StudyPage /> },
       { path: ROUTES.quiz, element: <QuizPage /> },
       { path: ROUTES.quizResult, element: <QuizResultPage /> },
       { path: ROUTES.books, element: <BooksPage /> },

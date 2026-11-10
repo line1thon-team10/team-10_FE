@@ -4,6 +4,7 @@ import {
   toMaterials,
   toPlanDraft,
   toTocUnits,
+  toUnitExam,
   toUnits,
   toUploadStarted,
 } from './adapters/plan.js';
@@ -22,6 +23,9 @@ export async function uploadMaterial({ subjectId, file }) {
 export const getJob = async (jobId) => toJob(await http.get(`${EP.materialJob}/${jobId}`));
 export const postToc = async ({ subjectId, text }) =>
   toTocUnits(await http.post(EP.toc, { subjectId, text }));
+
+export const patchUnitExam = async ({ materialId, unitNo, inExam }) =>
+  toUnitExam(await http.patch(`${EP.materials}/${materialId}/units`, { unitNo, inExam }));
 
 export const getUnits = async (subjectId) =>
   toUnits(await http.get(EP.units, { params: { subjectId } }));

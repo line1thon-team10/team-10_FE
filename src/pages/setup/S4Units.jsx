@@ -1,4 +1,5 @@
 // S4 단원 확인 — 신민종
+import { Check } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
@@ -8,10 +9,11 @@ import Button from '@/components/common/Button.jsx';
 import { ErrorState, LoadingState } from '@/components/common/StateView.jsx';
 import Tabs from '@/components/common/Tabs.jsx';
 import PdfThumb from '@/components/setup/PdfThumb.jsx';
+import SetupHead from '@/components/setup/SetupHead.jsx';
 import { UnitEditRow } from '@/components/setup/UnitRows.jsx';
 import { moveItem, patchItem, removeItem, unitRangeValid } from '@/lib/unitList.js';
 import { DIFFICULTY } from '@/config/labels.js';
-import { useAllUnits, useMaterials, useSaveUnits } from '@/hooks/usePlan.js';
+import { useAllUnits, useMaterials, useSaveUnits, useUnitExam } from '@/hooks/usePlan.js';
 import { useMaterialStore } from '@/stores/materialStore.js';
 
 function Evidence({ subjectId, data, unit, materials }) {
@@ -28,7 +30,7 @@ function Evidence({ subjectId, data, unit, materials }) {
 
   return (
     <AiBox label="AI">
-      <h2 className="text-sm font-semibold">PDF를 어떻게 나눴는지</h2>
+      <h2 className="text-[15px]">PDF를 어떻게 나눴는지</h2>
       <p className="num text-xs text-fg-2">
         {data.file.name} · {total}페이지 · 단원 경계
       </p>
@@ -58,7 +60,7 @@ function Evidence({ subjectId, data, unit, materials }) {
               width={120}
             />
           </div>
-          <h3 className="text-sm font-semibold">{unit.no}단원을 이렇게 나눴어요</h3>
+          <h3 className="text-[14px]">{unit.no}단원을 이렇게 나눴어요</h3>
           <ul className="flex list-disc flex-col gap-1 pl-5 text-[13px]">
             {unit.evidence.map((e) => (
               <li key={e}>{e}</li>
@@ -83,12 +85,30 @@ function Evidence({ subjectId, data, unit, materials }) {
   );
 }
 
+// 시험 범위 체크 (PDF-08): 빼면 서버가 계획·S5 분량·퀴즈·진도율에서 빼요
+function ExamCheck({ checked, disabled, label, onChange }) {
+  return (
+    <button
+      type="button"
+      role="checkbox"
+      aria-checked={checked}
+      aria-label={label}
+      disabled={disabled}
+      onClick={onChange}
+      className={`grid h-5 w-5 place-items-center rounded-md border transition-colors ${checked ? 'border-brand bg-brand text-brand-fg' : 'border-line-2 text-transparent hover:border-fg-soft'}`}
+    >
+      <Check size={12} strokeWidth={3} aria-hidden="true" />
+    </button>
+  );
+}
+
 export default function S4Units() {
   const navigate = useNavigate();
   const { data: materials } = useMaterials();
   const subjects = materials?.subjects ?? [];
   const results = useAllUnits(subjects.map((s) => s.id));
   const save = useSaveUnits();
+  const exam = useUnitExam();
   const [tab, setTab] = useState(null);
   const [drafts, setDrafts] = useState({}); // { subjectId: units[] } 고친 과목만
   const [editing, setEditing] = useState(null); // 고치는 중인 줄 번호
@@ -106,6 +126,19 @@ export default function S4Units() {
   const setUnits = (fn) => setDrafts((d) => ({ ...d, [subjectId]: fn(units) }));
   const sel = units[picked[subjectId] ?? 0];
   const allValid = Object.values(drafts).every((list) => list.every(unitRangeValid));
+  // 시험 범위는 서버 값 (단원 번호 기준). 체크를 보낼 자료는 그 과목에서 분석이 끝난 강의자료
+  const inExam = (no) => data.units.find((u) => u.no === no)?.inExam ?? true;
+  const files = materials.subjects.find((s) => s.id === subjectId)?.files ?? [];
+  const material =
+    files.filter((f) => f.status === 'done' && !f.quizless).at(-1) ??
+    files.find((f) => f.status === 'done');
+  const inUnits = data.units.filter((u) => u.inExam);
+  const inPages = inUnits.reduce((n, u) => n + (u.from && u.to ? u.to - u.from + 1 : 0), 0);
+  const toggleExam = (u) =>
+    exam.mutate(
+      { materialId: material.id, unitNo: u.no, inExam: !inExam(u.no) },
+      { onError: (e) => toast.error(e.message) },
+    );
 
   const onNext = async () => {
     try {
@@ -119,13 +152,15 @@ export default function S4Units() {
 
   return (
     <>
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold">AI가 나눈 단원을 확인해 주세요</h1>
-        <p className="text-fg-2">
-          단원을 고르면 PDF를 어디서 어떻게 나눴는지 오른쪽에 보여줘요. 이름·순서·페이지를 고치면
-          계획에 바로 반영돼요.
-        </p>
-      </div>
+      <SetupHead
+        title="AI가 나눈 단원이 맞는지 봐 주세요"
+        desc="처음에는 모든 단원이 시험 범위로 체크되어 있어요. 빼고 싶은 단원만 체크를 풀면 그 단원은 계획·퀴즈·진도율에서 빠져요."
+      >
+        <Button onClick={() => navigate(ROUTES.s3)}>이전</Button>
+        <Button variant="primary" disabled={!allValid || save.isPending} onClick={onNext}>
+          {save.isPending ? '저장하는 중…' : '다음: 분량 확인'}
+        </Button>
+      </SetupHead>
       <Tabs
         label="과목"
         items={subjects.map((s) => ({ value: s.id, label: s.name }))}
@@ -137,7 +172,13 @@ export default function S4Units() {
       />
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         <AiBox label="AI" className="min-w-0">
-          <h2 className="text-sm font-semibold">AI가 분해한 단원·개념·페이지 · 난이도는 AI 추정</h2>
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="text-[15px]">AI가 분해한 단원·개념·페이지</h2>
+            <span className="num text-[11.5px] text-fg-2">
+              {data.units.length}단원 · 시험 범위 {inUnits.length}/{data.units.length} 단원 ·{' '}
+              {inPages}p · 난이도는 AI 추정
+            </span>
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full text-[13px] [&_td]:border-b [&_td]:border-line [&_td]:px-2 [&_td]:py-2 [&_th]:px-2 [&_th]:pb-1 [&_th]:text-left [&_th]:text-xs [&_th]:font-semibold [&_th]:text-fg-2">
               <thead>
@@ -145,6 +186,7 @@ export default function S4Units() {
                   <th>단원</th>
                   <th>개념</th>
                   <th>페이지</th>
+                  <th>시험 범위</th>
                   <th>난이도</th>
                   <th>동작</th>
                 </tr>
@@ -153,7 +195,7 @@ export default function S4Units() {
                 {units.map((u, i) =>
                   editing === i ? (
                     <tr key={u.id ?? i}>
-                      <td colSpan={5}>
+                      <td colSpan={6}>
                         <UnitEditRow
                           unit={u}
                           index={i}
@@ -174,7 +216,7 @@ export default function S4Units() {
                   ) : (
                     <tr
                       key={u.id ?? i}
-                      className={(picked[subjectId] ?? 0) === i ? 'bg-surface-2' : ''}
+                      className={`${(picked[subjectId] ?? 0) === i ? 'bg-surface-2' : ''} ${inExam(u.no) ? '' : '[&>td:not(:nth-child(4))]:opacity-45'}`}
                     >
                       <td className="font-medium">
                         {u.no}. {u.title}
@@ -184,6 +226,14 @@ export default function S4Units() {
                       <td className="num whitespace-nowrap">
                         {u.from && u.to ? `p.${u.from}–${u.to}` : '-'}
                       </td>
+                      <td>
+                        <ExamCheck
+                          checked={inExam(u.no)}
+                          disabled={!material || exam.isPending}
+                          label={`${u.no}단원 ${u.title} 시험 범위`}
+                          onChange={() => toggleExam(u)}
+                        />
+                      </td>
                       <td>{u.difficulty ? DIFFICULTY[u.difficulty] : '-'}</td>
                       <td className="whitespace-nowrap">
                         <Button
@@ -191,7 +241,7 @@ export default function S4Units() {
                           variant="ghost"
                           onClick={() => setPicked((p) => ({ ...p, [subjectId]: i }))}
                         >
-                          PDF에서 보기
+                          PDF
                         </Button>
                         <Button size="sm" variant="ghost" onClick={() => setEditing(i)}>
                           수정
@@ -228,12 +278,6 @@ export default function S4Units() {
           </Button>
         </AiBox>
         <Evidence subjectId={subjectId} data={data} unit={sel} materials={materials} />
-      </div>
-      <div className="flex justify-between gap-2">
-        <Button onClick={() => navigate(ROUTES.s3)}>이전</Button>
-        <Button variant="primary" disabled={!allValid || save.isPending} onClick={onNext}>
-          {save.isPending ? '저장하는 중…' : '다음: 분량 확인'}
-        </Button>
       </div>
     </>
   );

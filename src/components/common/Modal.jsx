@@ -1,3 +1,4 @@
+import { X } from 'lucide-react';
 import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -11,19 +12,24 @@ export default function Modal({ title, onClose, wide = false, footer, children }
 
   return createPortal(
     <div
-      className="fixed inset-0 z-40 grid place-items-center overflow-auto bg-[rgb(10_12_18/0.45)] p-4"
+      className="fixed inset-0 z-40 grid place-items-center overflow-auto bg-black/60 p-4 backdrop-blur-[2px]"
       onMouseDown={(e) => e.target === e.currentTarget && onClose?.()}
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className={`card flex max-h-full w-full flex-col gap-4 overflow-auto p-5 shadow-xl ${wide ? 'max-w-[780px]' : 'max-w-[580px]'}`}
+        className={`card flex max-h-full w-full flex-col gap-4 overflow-auto border-line-2 p-6 shadow-[0_30px_70px_-30px_rgb(0_0_0/0.9)] ${wide ? 'max-w-[780px]' : 'max-w-[580px]'}`}
       >
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-lg font-bold">{title}</h2>
-          <button type="button" className="btn btn-sm" onClick={onClose}>
-            닫기
+          <h2 className="text-xl">{title}</h2>
+          <button
+            type="button"
+            className="grid h-8 w-8 place-items-center rounded-full border border-line-2 text-fg-2 hover:text-fg"
+            onClick={onClose}
+            aria-label="닫기"
+          >
+            <X size={16} aria-hidden="true" />
           </button>
         </div>
         {children}

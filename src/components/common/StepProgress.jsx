@@ -16,12 +16,12 @@ export default function StepProgress({ steps, current = 0, failed = null, done =
               aria-hidden="true"
               className={
                 state === 'done'
-                  ? 'grid h-[18px] w-[18px] place-items-center rounded-full bg-fg-2 text-[11px] text-surface'
+                  ? 'grid h-[18px] w-[18px] place-items-center rounded-full bg-fg text-[11px] text-ink-fg'
                   : state === 'fail'
                     ? 'grid h-[18px] w-[18px] place-items-center rounded-full border-[1.5px] border-st-risk text-[11px] text-st-risk'
                     : state === 'now'
-                      ? 'h-[18px] w-[18px] animate-[spin_0.9s_linear_infinite] rounded-full border-[1.5px] border-fg border-t-transparent motion-reduce:animate-none'
-                      : 'h-[18px] w-[18px] rounded-full border-[1.5px] border-line'
+                      ? 'h-[18px] w-[18px] animate-[spin_0.9s_linear_infinite] rounded-full border-[1.5px] border-brand-deep border-t-transparent motion-reduce:animate-none'
+                      : 'h-[18px] w-[18px] rounded-full border-[1.5px] border-line-2'
               }
             >
               {state === 'done' ? '✓' : state === 'fail' ? '!' : ''}
@@ -33,8 +33,8 @@ export default function StepProgress({ steps, current = 0, failed = null, done =
                   : state === 'fail'
                     ? 'font-semibold text-st-risk'
                     : state === 'now'
-                      ? 'font-semibold'
-                      : 'text-fg-2'
+                      ? 'font-semibold text-fg'
+                      : 'text-fg-soft'
               }
             >
               {name}
