@@ -1,14 +1,17 @@
 import { createBrowserRouter } from 'react-router';
+import FocusLayout from '@/components/layout/FocusLayout.jsx';
 import MainLayout from '@/components/layout/MainLayout.jsx';
 import SetupLayout from '@/components/layout/SetupLayout.jsx';
 import BooksPage from '@/pages/books/S9Books.jsx';
 import CalendarPage from '@/pages/calendar/CalendarTab.jsx';
 import DevPage from '@/pages/dev/DevPage.jsx';
 import HomePage from '@/pages/home/S6Home.jsx';
+import ManagePage from '@/pages/manage/S14Manage.jsx';
 import NotFound from '@/pages/NotFound.jsx';
 import QuizPage from '@/pages/quiz/S8Quiz.jsx';
 import QuizResultPage from '@/pages/quiz/S8_2Result.jsx';
 import ReviewPage from '@/pages/review/S10Review.jsx';
+import StudyPage from '@/pages/study/S12Study.jsx';
 import S1Schedule from '@/pages/setup/S1Schedule.jsx';
 import S2Calendar from '@/pages/setup/S2Calendar.jsx';
 import S3Upload from '@/pages/setup/S3Upload.jsx';
@@ -34,10 +37,12 @@ export const router = createBrowserRouter([
       { path: ROUTES.s5_2, element: <S5_2Compare /> },
     ],
   },
+  { element: <FocusLayout />, children: [{ path: ROUTES.study, element: <StudyPage /> }] },
   {
     element: <MainLayout />,
     children: [
       { path: ROUTES.home, element: <HomePage /> },
+      { path: ROUTES.manage, element: <ManagePage /> },
       { path: ROUTES.quiz, element: <QuizPage /> },
       { path: ROUTES.quizResult, element: <QuizResultPage /> },
       { path: ROUTES.books, element: <BooksPage /> },

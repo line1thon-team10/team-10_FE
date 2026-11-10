@@ -1,10 +1,16 @@
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  deleteResplit,
   getJob,
+  getMaterialFile,
   getMaterials,
   getPlanDraft,
+  getResplit,
   getUnits,
+  patchUnitExam,
   postApprove,
+  postResplit,
+  postResplitApply,
   postToc,
   putUnits,
   uploadMaterial,
@@ -69,9 +75,64 @@ export function useSaveUnits() {
   });
 }
 
-export const usePlanDraft = () => useQuery({ queryKey: QK.planDraft, queryFn: getPlanDraft });
+// S4 시험 범위 체크 (PDF-08): 바꾸면 단원 목록과 S5 분량을 다시 받아요
+export function useUnitExam() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: patchUnitExam,
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: QK.units(data.subjectId) });
+      qc.invalidateQueries({ queryKey: QK.planDraft });
+    },
+  });
+}
+
+// S5 계획 생성 (AI). saved면 저장된 결과
+export const usePlanDraft = (saved = false) =>
+  useQuery({
+    queryKey: [...QK.planDraft, saved],
+    queryFn: () => getPlanDraft(saved),
+    retry: false,
+  });
 
 export function useApprove() {
   const qc = useQueryClient();
   return useMutation({ mutationFn: postApprove, onSuccess: () => qc.invalidateQueries() });
 }
+
+// 원본 PDF (Blob). 한 번 받으면 다시 받지 않아요
+export const useMaterialFile = (materialId) =>
+  useQuery({
+    queryKey: ['material', 'file', materialId],
+    queryFn: () => getMaterialFile(materialId),
+    enabled: Boolean(materialId),
+    staleTime: Infinity,
+    retry: false,
+  });
+
+// 다시 나누기 (S5-1 · S5-2, PL-06)
+export function useResplitRequest() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: postResplit,
+    onSuccess: (data) => {
+      if (!data.question) qc.removeQueries({ queryKey: QK.resplit });
+    },
+  });
+}
+export const useResplit = () =>
+  useQuery({ queryKey: QK.resplit, queryFn: getResplit, retry: false });
+
+// 승인 · 되돌리기: S5 첫 주 미리보기를 다시 받아요
+function useResplitDecide(fn) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: fn,
+    onSuccess: () => {
+      qc.removeQueries({ queryKey: QK.resplit });
+      qc.invalidateQueries({ queryKey: QK.planDraft });
+    },
+  });
+}
+export const useApplyResplit = () => useResplitDecide(postResplitApply);
+export const useCancelResplit = () => useResplitDecide(deleteResplit);

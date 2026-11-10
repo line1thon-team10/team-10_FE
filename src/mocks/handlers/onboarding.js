@@ -3,6 +3,7 @@ import { http } from 'msw';
 import { EP } from '@/api/endpoints.js';
 import { SCHEDULE_KIND } from '@/config/labels.js';
 import { db } from '../db.js';
+import { parseSchedule } from '../parseSchedule.js';
 import { fail, ok } from './respond.js';
 
 // mock: AI(김현민)가 할 자연어 해석과 추가 질문을 정해진 대본으로 흉내 내요. 입력 문장 내용은 보지 않아요.
@@ -36,7 +37,8 @@ function handleMessage(text) {
       name: sub.name,
       examDate: sub.examDate,
       goal: i === 0 ? sub.goal : null,
-      goalDetail: null,
+      goalTotal: null,
+      goalEtc: null,
       target: null,
       status: i === 0 ? 'asking' : 'pending',
     }));
@@ -55,7 +57,8 @@ function handleMessage(text) {
     const ds = o.subjects[0];
     Object.assign(ds, {
       status: 'confirmed',
-      goalDetail: s.subjects[0].goalDetail,
+      goalTotal: s.subjects[0].goalTotal,
+      goalEtc: s.subjects[0].goalEtc,
       target: script.goalTargets.ds,
     });
     o.subjects.slice(1).forEach((x) => (x.status = 'asking'));
@@ -68,7 +71,8 @@ function handleMessage(text) {
       Object.assign(x, {
         status: 'confirmed',
         goal: src.goal,
-        goalDetail: src.goalDetail,
+        goalTotal: src.goalTotal,
+        goalEtc: src.goalEtc,
         target: script.goalTargets[x.id],
       });
     });
@@ -101,33 +105,25 @@ function calendarView() {
   };
 }
 
-// mock: "수요일 저녁 7시부터 9시까지 팀플 회의" 같은 문장에서 요일·시간만 간단히 뽑아요. 실제는 AI가 해요.
-const DAY_WORDS = ['월', '화', '수', '목', '금', '토', '일'];
+// mock: 말로 한 일정 해석 (parseSchedule.js, S6-4와 같은 함수). 실제는 AI가 해요.
+// 지금 규칙 그대로: 요일과 시각(또는 때)이 없으면 해석 실패. 반복이면 매주 일정으로 넣어요
 function parseVoice(text) {
   const s = db.get();
-  const dayIdx = DAY_WORDS.findIndex((d) => new RegExp(`${d}(요일)?`).test(text));
-  const pm = /(저녁|오후|밤)/.test(text);
-  const hours = [...text.matchAll(/(\d{1,2})\s*시/g)].map((m) => {
-    const h = Number(m[1]);
-    return pm && h < 12 ? h + 12 : h;
-  });
-  if (dayIdx < 0 || hours.length === 0) return null;
-  const start = hours[0];
-  const end = hours[1] ?? start + 2;
-  const title =
-    text
-      .replace(/(월|화|수|목|금|토|일)(요일)?/g, '')
-      .replace(/(저녁|오후|오전|아침|밤)/g, '')
-      .replace(/\d{1,2}\s*시(부터|까지)?/g, '')
-      .replace(/(에|있어|생겼어|추가해 ?줘|잡혔어|이야|야)/g, '')
-      .trim() || '새 일정';
+  const r = parseSchedule(text);
+  if (!r.days.length || !r.start) return null;
   return {
     id: newId('e'),
     kind: 'other',
-    title,
-    date: dayjs(s.onboardingWeekStart).add(dayIdx, 'day').format('YYYY-MM-DD'),
-    start: `${String(start).padStart(2, '0')}:00`,
-    end: `${String(Math.min(end, 24)).padStart(2, '0')}:00`,
+    title: r.title,
+    ...(r.repeat
+      ? { days: r.days }
+      : {
+          date: dayjs(s.onboardingWeekStart)
+            .add(r.days[0] - 1, 'day')
+            .format('YYYY-MM-DD'),
+        }),
+    start: r.start,
+    end: r.end,
     added: true,
   };
 }

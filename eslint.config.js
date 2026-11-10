@@ -5,7 +5,7 @@ import { defineConfig, globalIgnores } from 'eslint/config';
 import globals from 'globals';
 
 export default defineConfig([
-  globalIgnores(['dist', 'public/mockServiceWorker.js']),
+  globalIgnores(['dist', 'public/mockServiceWorker.js', 'design-ref']),
   {
     files: ['**/*.{js,jsx}'],
     extends: [

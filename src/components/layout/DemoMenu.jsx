@@ -1,10 +1,11 @@
+import { ArrowRight, FlaskConical } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import { ROUTES } from '@/app/screens.js';
 import { useDemoState, useSeed } from '@/hooks/useDemo.js';
 
-// 데모 메뉴 (NF-09): 시연용 시드 3개를 불러와요. 빈 계정은 계획 만들기(온보딩)로, 나머지는 홈으로 가요.
+// 데모 메뉴 (NF-09, 디자인 DemoMenu 모양): 시연용 시드 3개를 불러와요. 빈 계정은 계획 만들기(온보딩)로, 나머지는 홈으로 가요.
 export default function DemoMenu() {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -33,19 +34,22 @@ export default function DemoMenu() {
     <div className="relative" ref={ref}>
       <button
         type="button"
-        className="btn btn-sm"
         aria-expanded={open}
         aria-haspopup="menu"
+        aria-label="데모 메뉴"
         onClick={() => setOpen((o) => !o)}
+        className="inline-flex items-center gap-1 rounded-full border border-dashed border-line-2 px-2.5 py-1 text-[11px] font-medium whitespace-nowrap text-fg-2 hover:border-fg-2 hover:text-fg-soft"
       >
-        데모 ▾
+        <FlaskConical size={12} aria-hidden="true" />
+        데모
       </button>
       {open && (
         <div
           role="menu"
-          className="card absolute right-0 z-30 mt-1.5 flex w-72 flex-col gap-0.5 p-1.5 shadow-lg"
+          aria-label="데모 시연 상태"
+          className="absolute top-full right-0 z-50 mt-2 flex w-[248px] flex-col rounded-xl border border-line-2 bg-bg-2 p-1.5 shadow-[0_24px_50px_-24px_rgb(0_0_0/0.85)]"
         >
-          <span className="label px-2 py-1">시드 불러오기</span>
+          <p className="label px-2.5 pt-1 pb-1.5 text-[9.5px]">시연 상태</p>
           {Object.entries(data?.seeds ?? {}).map(([key, label]) => (
             <button
               key={key}
@@ -53,20 +57,23 @@ export default function DemoMenu() {
               role="menuitem"
               disabled={seed.isPending}
               onClick={() => pick(key)}
-              className="rounded-sm px-2.5 py-2 text-left text-[13px] hover:bg-surface-2"
+              className="flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left text-[12px] font-semibold hover:bg-white/[0.07]"
             >
               {label}
-              {data?.seed === key && <span className="ml-1.5 text-xs text-fg-3">· 지금</span>}
+              {data?.seed === key && (
+                <span className="text-[10.5px] font-normal text-brand-deep">지금</span>
+              )}
             </button>
           ))}
-          <hr className="my-1 border-line" />
+          <div className="my-1.5 h-px bg-line" />
           <Link
             role="menuitem"
             to={ROUTES.dev}
             onClick={() => setOpen(false)}
-            className="rounded-sm px-2.5 py-2 text-[13px] hover:bg-surface-2"
+            className="flex items-center justify-between rounded-lg px-2.5 py-2 text-[12px] text-fg-2 hover:bg-white/[0.07] hover:text-fg"
           >
             개발용 페이지 (/dev)
+            <ArrowRight size={13} aria-hidden="true" />
           </Link>
         </div>
       )}

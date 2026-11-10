@@ -10,7 +10,9 @@ import { toast } from 'sonner';
 import { ROUTES } from '@/app/screens.js';
 import AiBox from '@/components/common/AiBox.jsx';
 import Button from '@/components/common/Button.jsx';
+import CalEvent from '@/components/common/CalEvent.jsx';
 import Card from '@/components/common/Card.jsx';
+import SetupHead from '@/components/setup/SetupHead.jsx';
 import { ErrorState, LoadingState } from '@/components/common/StateView.jsx';
 import EventModal from '@/components/setup/EventModal.jsx';
 import { fmtShort } from '@/config/date.js';
@@ -61,7 +63,7 @@ function VoiceAdd() {
       <form className="flex gap-2" onSubmit={submit}>
         <input
           id="s2-voice"
-          className="min-w-0 flex-1 rounded-sm border border-line px-3 py-2"
+          className="min-w-0 flex-1 rounded-full border border-line-2 bg-bg px-3.5 py-2"
           placeholder="예: 수요일 저녁 7시부터 9시까지 팀플 회의"
           value={text}
           onChange={(e) => setText(e.target.value)}
@@ -93,14 +95,17 @@ export default function S2Calendar() {
 
   return (
     <>
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold">이렇게 정리했어요. 틀린 곳을 고쳐 주세요</h1>
-        <p className="text-fg-2">
-          공부 계획은 비어 있는 시간에만 들어가요. 블록을 누르면 수정·삭제, 빈 칸을 누르면 추가해요.
-        </p>
-      </div>
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
-        <AiBox label="AI 정리본" className="cal-wrap">
+      <SetupHead
+        title="이렇게 정리했어요. 틀린 곳을 고쳐 주세요"
+        desc="공부 계획은 비어 있는 시간에만 들어가요. 블록을 누르면 수정·삭제, 빈 칸을 누르면 추가할 수 있어요."
+      >
+        <Button onClick={() => navigate(ROUTES.s1)}>이전</Button>
+        <Button variant="primary" onClick={() => navigate(ROUTES.s3)}>
+          다음: 자료 올리기
+        </Button>
+      </SetupHead>
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.75fr)_minmax(0,1fr)]">
+        <AiBox label="AI 말한 내용을 정리한 캘린더" className="cal-wrap">
           <FullCalendar
             plugins={[timeGridPlugin, interactionPlugin]}
             initialView="timeGridWeek"
@@ -119,6 +124,9 @@ export default function S2Calendar() {
             events={data.events.map(toFc)}
             selectable
             selectMirror
+            eventContent={(arg) => <CalEvent event={arg.event} />}
+            eventMinHeight={18}
+            slotEventOverlap={false} // 실제로 시간이 겹치는 일정만 나란히
             eventClick={(info) => setEditing(data.events.find((e) => e.id === info.event.id))}
             select={(info) =>
               setEditing({
@@ -133,7 +141,7 @@ export default function S2Calendar() {
         </AiBox>
         <aside className="flex min-w-0 flex-col gap-4">
           <Card className="flex flex-col gap-2">
-            <h2 className="font-semibold">시험 일정</h2>
+            <h2 className="text-[15px]">시험 일정</h2>
             {data.exams.map((x) => (
               <p key={x.subjectId} className="num text-[13.5px]">
                 {fmtShort(x.examDate)} {x.name}
@@ -141,7 +149,7 @@ export default function S2Calendar() {
             ))}
           </Card>
           <Card className="flex flex-col gap-2">
-            <h2 className="font-semibold">이번 주 요약</h2>
+            <h2 className="text-[15px]">이번 주 요약</h2>
             <p className="text-[13.5px]">
               고정 일정 <b className="num">{hoursLabel(data.summary.fixedMinutes)}</b>
             </p>
@@ -150,7 +158,7 @@ export default function S2Calendar() {
             </p>
           </Card>
           <Card className="flex flex-col gap-2">
-            <h2 className="font-semibold">범례</h2>
+            <h2 className="text-[15px]">범례</h2>
             {LEGEND.map(([cls, label]) => (
               <span key={cls} className="flex items-center gap-2 text-[13px]">
                 <span className={`legend-swatch ${cls}`} aria-hidden="true" />
@@ -160,12 +168,6 @@ export default function S2Calendar() {
           </Card>
           <VoiceAdd />
         </aside>
-      </div>
-      <div className="flex justify-between gap-2">
-        <Button onClick={() => navigate(ROUTES.s1)}>이전</Button>
-        <Button variant="primary" onClick={() => navigate(ROUTES.s3)}>
-          다음: 자료 올리기
-        </Button>
       </div>
       {editing && (
         <EventModal

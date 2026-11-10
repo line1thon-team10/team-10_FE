@@ -6,6 +6,7 @@ import { ROUTES } from '@/app/screens.js';
 import AiBox from '@/components/common/AiBox.jsx';
 import Button from '@/components/common/Button.jsx';
 import Card from '@/components/common/Card.jsx';
+import SetupHead from '@/components/setup/SetupHead.jsx';
 import { UnitEditRow } from '@/components/setup/UnitRows.jsx';
 import { moveItem, patchItem, removeItem, unitRangeValid } from '@/lib/unitList.js';
 import { useSaveUnits, useToc, useUnits } from '@/hooks/usePlan.js';
@@ -14,7 +15,7 @@ export default function S3_2Toc() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const subjectId = params.get('subject') ?? 'net';
-  const fileName = params.get('file') ?? '컴퓨터네트워크_보충자료_스캔본.pdf';
+  const fileName = params.get('file') ?? '올린 PDF';
   const { data: current } = useUnits(subjectId);
   const toc = useToc();
   const save = useSaveUnits();
@@ -62,10 +63,15 @@ export default function S3_2Toc() {
 
   return (
     <>
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold">보충자료 목차를 직접 입력해 주세요</h1>
-        <p className="text-fg-2">{fileName}의 글자를 읽지 못해서 직접 입력으로 바꿨어요.</p>
-      </div>
+      <SetupHead
+        title="목차를 직접 입력해 주세요"
+        desc={`${fileName}는 글자 인식으로도 분석하지 못해서 직접 입력으로 바꿨어요. 이 범위는 퀴즈가 나오지 않아요.`}
+      >
+        <Button onClick={() => navigate(ROUTES.s3)}>이전</Button>
+        <Button variant="primary" disabled={!valid || save.isPending} onClick={onSave}>
+          저장하고 다음
+        </Button>
+      </SetupHead>
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
         <div className="flex min-w-0 flex-col gap-4">
           <AiBox label="AI">
@@ -75,7 +81,7 @@ export default function S3_2Toc() {
             <textarea
               id="toc-text"
               rows={5}
-              className="w-full rounded-sm border border-line px-3 py-2"
+              className="w-full rounded-xl border border-line-2 bg-bg px-3.5 py-2.5"
               placeholder={
                 '강의계획서나 교재 목차를 그대로 붙여넣어도 돼요\n예) 1. 서브넷 계산 연습 p.1-5'
               }
@@ -91,7 +97,7 @@ export default function S3_2Toc() {
             </Button>
           </AiBox>
           <Card className="flex flex-col gap-2">
-            <h2 className="font-semibold">정리된 단원 (직접 고칠 수 있어요)</h2>
+            <h2 className="text-[15px]">정리된 단원 (직접 고칠 수 있어요)</h2>
             {rows.length === 0 && (
               <p className="text-sm text-fg-3">목차를 정리하면 여기에 단원이 나와요.</p>
             )}
@@ -123,19 +129,13 @@ export default function S3_2Toc() {
         </div>
         <aside>
           <Card className="flex flex-col gap-2">
-            <h2 className="font-semibold">퀴즈 없는 모드</h2>
+            <h2 className="text-[15px]">퀴즈 없는 모드</h2>
             <p className="text-[13px] text-fg-2">
               이 파일 범위는 계획·기록·책 쌓기만 돼요. 오늘의 퀴즈와 문제 뽑기에서는 빠져요.
               강의자료 PDF 범위는 퀴즈 그대로예요.
             </p>
           </Card>
         </aside>
-      </div>
-      <div className="flex justify-between gap-2">
-        <Button onClick={() => navigate(ROUTES.s3)}>이전</Button>
-        <Button variant="primary" disabled={!valid || save.isPending} onClick={onSave}>
-          저장하고 다음
-        </Button>
       </div>
     </>
   );

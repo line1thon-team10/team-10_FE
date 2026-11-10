@@ -14,7 +14,7 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <RouterProvider router={router} />
       {/* P1-1 가벼운 알림 자리 (오른쪽 위) */}
-      <Toaster position="top-right" richColors={false} closeButton={false} />
+      <Toaster position="top-right" theme="dark" richColors={false} closeButton={false} />
     </QueryClientProvider>
   );
 }

@@ -12,7 +12,8 @@ export const toMaterials = (raw) => ({
       pages: f.pages,
       status: f.status,
       jobId: f.jobId,
-      quizless: f.quizless,
+      quizless: f.quizless, // 이 파일 범위는 퀴즈 없음 (스캔본·목차 직접 입력)
+      ocr: Boolean(f.ocr), // 글자 인식으로 분석한 스캔본
     })),
   })),
 });
@@ -24,6 +25,7 @@ export const toJob = (raw) => ({
   materialId: raw.materialId,
   subjectId: raw.subjectId,
   status: raw.status, // running | done | failed
+  ocr: Boolean(raw.ocr), // 스캔본: 글자 인식으로 분석
   steps: raw.steps,
   current: raw.current,
   failedStep: raw.failedStep,
@@ -41,6 +43,7 @@ export const toUnit = (raw) => ({
   to: raw.to,
   difficulty: raw.difficulty ?? null, // low | mid | high (AI 추정)
   quizless: Boolean(raw.quizless), // 목차 직접 입력 범위 (퀴즈 없음)
+  inExam: raw.inExam !== false, // 시험 범위 체크 (PDF-08)
   evidence: raw.evidence ?? [], // PDF를 어떻게 나눴는지 근거 문장
 });
 
@@ -53,9 +56,19 @@ export const toTocUnits = (raw) =>
   raw.units.map((u) => ({ no: u.no, title: u.title, from: u.from, to: u.to }));
 
 export const toPlanDraft = (raw) => ({
+  saved: Boolean(raw.saved), // 저장된 결과 (NF-10)
   today: raw.today,
   summary: raw.summary,
-  allocation: raw.allocation,
+  // 과목별 배분 + 단원별 태스크 블록 (S5 분할 장면)
+  allocation: raw.allocation.map((a) => ({
+    subjectId: a.subjectId,
+    name: a.name,
+    color: a.color,
+    goalLabel: a.goalLabel,
+    pages: a.pages,
+    tasks: a.tasks,
+    units: a.units.map((u) => ({ no: u.no, title: u.title, pages: u.pages, tasks: u.tasks })),
+  })),
   firstWeek: raw.firstWeek,
   reasons: raw.reasons,
 });
@@ -70,4 +83,31 @@ export const fromUnit = (u) => ({
   to: u.to,
   difficulty: u.difficulty,
   quizless: u.quizless,
+});
+
+// S4 시험 범위 체크 결과
+export const toUnitExam = (raw) => ({
+  subjectId: raw.subjectId,
+  unitNo: raw.unitNo,
+  inExam: raw.inExam,
+});
+
+// S5-1 다시 나누기 요청: 후속 질문이 있으면 question, 없으면 비교 화면으로
+export const toResplitAsk = (raw) => ({
+  question: raw.question ? { text: raw.question.text, choices: raw.question.choices ?? [] } : null,
+});
+
+// S5-2 비교 (PL-06)
+export const toResplit = (raw) => ({
+  request: raw.request,
+  keep: raw.keep,
+  saved: Boolean(raw.saved), // 저장된 결과 (NF-10)
+  days: raw.days.map((d) => ({
+    date: d.date,
+    before: d.before,
+    after: d.after,
+    changed: Boolean(d.changed),
+  })),
+  stats: raw.stats.map((x) => ({ label: x.label, unit: x.unit, before: x.before, after: x.after })),
+  reasons: raw.reasons ?? [],
 });
