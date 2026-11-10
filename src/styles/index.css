@@ -289,12 +289,34 @@
     outline: 2px solid var(--color-brand);
     outline-offset: 1px;
   }
-  .blk-tag {
+  /* 책 위 글자: 보충 표시 + 상태 이름 (G-1) */
+  .blk-labels {
     position: absolute;
     z-index: 1;
     left: 6px;
     top: 50%;
     transform: translateY(-50%);
+    display: flex;
+    gap: 3px;
+    pointer-events: none;
+  }
+  .blk-mini .blk-labels {
+    display: none;
+  }
+  .blk-text {
+    font: 700 9.5px/1.3 var(--font-sans);
+    padding: 0 4px;
+    border-radius: 3px;
+    white-space: nowrap;
+    background: rgb(0 0 0 / 0.6);
+    color: var(--color-fg);
+  }
+  .blk[data-state='planned'] .blk-text,
+  .blk[data-state='doing'] .blk-text {
+    background: var(--color-surface);
+    color: var(--color-fg-2);
+  }
+  .blk-tag {
     font: 700 9.5px/1.3 var(--font-sans);
     padding: 0 4px;
     border-radius: 3px;
