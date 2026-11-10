@@ -193,7 +193,7 @@ function Player({ subjectId }) {
       <ErrorState onRetry={refetch} />
     );
 
-  const toResult = () => navigate(`${ROUTES.quizResult}?subject=${subjectId}`);
+  const toResult = () => navigate(`${ROUTES.quizResult}?subject=${set.resultFor}`);
   // 문제 뽑기 세트처럼 책 색이 안 바뀌면 P3 없이 결과로
   if (result && result.bookChanges.length)
     return <P3BookColor result={result} onClose={toResult} />;

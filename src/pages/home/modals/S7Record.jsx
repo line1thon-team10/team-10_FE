@@ -1,6 +1,8 @@
 // S7 공부 기록 (팝업) — 신민종
-// 이해도 자기평가는 넣지 않아요 (정의서 v2 · 11/10 해결). 집중 모드 측정 시간 칩은 지시문 8에서 붙여요.
+// 이해도 자기평가는 넣지 않아요 (정의서 v2 · 11/10 해결).
+// 집중 모드에서 왔거나 '기록 전 · N분'이 있으면 '집중 모드 N분 측정' 칩을 달고 sessionId를 같이 보내요 (HM-08)
 // 기록한 태스크(부분 완료)를 다시 열면 '페이지 고치기' 모드예요 (PATCH /api/tasks/:id/record)
+import { Timer } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import Button from '@/components/common/Button.jsx';
@@ -14,7 +16,7 @@ const RESULTS = ['done', 'partial', 'none'];
 const FIX_NOTE =
   "기록한 뒤에도 홈의 이 태스크에서 '페이지 고치기'로 끝낸 페이지를 바꿀 수 있어요. 바꾸면 내일로 넘어가는 분량과 오늘 진행률이 다시 계산돼요.";
 
-export default function S7Record({ taskId, onClose }) {
+export default function S7Record({ taskId, sessionId = null, sessionMinutes = null, onClose }) {
   const { data: today } = useToday();
   const record = useRecord();
   const fix = useFixRecord();
@@ -81,7 +83,7 @@ export default function S7Record({ taskId, onClose }) {
         },
       );
     record.mutate(
-      { taskId: task.id, result, toPage: result === 'partial' ? to : undefined },
+      { taskId: task.id, result, toPage: result === 'partial' ? to : undefined, sessionId },
       {
         onSuccess: ({ event }) => {
           onClose();
@@ -124,6 +126,15 @@ export default function S7Record({ taskId, onClose }) {
           </span>
         )}
       </p>
+
+      {!fixing && sessionId && (
+        <p>
+          <span className="badge border-brand-line bg-brand-tint text-brand-deep">
+            <Timer size={11} aria-hidden="true" />
+            집중 모드 {sessionMinutes ? `${sessionMinutes}분` : '1분 미만'} 측정
+          </span>
+        </p>
+      )}
 
       {!fixing && (
         <fieldset className="flex flex-col gap-2.5">

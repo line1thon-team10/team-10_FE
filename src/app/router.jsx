@@ -1,4 +1,5 @@
 import { createBrowserRouter } from 'react-router';
+import FocusLayout from '@/components/layout/FocusLayout.jsx';
 import MainLayout from '@/components/layout/MainLayout.jsx';
 import SetupLayout from '@/components/layout/SetupLayout.jsx';
 import BooksPage from '@/pages/books/S9Books.jsx';
@@ -35,11 +36,11 @@ export const router = createBrowserRouter([
       { path: ROUTES.s5_2, element: <S5_2Compare /> },
     ],
   },
+  { element: <FocusLayout />, children: [{ path: ROUTES.study, element: <StudyPage /> }] },
   {
     element: <MainLayout />,
     children: [
       { path: ROUTES.home, element: <HomePage /> },
-      { path: ROUTES.study, element: <StudyPage /> },
       { path: ROUTES.quiz, element: <QuizPage /> },
       { path: ROUTES.quizResult, element: <QuizResultPage /> },
       { path: ROUTES.books, element: <BooksPage /> },

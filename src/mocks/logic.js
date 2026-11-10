@@ -66,10 +66,18 @@ export function buildToday() {
     .filter(([, r]) => r >= OPEN_RATE)
     .map(([subjectId]) => ({ subjectId, count: counts[subjectId] ?? 0 }));
 
+  // 집중 모드로 재고 아직 기록하지 않은 시간 ('기록 전 · N분')
+  const pendingOf = (t) =>
+    Object.values(s.studySessions).find(
+      (x) => x.taskId === t.id && x.status === 'ended' && !x.recorded,
+    );
   return {
     date: s.today.date,
     subjects: s.subjects.map(({ id, name, color, examDate }) => ({ id, name, color, examDate })),
-    tasks,
+    tasks: tasks.map((t) => {
+      const p = pendingOf(t);
+      return { ...t, pendingSessionId: p?.id ?? null, pendingMinutes: p?.minutes ?? null };
+    }),
     progress: {
       doneCount: tasks.filter((t) => t.status === 'done').length,
       totalCount: tasks.length,
@@ -98,6 +106,7 @@ export function buildToday() {
       },
     ],
     notice: s.notice,
+    tutorSuggestions: s.tutorSuggestions, // AI 튜터 추천 질문 칩 (mock)
     replan: s.replan && {
       ...s.replan,
       totalPages: s.replan.overdue.reduce((n, o) => n + o.pages, 0),
@@ -200,10 +209,16 @@ const openSet = (today) =>
       : today.quiz.openSubjects.map((o) => o.subjectId),
   );
 
-export function recordTask(taskId, result, toPage) {
+export function recordTask(taskId, result, toPage, sessionId = null) {
   const s = db.get();
   const task = s.today.tasks.find((t) => t.id === taskId);
   if (!task) throw new MockError('TASK_NOT_FOUND', '태스크를 찾지 못했어요', 404);
+  // 집중 모드에서 온 기록이면 측정 시간을 붙여요. 없으면 시간 없이 저장 (HM-08)
+  const session = sessionId && s.studySessions[sessionId];
+  if (session?.status === 'ended') {
+    task.measuredMinutes = (task.measuredMinutes ?? 0) + session.minutes;
+    session.recorded = true;
+  }
   const before = buildToday();
   if (result === 'done') setDonePage(task, task.to);
   if (result === 'partial') setDonePage(task, toPage);
@@ -359,7 +374,8 @@ export function quizSetView(subjectId) {
   const sub = subjectOfSet(s, subjectId, set);
   return {
     subjectId,
-    custom: Boolean(set.subjectId), // 문제 뽑기로 만든 세트
+    custom: Boolean(set.subjectId), // 문제 뽑기·더 풀기로 만든 세트
+    resultFor: set.moreOf ?? subjectId, // 풀고 나서 볼 결과 (더 풀기는 원래 퀴즈 결과)
     name: sub.name,
     round: set.round,
     difficulty: set.difficulty,
@@ -423,6 +439,7 @@ export function gradeQuiz(subjectId, answers, savedGrading = false) {
       score,
       feedback,
       explanation: q.explanation ?? null, // v2: 정답·해설은 결과 화면에서 한 번에 (QZ-08)
+      evidence: q.evidence ?? null, // 근거 원본 { materialId, page, quote } — 결과에서만 (QZ-13)
       mockFilled: q.mockFilled ?? [],
     };
   });
@@ -465,6 +482,20 @@ export function gradeQuiz(subjectId, answers, savedGrading = false) {
       .filter((x) => !x.correct || x.confidence === 'unsure')
       .map((x) => ({ no: x.no, reason: x.correct ? '애매 정답' : '오답' })),
   };
+  // 더 풀기 (QZ-11): 이해도에 반영(4-2 '더 푼 5문항도 이해도에', mock은 다시 풀기와 같은 규칙)하고 원래 결과에 이어 붙여요
+  // 실제 이해도 계산은 서버 몫이에요 (정의서 4-1 계산식 · calc.py). 여기 점수 변화는 시연용 mock 규칙
+  if (set.moreOf) {
+    let change = null;
+    for (const it of items) {
+      const d = it.correct ? (it.confidence === 'sure' ? 1 : 0) : -1;
+      const c = applyUnitDelta(s, sub.id, set.unitNo, d);
+      if (c) change = { unitNo: set.unitNo, before: change?.before ?? c.before, after: c.after };
+    }
+    result.unitNo = set.unitNo;
+    result.moreUnitChange = change;
+    const base = s.quizResults[quizKey(s, set.moreOf)];
+    if (base) base.more = [...(base.more ?? []), result];
+  }
   s.quizResults[quizKey(s, subjectId)] = result;
   addNotes(s, sub.id, set.questions, items); // RV-01: 오답·애매 정답은 오답 노트로
   return result;
@@ -665,12 +696,29 @@ export function retryNote(noteId, answer) {
   n.lastDate = s.today.date;
   n.history.push({ date: s.today.date, result: r, score: score ?? undefined, retry: true });
 
-  // 단원 점수 (mock): 확실 정답 +1 · 오답 −1, 회복 모드 하루 상한
-  const unit = unitOf(s, n.subjectId, n.unitNo);
+  const unitChange = applyUnitDelta(
+    s,
+    n.subjectId,
+    n.unitNo,
+    r === 'sureRight' ? 1 : correct ? 0 : -1,
+  );
+  return {
+    note: noteView(s, n),
+    correct,
+    confidence: answer.confidence,
+    score,
+    explanation: q.explanation ?? null,
+    wrongCountBefore: beforeCount,
+    unitChange,
+  };
+}
+
+// 단원 점수 (mock): 확실 정답 +1 · 오답 −1, 회복 모드(80점 미만) 하루 +5 · 재학습한 날 +15, 등급은 한 칸씩
+function applyUnitDelta(s, subjectId, unitNo, delta) {
+  const unit = unitOf(s, subjectId, unitNo);
   let unitChange = null;
   if (unit?.score != null) {
-    const delta = r === 'sureRight' ? 1 : correct ? 0 : -1;
-    const key = `${s.today.date}:${n.subjectId}:${n.unitNo}`;
+    const key = `${s.today.date}:${subjectId}:${unitNo}`;
     const gained = s.dailyGain[key] ?? 0;
     const cap = unit.relearnedOn === s.today.date ? 15 : 5;
     const applied = delta > 0 && unit.score < 80 ? Math.min(delta, cap - gained) : delta;
@@ -682,17 +730,9 @@ export function retryNote(noteId, answer) {
       grade = GRADE_ORDER[GRADE_ORDER.indexOf(unit.grade) + 1];
     if (applied > 0) s.dailyGain[key] = gained + applied;
     Object.assign(unit, { score: next, grade });
-    unitChange = { unitNo: n.unitNo, before, after: { score: next, grade } };
+    unitChange = { unitNo, before, after: { score: next, grade } };
   }
-  return {
-    note: noteView(s, n),
-    correct,
-    confidence: answer.confidence,
-    score,
-    explanation: q.explanation ?? null,
-    wrongCountBefore: beforeCount,
-    unitChange,
-  };
+  return unitChange;
 }
 
 // 재학습 기록 (RV-03): 범위 전체 재학습 → 회독 +1, 그날 회복 상한 +15 (회복 점수 계산은 서버)
@@ -742,5 +782,259 @@ export function makeCustomQuiz({ subjectId, units, difficulty, count }) {
       picked.length < count
         ? `목업 문항이 ${picked.length}개뿐이라 ${picked.length}문항만 뽑았어요`
         : null,
+  };
+}
+
+// ── 집중 모드 (S12 · S12-1 · HM-07~09) ────────────────────
+// 시간은 서버가 재요. 화면은 시작·멈춤·재개·종료만 보내고, 받은 분만 보여줘요.
+// mock: 서버 시계 = 이 목업의 Date.now(). '오늘' 날짜는 데모 날짜를 써요
+const MIN = 60 * 1000;
+const CHECK_WAIT_MS = 10 * MIN; // HM-09: 알림 뒤 10분 무응답이면 알림 시점에서 멈춤
+
+function activeMs(x, now = Date.now()) {
+  const end = x.endedAt ?? now;
+  const pausing = x.pausedAt ? end - x.pausedAt : 0;
+  return Math.max(0, end - x.startedAt - x.pausedMs - pausing);
+}
+
+// 예상 시간 2배가 지났는지 · 알림 뒤 10분 무응답이면 자동 종료 (HM-09)
+function checkSession(s, x, now = Date.now()) {
+  if (x.status !== 'active' || x.checkDismissed) return;
+  const limit = x.expectedMinutes * 2 * MIN;
+  if (activeMs(x, now) < limit) return;
+  x.promptAt ??= x.startedAt + x.pausedMs + limit;
+  if (now >= x.promptAt + CHECK_WAIT_MS) {
+    // 알림이 뜬 시점까지만 측정하고, 이 기록은 속도 보정(PL-07)에서 빼요
+    endSession(s, x, x.promptAt);
+    x.autoStopped = true;
+    x.excludeFromPace = true;
+  }
+}
+
+function endSession(s, x, at = Date.now()) {
+  if (x.pausedAt) {
+    x.pausedMs += at - x.pausedAt;
+    x.pausedAt = null;
+  }
+  x.endedAt = at;
+  x.status = 'ended';
+  x.minutes = Math.floor(activeMs(x) / MIN);
+}
+
+const sumMinutes = (s, pick) =>
+  Object.values(s.studySessions)
+    .filter((x) => x.status === 'ended' && pick(x))
+    .reduce((n, x) => n + x.minutes, 0);
+
+function sessionView(s, x) {
+  checkSession(s, x);
+  const task = findTask(s, x.taskId);
+  const sub = s.subjects.find((y) => y.id === x.subjectId);
+  const pausing = x.pausedAt ? Date.now() - x.pausedAt : 0;
+  return {
+    id: x.id,
+    taskId: x.taskId,
+    subjectId: x.subjectId,
+    subjectName: sub.name,
+    task: task && {
+      title: task.title,
+      from: task.from,
+      to: task.to,
+      pages: pagesOf(task),
+      minutes: task.minutes,
+    },
+    status: x.status, // active | paused | ended
+    quote: x.quote,
+    material: { id: sub.file.id, page: task?.from ?? 1 }, // [자료 열기] PDF 보기
+    minutes: x.status === 'ended' ? x.minutes : Math.floor(activeMs(x) / MIN),
+    pausedMinutes: Math.floor((x.pausedMs + pausing) / MIN),
+    checkIn: x.status === 'active' && Boolean(x.promptAt) && !x.checkDismissed, // '아직 공부 중이에요?'
+    autoStopped: Boolean(x.autoStopped),
+    excludeFromPace: Boolean(x.excludeFromPace),
+    recorded: Boolean(x.recorded),
+    todayMinutes: sumMinutes(s, (y) => y.date === s.today.date),
+    subjectMinutes: sumMinutes(s, (y) => y.subjectId === x.subjectId),
+  };
+}
+
+const sessionOf = (s, id) => {
+  const x = s.studySessions[id];
+  if (!x) throw new MockError('SESSION_NOT_FOUND', '공부 기록을 찾지 못했어요', 404);
+  return x;
+};
+const activeOf = (s) =>
+  Object.values(s.studySessions).find((x) => {
+    checkSession(s, x);
+    return x.status === 'active' || x.status === 'paused';
+  });
+
+export function startSession(taskId) {
+  const s = db.get();
+  const task = s.today.tasks.find((t) => t.id === taskId);
+  if (!task) throw new MockError('TASK_NOT_FOUND', '태스크를 찾지 못했어요', 404);
+  const running = activeOf(s);
+  if (running?.taskId === taskId) return sessionView(s, running); // 새로고침·다시 들어옴 → 이어서
+  if (running) {
+    const other = findTask(s, running.taskId);
+    throw new MockError(
+      'OTHER_ACTIVE',
+      `${other?.title ?? '다른 태스크'} 공부가 아직 진행 중이에요`,
+      409,
+    );
+  }
+  const id = `s${Object.keys(s.studySessions).length + 1}`;
+  const quotes = s.focusQuotes;
+  s.studySessions[id] = {
+    id,
+    taskId,
+    subjectId: task.subjectId,
+    date: s.today.date,
+    expectedMinutes: task.minutes,
+    quote: quotes[Math.floor(Math.random() * quotes.length)],
+    startedAt: Date.now(),
+    pausedAt: null,
+    pausedMs: 0,
+    status: 'active',
+  };
+  return sessionView(s, s.studySessions[id]);
+}
+
+export function activeSessionView() {
+  const s = db.get();
+  const x = activeOf(s);
+  return x ? sessionView(s, x) : null;
+}
+
+export const getSessionView = (id) => {
+  const s = db.get();
+  return sessionView(s, sessionOf(s, id));
+};
+
+export function pauseSession(id) {
+  const s = db.get();
+  const x = sessionOf(s, id);
+  if (x.status !== 'active') throw new MockError('NOT_ACTIVE', '공부 중일 때만 멈출 수 있어요');
+  Object.assign(x, { status: 'paused', pausedAt: Date.now() });
+  return sessionView(s, x);
+}
+
+// 다시 시작 · '아직 공부 중이에요?'에서 [계속 공부]
+export function resumeSession(id) {
+  const s = db.get();
+  const x = sessionOf(s, id);
+  if (x.status === 'paused') {
+    x.pausedMs += Date.now() - x.pausedAt;
+    Object.assign(x, { status: 'active', pausedAt: null });
+  } else if (x.status === 'active') x.checkDismissed = true;
+  else throw new MockError('ENDED', '이미 끝난 공부예요');
+  return sessionView(s, x);
+}
+
+export function finishSession(id) {
+  const s = db.get();
+  const x = sessionOf(s, id);
+  if (x.status !== 'ended') endSession(s, x);
+  return sessionView(s, x);
+}
+
+// ── 더 풀기 (QZ-11) ───────────────────────────────────────
+// 같은 단원 5문항. mock은 그 단원 퀴즈 문항에서 골라요 (AI 출제 자리)
+const MORE_COUNT = 5;
+export function makeMoreQuiz(subjectId, unitNo) {
+  const s = db.get();
+  const base = s.quizResults[quizKey(s, subjectId)];
+  if (!base) throw new MockError('NO_RESULT', '오늘 퀴즈를 먼저 풀어 주세요');
+  if (base.more?.some((m) => m.unitNo === unitNo))
+    throw new MockError('ALREADY', '이 단원은 오늘 더 풀기를 했어요');
+  const pool = Object.values(s.quizSets)
+    .flatMap((day) => day[subjectId]?.questions ?? [])
+    .filter((q) => q.unitNo === unitNo);
+  if (!pool.length) throw new MockError('NO_QUESTIONS', '이 단원은 목업 문항이 아직 없어요', 404);
+  const id = `m${Object.keys(s.customSets).length + 1}`;
+  s.customSets[id] = {
+    subjectId,
+    moreOf: subjectId,
+    unitNo,
+    round: base.round ?? '1회독',
+    difficulty: '하',
+    composition: `${unitNo}단원 더 풀기 ${Math.min(MORE_COUNT, pool.length)}문항`,
+    questions: pool.slice(0, MORE_COUNT).map((q) => ({
+      ...q,
+      tag: '더 풀기',
+      mockFilled: [...new Set([...(q.mockFilled ?? []), 'more'])],
+    })),
+  };
+  return { quizId: id, count: s.customSets[id].questions.length };
+}
+
+// ── 근거 원본 PDF (QZ-13) ─────────────────────────────────
+// mock: 자료구조 강의자료만 목업 PDF가 있어요
+export const MOCK_PDF = { 'ds-main': '/mock/ds-lecture-mock.pdf' };
+
+// ── AI 튜터 (TU-01 단일턴 · TU-02 쉬운 설명, 정의서 v2_2 4-14) ─────────
+// 요청은 { question, history } (제안). 기본 질문은 history = [], 쉬운 설명은 직전 한 쌍 1개.
+// 응답은 두 경우 모두 { answer, pages }. 질문·답은 한 쌍씩 저장하고, 쉬운 설명은 원래 답에 연결해요.
+// mock: 키워드로 미리 써 둔 답을 골라요
+const NO_ANSWER =
+  '올린 강의자료에서 이 질문에 맞는 부분을 찾지 못했어요. 단원 이름이나 개념을 넣어서 다시 물어봐 주세요.';
+
+function savePair(s, fields) {
+  const sub = s.subjects.find((x) => x.id === (fields.subjectId ?? 'ds'));
+  const pair = {
+    id: `tq${s.tutorPairs.length + 1}`,
+    subjectId: sub.id,
+    subjectName: sub.name,
+    parentId: null,
+    saved: false,
+    mockFilled: ['answer'],
+    ...fields,
+  };
+  s.tutorPairs.push(pair);
+  return pair;
+}
+
+export function askTutor({ question, history = [] }) {
+  const s = db.get();
+  const answers = s.tutorAnswers;
+  // TU-02 쉬운 설명: 직전 질문·답 한 쌍을 받아 쉬운 말로 다시. 근거는 원래 답 그대로
+  if (history.length) {
+    const prev = history.at(-1);
+    const parent = [...s.tutorPairs].reverse().find((p) => p.answer === prev.answer && !p.parentId);
+    const hit = answers.find((a) => a.answer === prev.answer);
+    return savePair(s, {
+      subjectId: parent?.subjectId,
+      parentId: parent?.id ?? null,
+      question: question || '더 쉽게 설명해줘',
+      answer:
+        hit?.easy ??
+        `쉽게 말하면 이래요. ${prev.answer.split('.')[0]}. 자료의 근거 페이지에 그림이 있으니 같이 보면 더 잘 보여요.`,
+      pages: prev.pages ?? [],
+    });
+  }
+  if (!String(question ?? '').trim()) throw new MockError('EMPTY', '질문을 입력해 주세요');
+  const hit = answers.find((a) => a.keywords.some((k) => question.includes(k)));
+  return savePair(s, {
+    subjectId: hit?.subjectId,
+    question,
+    answer: hit?.answer ?? NO_ANSWER,
+    pages: hit?.pages ?? [],
+  });
+}
+
+// 저장된 결과 (NF-10): 응답이 늦거나 실패하면 화면이 따로 받아요. kind: basic(기본 답) | easy(쉬운 설명)
+// 시연 백업은 "AVL 트리 회전은 언제 해?"의 기본 답과 쉬운 설명 하나씩 (4-14)
+export function tutorBackup(kind = 'basic') {
+  const s = db.get();
+  const b = s.tutorAnswers.find((a) => a.saved);
+  return {
+    id: `backup-${kind}`,
+    subjectId: b.subjectId,
+    subjectName: s.subjects.find((x) => x.id === b.subjectId).name,
+    parentId: null,
+    question: kind === 'easy' ? '더 쉽게 설명해줘' : b.question,
+    answer: kind === 'easy' ? b.easy : b.answer,
+    pages: b.pages,
+    saved: true,
+    mockFilled: ['answer'],
   };
 }

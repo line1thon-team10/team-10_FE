@@ -17,21 +17,22 @@
 
 명세가 나오면 `src/api/endpoints.js`, `src/api/adapters/`, `src/mocks/`만 고쳐요.
 
-| 항목                                                                  | 지금 프론트 임시값                                                                                                       | 정할 사람         |
-| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ----------------- |
-| API 기본 주소                                                         | 비어 있음 (`.env`의 `VITE_API_BASE_URL`)                                                                                 | 백엔드 B          |
-| 공통 응답 형식                                                        | `{ success, data, error: { code, message } }`                                                                            | 백엔드 B          |
-| 익명 ID 발급·전달                                                     | `POST /api/session` → `anonymousId`, 헤더 `X-Anonymous-Id`                                                               | 백엔드 B          |
-| 데모 날짜 · 다음 날로 · 시드 초기화 · 시드 고르기                     | `GET /api/demo/state`, `POST /api/demo/next-day`, `POST /api/demo/reset`, `POST /api/demo/seed` (empty · day9 · overdue) | 백엔드 A · B      |
-| 다음 날로 응답에 자정 판정 결과 포함                                  | 목업은 `judgment: carry · replan · none` + 오늘 데이터의 `notice`·`replan`                                               | 백엔드 A          |
-| 분배안 적용                                                           | `POST /api/plan/replan` `{ key: A·B·C }` → 회복 박스 이벤트                                                              | 백엔드 A          |
-| 오늘의 퀴즈 (과목별 열림 · 문항 · 제출 · 결과)                        | `GET /api/quiz/today`, `GET /api/quiz/:subjectId`, `POST /api/quiz/:subjectId/submit`, `GET /api/quiz/:subjectId/result` | 백엔드 A · 김현민 |
-| 책 쌓기 (단원별 책 · 등급 · 점수 · 준비도)                            | `GET /api/books`                                                                                                         | 백엔드 A          |
-| 화면 데이터 (과목·단원·태스크·기록·퀴즈·등급·오답·분배안)             | `src/mocks/data/seed.js` 모양                                                                                            | 백엔드 A · B      |
-| 서버 상태 값 (블록 상태·등급·문항 유형·확신도)                        | `src/config/labels.js`의 키                                                                                              | 백엔드 B          |
-| AI 응답 형식 (PDF 분해, 일정 해석, 퀴즈 문항, 서술형 채점, 튜터 답변) | 아직 없음                                                                                                                | 김현민            |
-| 오래 걸리는 작업 진행 상태 (PDF 분석·계획 생성·퀴즈 생성)             | 아직 없음                                                                                                                | 백엔드 B · 김현민 |
-| PDF 근거 미리보기용 원본 PDF 제공 여부                                | 아직 없음                                                                                                                | 백엔드 B          |
+| 항목                                                                                                           | 지금 프론트 임시값                                                                                                       | 정할 사람         |
+| -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ----------------- |
+| API 기본 주소                                                                                                  | 비어 있음 (`.env`의 `VITE_API_BASE_URL`)                                                                                 | 백엔드 B          |
+| 공통 응답 형식                                                                                                 | `{ success, data, error: { code, message } }`                                                                            | 백엔드 B          |
+| 익명 ID 발급·전달                                                                                              | `POST /api/session` → `anonymousId`, 헤더 `X-Anonymous-Id`                                                               | 백엔드 B          |
+| 데모 날짜 · 다음 날로 · 시드 초기화 · 시드 고르기                                                              | `GET /api/demo/state`, `POST /api/demo/next-day`, `POST /api/demo/reset`, `POST /api/demo/seed` (empty · day9 · overdue) | 백엔드 A · B      |
+| 다음 날로 응답에 자정 판정 결과 포함                                                                           | 목업은 `judgment: carry · replan · none` + 오늘 데이터의 `notice`·`replan`                                               | 백엔드 A          |
+| 분배안 적용                                                                                                    | `POST /api/plan/replan` `{ key: A·B·C }` → 회복 박스 이벤트                                                              | 백엔드 A          |
+| 오늘의 퀴즈 (과목별 열림 · 문항 · 제출 · 결과)                                                                 | `GET /api/quiz/today`, `GET /api/quiz/:subjectId`, `POST /api/quiz/:subjectId/submit`, `GET /api/quiz/:subjectId/result` | 백엔드 A · 김현민 |
+| 책 쌓기 (단원별 책 · 등급 · 점수 · 준비도)                                                                     | `GET /api/books`                                                                                                         | 백엔드 A          |
+| 화면 데이터 (과목·단원·태스크·기록·퀴즈·등급·오답·분배안)                                                      | `src/mocks/data/seed.js` 모양                                                                                            | 백엔드 A · B      |
+| 서버 상태 값 (블록 상태·등급·문항 유형·확신도)                                                                 | `src/config/labels.js`의 키                                                                                              | 백엔드 B          |
+| AI 응답 형식 (PDF 분해, 일정 해석, 퀴즈 문항, 서술형 채점, 튜터 답변)                                          | 아직 없음                                                                                                                | 김현민            |
+| 오래 걸리는 작업 진행 상태 (PDF 분석·계획 생성·퀴즈 생성)                                                      | 아직 없음                                                                                                                | 백엔드 B · 김현민 |
+| PDF 근거 미리보기용 원본 PDF 제공 여부                                                                         | 아직 없음                                                                                                                | 백엔드 B          |
+| 튜터 요청 형식 `{ question, history }` · 쉬운 설명 근거 유지 (정의서 '제안', 김현민 확인 전) · `pages` 안 모양 | `pages: [{ materialId, from, to }]` 임시                                                                                 | 김현민            |
 
 ## 기획 확인 필요
 

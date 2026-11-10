@@ -2,7 +2,6 @@
 import { ArrowRight, Flag, Plus, X } from 'lucide-react';
 import { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { toast } from 'sonner';
 import { ROUTES } from '@/app/screens.js';
 import BookBlock from '@/components/book/BookBlock.jsx';
 import Shelf from '@/components/book/Shelf.jsx';
@@ -11,6 +10,7 @@ import Card from '@/components/common/Card.jsx';
 import ProgressBar from '@/components/common/ProgressBar.jsx';
 import { EmptyState, ErrorState, LoadingState } from '@/components/common/StateView.jsx';
 import TaskCard from '@/components/home/TaskCard.jsx';
+import TutorPanel from '@/components/home/TutorPanel.jsx';
 import { fmtFull, toDay } from '@/config/date.js';
 import { PLAN_OPTION } from '@/config/labels.js';
 import { useToday } from '@/hooks/useToday.js';
@@ -255,30 +255,6 @@ function WeekShelfCard({ today }) {
   );
 }
 
-// 하단 고정 AI 튜터 (TU-01, Should) — 답변 화면(S6-3)은 11/10에 연결해요
-function TutorBar() {
-  return (
-    <form
-      className="sticky bottom-0 -mx-5 -mb-5 mt-auto flex items-center gap-2 border-t border-line bg-surface/95 px-5 py-3 backdrop-blur"
-      onSubmit={(e) => {
-        e.preventDefault();
-        toast('AI 튜터는 아직 연결 전이에요 (S6-3)');
-      }}
-    >
-      <span className="ai-chip self-center">AI 튜터</span>
-      <input
-        id="tutor-question"
-        className="min-w-0 flex-1 rounded-sm border border-line px-3 py-2"
-        placeholder="올린 자료 내용 무엇이든 물어보세요 (답에 근거 페이지 표시)"
-        autoComplete="off"
-      />
-      <Button type="submit" variant="primary">
-        질문
-      </Button>
-    </form>
-  );
-}
-
 export default function S6Home() {
   const navigate = useNavigate();
   const { data: today, isPending, isError, error, refetch } = useToday();
@@ -312,7 +288,14 @@ export default function S6Home() {
   const subjectsById = Object.fromEntries(today.subjects.map((s) => [s.id, s]));
   const firstExam = [...today.exams].sort((a, b) => a.dday - b.dday)[0];
   const { progress } = today;
-  const openRecord = (taskId) => openModal('S7', { taskId });
+  const openRecord = (taskId) => {
+    const t = today.tasks.find((x) => x.id === taskId);
+    openModal('S7', {
+      taskId,
+      sessionId: t?.pendingSessionId ?? null,
+      sessionMinutes: t?.pendingMinutes ?? null,
+    });
+  };
   const startStudy = (taskId) => navigate(`${ROUTES.study}?task=${taskId}`);
 
   return (
@@ -378,7 +361,7 @@ export default function S6Home() {
         </aside>
       </div>
       <WeekShelfCard today={today} />
-      <TutorBar />
+      <TutorPanel suggestions={today.tutorSuggestions} />
     </>
   );
 }

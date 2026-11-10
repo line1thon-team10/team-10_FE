@@ -271,3 +271,119 @@
 
 - 응답 `{ subjectId, unitNo, round, relearnedOn }`. 회독 +1, 그날 회복 상한 +15. 하루 한 번 (`ALREADY`)
 - `GET /api/books`의 `units[].round`: 회독 (보충을 끝내면 2회독, 정의서 4-2)
+
+## 집중 모드 S12 · S12-1 (11/10 · 지시문 8)
+
+시간은 서버가 재요. 화면은 시작·멈춤·재개·종료만 보내고 받은 분만 보여줘요 (HM-07·08). mock은 `src/mocks/logic.js`의 집중 모드 부분.
+
+| 요청      | 경로                                    | 하는 일                                                                                                      |
+| --------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| 시작      | `POST /api/study/sessions` `{ taskId }` | 같은 태스크가 진행 중이면 그 측정을 돌려줘요 (새로고침해도 이어짐). 다른 태스크가 진행 중이면 `OTHER_ACTIVE` |
+| 진행 중   | `GET /api/study/sessions/active`        | 없으면 `null`. 화면은 30초마다 다시 물어봐요 (알림·자동 종료)                                                |
+| 한 개     | `GET /api/study/sessions/:id`           | S12-1 새로고침용 (**지시문에 없던 경로**)                                                                    |
+| 멈춤      | `POST /api/study/sessions/:id/pause`    | 멈춘 시간은 측정에서 빠져요                                                                                  |
+| 다시 시작 | `POST /api/study/sessions/:id/resume`   | '아직 공부 중이에요?'에서 [계속 공부]도 이 경로                                                              |
+| 종료      | `POST /api/study/sessions/:id/end`      |                                                                                                              |
+
+응답 (모두 같은 모양):
+
+```json
+{
+  "id": "s1",
+  "taskId": "t1",
+  "subjectName": "자료구조",
+  "task": {
+    "title": "3단원 이진 탐색 트리·AVL 트리",
+    "from": 72,
+    "to": 95,
+    "pages": 24,
+    "minutes": 60
+  },
+  "status": "ended",
+  "quote": "시험은 한 번, 준비는 매일 조금씩.",
+  "minutes": 42,
+  "pausedMinutes": 8,
+  "checkIn": false,
+  "autoStopped": false,
+  "excludeFromPace": false,
+  "recorded": false,
+  "todayMinutes": 175,
+  "subjectMinutes": 370
+}
+```
+
+- `status`: `active` · `paused` · `ended`. `quote`: 들어올 때 서버가 고른 문구 1개 (HM-10)
+- HM-09: 예상 시간의 2배가 지나면 `checkIn: true`. 그 뒤 10분 동안 답이 없으면 서버가 알림 시점에서 멈추고 `autoStopped: true`, `excludeFromPace: true`(속도 보정에서 뺌)
+
+### 기록에 측정 시간 붙이기
+
+- `POST /api/records`에 `sessionId`를 같이 보내요 (지시문에는 `POST /api/tasks/:id/record`로 적혀 있지만 기록 경로는 `/api/records`예요). 끝난 측정이면 태스크 `measuredMinutes`에 더하고 `recorded: true`
+- `sessionId` 없이 오면 시간 없이 저장
+- `GET /api/today`의 `tasks[]`: `pendingSessionId` · `pendingMinutes`(재고 아직 기록 안 한 측정 → 홈 카드 '기록 전 · N분'), `measuredMinutes`
+
+## 근거 원본 · 더 풀기 · AI 튜터 (11/10 · 지시문 9, 정의서 v2_2)
+
+### 원본 PDF — `GET /api/materials/:materialId/file` (QZ-13)
+
+- 응답: PDF 파일 (`application/pdf`). mock은 `public/mock/ds-lecture-mock.pdf` (자료구조 140쪽, 쪽마다 MOCK). 자료구조(`ds-main`) 말고는 `NO_FILE` 404
+- 과목 강의자료 id: `subjects[].file.id` (`ds-main` · `os-main` · `net-main`)
+- 퀴즈 결과 `items[].evidence`: `{ materialId, page, quote }`. 풀 때(`GET /api/quiz/:id`)는 보내지 않아요. 화면은 그 쪽을 열고 글자 층에서 `quote`를 찾아 하이라이트
+- 집중 모드 세션 `material: { id, page }` → [자료 열기]
+
+### 더 풀기 — `POST /api/quiz/:subjectId/more` `{ unitNo }` (QZ-11)
+
+```json
+// 응답 data
+{ "quizId": "m1", "count": 5 }
+```
+
+- 같은 단원 5문항 세트를 만들고 `/quiz?subject=m1`로 풀어요 (`GET /api/quiz/m1`의 `resultFor: "ds"`)
+- 제출하면 원래 결과(`GET /api/quiz/ds/result`)의 `more[]`에 이어 붙어요: `{ unitNo, summary, items, moreUnitChange: { unitNo, before, after } }`
+- 이해도 반영 (4-2 "더 푼 5문항도 이해도에"): mock은 다시 풀기와 같은 규칙. 실제 계산은 서버 (정의서 4-1, calc.py). 단원마다 하루 한 번
+
+### AI 튜터 — `POST /api/tutor` (TU-01 · TU-02, 정의서 v2_2 4-14)
+
+요청 (제안, 김현민 확인 전):
+
+```json
+// TU-01 기본 질문: 단일턴, 지난 질문·답은 보내지 않아요
+{ "question": "AVL 트리 회전은 언제 해?", "history": [] }
+// TU-02 쉬운 설명: 직전 질문·답 한 쌍 1개
+{
+  "question": "더 쉽게 설명해줘",
+  "history": [
+    {
+      "question": "AVL 트리 회전은 언제 해?",
+      "answer": "AVL 트리는 …",
+      "pages": [{ "materialId": "ds-main", "from": 90, "to": 90 }]
+    }
+  ]
+}
+```
+
+응답 (두 경우 같은 모양):
+
+```json
+{
+  "id": "tq2",
+  "parentId": "tq1",
+  "subjectName": "자료구조",
+  "question": "더 쉽게 설명해줘",
+  "answer": "시소를 떠올려 보세요. …",
+  "pages": [
+    { "materialId": "ds-main", "from": 90, "to": 90 },
+    { "materialId": "ds-main", "from": 91, "to": 93 }
+  ],
+  "saved": false
+}
+```
+
+- 정의서가 정한 건 `{ answer, pages }`. 나머지 필드(`id` · `parentId` · `question` · `subjectName` · `saved`)는 화면 표시용 임시
+- `pages` 안 모양 `[{ materialId, from, to }]`는 임시 (TODO 백엔드 확정)
+- 쉬운 설명의 `pages`는 원래 답 그대로 (4-14 제안). 질문·답은 한 쌍씩 저장, 쉬운 설명은 원래 답에 연결 (`parentId`)
+- 버튼은 답 하나당 1번 (화면). 새 질문의 답에는 다시 생겨요
+
+### 저장된 결과 — `GET /api/tutor/backup?kind=basic|easy` (임시, NF-10)
+
+- 응답이 30초 넘게 없거나 실패했을 때만 써요. 요청 `{ question, history }`에는 필드를 더하지 않아요 (11/10 결정 A)
+- 시연 백업: "AVL 트리 회전은 언제 해?"의 기본 답(`basic`)과 쉬운 설명(`easy`). 응답 모양은 위와 같고 `saved: true`

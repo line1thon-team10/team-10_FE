@@ -5,8 +5,9 @@ import { EP } from './endpoints.js';
 export const getToday = async () => toToday(await http.get(EP.today));
 
 // result: done | partial | none, toPage: 부분 완료일 때 끝낸 페이지
-export const postRecord = async ({ taskId, result, toPage }) =>
-  toRecordResult(await http.post(EP.records, { taskId, result, toPage }));
+// sessionId: 집중 모드에서 온 기록이면 측정 시간을 붙여요 (없으면 시간 없이 저장)
+export const postRecord = async ({ taskId, result, toPage, sessionId }) =>
+  toRecordResult(await http.post(EP.records, { taskId, result, toPage, sessionId }));
 
 // 기록한 뒤 끝낸 페이지 고치기
 export const patchRecord = async ({ taskId, toPage }) =>

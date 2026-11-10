@@ -460,6 +460,53 @@
   }
 }
 
+/* PDF 보기 근거 문장 하이라이트 (QZ-13). 글자 층 글자는 투명이라 배경만 보여요 */
+.pdf-mark {
+  background: rgb(255 119 16 / 0.45);
+  color: transparent;
+  border-radius: 2px;
+}
+
+/* 집중 모드 책 (S12): 들어오면 펼쳐지고, 멈추면 살짝 덮여요 */
+.focus-book {
+  display: flex;
+  width: 120px;
+  height: 84px;
+  perspective: 600px;
+}
+.focus-page {
+  flex: 1;
+  border: 1.5px solid var(--color-line-2);
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.05), rgb(255 255 255 / 0.01));
+  transition: transform 0.5s ease;
+}
+.focus-page-left {
+  border-radius: 8px 2px 2px 8px;
+  transform-origin: right center;
+  animation: focus-open-left 0.8s cubic-bezier(0.3, 0.7, 0.4, 1) both;
+}
+.focus-page-right {
+  border-radius: 2px 8px 8px 2px;
+  transform-origin: left center;
+  animation: focus-open-right 0.8s cubic-bezier(0.3, 0.7, 0.4, 1) both;
+}
+.focus-book.is-closed .focus-page-left {
+  transform: rotateY(55deg);
+}
+.focus-book.is-closed .focus-page-right {
+  transform: rotateY(-55deg);
+}
+@keyframes focus-open-left {
+  from {
+    transform: rotateY(88deg);
+  }
+}
+@keyframes focus-open-right {
+  from {
+    transform: rotateY(-88deg);
+  }
+}
+
 @keyframes blk-sway {
   0%,
   100% {
@@ -499,7 +546,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   .blk,
-  .blk-drop {
+  .blk-drop,
+  .focus-page {
     animation: none !important;
   }
 }

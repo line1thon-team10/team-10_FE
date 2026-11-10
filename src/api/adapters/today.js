@@ -22,6 +22,9 @@ export const toTask = (raw) => ({
   donePages: raw.donePages,
   doneTo: raw.doneTo ?? null, // 부분 완료면 어디까지 했는지
   carried: Boolean(raw.carried), // 어제에서 이월된 태스크 (S6-2)
+  measuredMinutes: raw.measuredMinutes ?? null, // 집중 모드로 잰 시간 (기록에 붙은 것)
+  pendingSessionId: raw.pendingSessionId ?? null, // 재고 아직 기록 안 한 측정 ('기록 전 · N분')
+  pendingMinutes: raw.pendingMinutes ?? null,
 });
 
 // 다음 접속 때 보여줄 안내 (S6-2 이월 · 분배안 적용 뒤)
@@ -82,6 +85,7 @@ export const toToday = (raw) => ({
     blocks: d.blocks.map((b) => ({ state: b.state, taskId: b.taskId ?? null })),
   })),
   notice: toNotice(raw.notice),
+  tutorSuggestions: raw.tutorSuggestions ?? [],
   replan: toReplan(raw.replan),
 });
 

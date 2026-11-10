@@ -34,3 +34,7 @@ export const putUnits = async ({ subjectId, units }) =>
 
 export const getPlanDraft = async () => toPlanDraft(await http.get(EP.planDraft));
 export const postApprove = async () => http.post(EP.planApprove);
+
+// 원본 PDF 파일 (QZ-13 근거 · 집중 모드 자료 열기)
+export const getMaterialFile = async (materialId) =>
+  http.get(`${EP.materials}/${materialId}/file`, { responseType: 'blob' });

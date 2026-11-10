@@ -1,6 +1,7 @@
-import { http } from 'msw';
+import { HttpResponse, bypass, http } from 'msw';
 import { EP } from '@/api/endpoints.js';
 import { db } from '../db.js';
+import { MOCK_PDF } from '../logic.js';
 import { fail, ok } from './respond.js';
 
 // mock: PDF 분석(김현민)·저장(백엔드 B)을 흉내 내요. 파일 내용은 읽지 않고 데이터 세트 단원표를 돌려줘요.
@@ -138,6 +139,17 @@ export const materialsHandlers = [
     else out.add(unitNo);
     setup().outOfExam[subjectId] = [...out];
     return ok({ subjectId, unitNo, inExam: Boolean(inExam) });
+  }),
+
+  // 원본 PDF (QZ-13 근거 · 집중 모드 자료 열기). mock은 목업 PDF를 돌려줘요
+  // TODO(확인필요): [기획 확인] 시연 PDF(김현민)를 받으면 public/mock 파일만 바꿔요
+  http.get(`${EP.materials}/:id/file`, async ({ params }) => {
+    const path = MOCK_PDF[params.id];
+    if (!path) return fail('NO_FILE', '이 자료는 원본 PDF가 아직 없어요', 404);
+    const res = await fetch(bypass(new URL(path, location.origin)));
+    return new HttpResponse(await res.arrayBuffer(), {
+      headers: { 'Content-Type': 'application/pdf' },
+    });
   }),
 
   http.post(EP.toc, async ({ request }) => {

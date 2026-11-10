@@ -20,7 +20,7 @@ export const SEED = {
       // S1 카드 4칸: 시험 총 목표 · 기타 정보 (데이터 세트 1장 목표 문장을 두 칸으로 나눔)
       goalTotal: '상대평가 상위 15% · 커트라인 90점',
       goalEtc: '중간 40% · 기말 40% · 교수님 강조 3단원 트리',
-      file: { name: '자료구조_강의자료.pdf', pages: 140 },
+      file: { id: 'ds-main', name: '자료구조_강의자료.pdf', pages: 140 },
       taskCount: 18,
       units: [
         {
@@ -73,7 +73,7 @@ export const SEED = {
       goal: 'B+ 이상',
       goalTotal: '80점 이상',
       goalEtc: '기말 50%',
-      file: { name: '운영체제_강의자료.pdf', pages: 120 },
+      file: { id: 'os-main', name: '운영체제_강의자료.pdf', pages: 120 },
       taskCount: 15,
       units: [
         {
@@ -118,7 +118,7 @@ export const SEED = {
       goal: '통과',
       goalTotal: '60점 이상',
       goalEtc: '기말 60%',
-      file: { name: '컴퓨터네트워크_강의자료.pdf', pages: 100 },
+      file: { id: 'net-main', name: '컴퓨터네트워크_강의자료.pdf', pages: 100 },
       taskCount: 12,
       units: [
         {
@@ -188,6 +188,64 @@ export const SEED = {
   },
   onboardingDate: '2026-11-03', // 계획 만드는 날 (화)
   onboardingWeekStart: '2026-11-02',
+
+  // 집중 모드 문구 (HM-10) — 디자인 studySession 10개. 들어올 때마다 서버가 하나 골라요
+  // TODO(확인필요): [기획 확인] 계획 운영 시나리오 3장 문구와 같은지
+  focusQuotes: [
+    '벼락치기 말고, 피뢰침.',
+    '지금은 이 범위만 보면 돼요.',
+    '오늘 한 페이지가 시험 날의 한 문제예요.',
+    '다 못 해도 괜찮아요. 한 만큼 쌓여요.',
+    '밀려도 무너지지 않아요. 다시 맞추면 돼요.',
+    '천천히 읽은 페이지가 오래 남아요.',
+    '오늘의 블록 하나, 지금 쌓는 중이에요.',
+    '어려운 곳에서 멈춘 것도 공부예요.',
+    '한 번 더 본 개념은 덜 흔들려요.',
+    '시험은 한 번, 준비는 매일 조금씩.',
+  ],
+
+  // AI 튜터 (TU-01 · S6-3) — mock 답변. AI 출력 형식은 김현민님 확인 전
+  // TODO(확인필요): [백엔드 확정 필요] 요청 { question, history } (정의서 '제안'), pages 안 모양
+  tutorSuggestions: [
+    'AVL 트리 회전은 언제 해?',
+    'BST에서 자식이 2개인 노드는 어떻게 지워?',
+    '편향 트리는 왜 느려?',
+  ],
+  tutorAnswers: [
+    {
+      keywords: ['AVL', '회전'],
+      question: 'AVL 트리 회전은 언제 해?', // 저장된 답을 보여줄 때 질문 말풍선
+      subjectId: 'ds',
+      answer:
+        'AVL 트리는 노드를 넣거나 지운 뒤 어떤 노드의 균형 인수(왼쪽 높이 − 오른쪽 높이)가 -1, 0, 1을 벗어나면 회전해요. 왼쪽-왼쪽으로 기울면 LL 회전, 오른쪽-오른쪽이면 RR 회전 한 번이고, LR·RL은 자식을 먼저 돌린 뒤 부모를 다시 돌리는 이중 회전이에요.',
+      pages: [
+        { materialId: 'ds-main', from: 90, to: 90 },
+        { materialId: 'ds-main', from: 91, to: 93 },
+      ],
+      saved: true, // 응답이 없을 때 보여주는 저장된 답 (시연 백업: 기본 답 + 쉬운 설명)
+      // TODO(확인필요): [기획 확인] 시연 백업 쉬운 설명 문구 (mock)
+      easy: '시소를 떠올려 보세요. 한쪽에 사람이 너무 많이 타서 기울면 가운데 받침을 옮겨 다시 평평하게 만들죠. AVL 트리도 넣거나 지운 뒤 한쪽이 두 칸 넘게 무거워지면, 무거운 쪽 노드를 위로 끌어올리는 회전으로 다시 평평하게 맞춰요. 한쪽으로 쭉 기울면 한 번, 꺾여서 기울면 두 번 돌려요.',
+    },
+    {
+      keywords: ['삭제', '지워', 'BST'],
+      subjectId: 'ds',
+      answer:
+        '자식이 2개인 노드는 오른쪽 서브트리의 가장 작은 값(후속자)으로 값을 바꾼 뒤, 후속자를 원래 자리에서 지워요. 후속자는 왼쪽 자식이 없어서 자식이 0개나 1개인 경우로 처리하면 돼요.',
+      pages: [{ materialId: 'ds-main', from: 82, to: 82 }],
+      easy: '반 대표를 바꾸는 상황이라고 생각해 보세요. 대표가 빠지면, 바로 다음 번호(오른쪽에서 가장 작은 값) 학생이 대표 자리로 올라오고, 그 학생이 원래 있던 자리는 비워 주면 돼요. 그 학생은 왼쪽 친구가 없어서 비우기가 쉬워요.',
+    },
+    {
+      keywords: ['편향'],
+      subjectId: 'ds',
+      answer:
+        '한쪽으로만 노드가 붙은 편향 트리는 연결 리스트와 모양이 같아서, 탐색할 때 노드를 하나씩 다 따라가야 해요. 그래서 최악의 경우 O(n)이에요. 균형이 잡히면 한 번 비교할 때마다 절반씩 줄어서 O(log n)이에요.',
+      pages: [
+        { materialId: 'ds-main', from: 79, to: 79 },
+        { materialId: 'ds-main', from: 76, to: 76 },
+      ],
+      easy: '줄을 한 줄로 길게 선 상황이에요. 찾는 사람이 맨 끝에 있으면 앞에서부터 한 명씩 다 물어봐야 하죠. 편향 트리가 딱 그래서 느려요. 반대로 사람들이 두 갈래로 고르게 나뉘어 서 있으면 매번 절반을 건너뛸 수 있어서 빨라요.',
+    },
+  ],
 
   // S5 요약
   planSummary: { totalPages: 360, taskCount: 45, dailyAvgMinutes: 75 },
@@ -458,6 +516,12 @@ export const SEED = {
         questions: [
           {
             id: 'q1',
+            // mock: 근거 문장 (목업 PDF public/mock/ds-lecture-mock.pdf에 같은 문장이 있어요)
+            evidence: {
+              materialId: 'ds-main',
+              page: 52,
+              quote: '후위 표기식은 피연산자를 스택에 넣고 연산자를 만나면 두 개를 꺼내 계산한다.',
+            },
             concept: '후위 표기식', // mock: 개념
             type: 'short',
             tag: '어제 오답',
@@ -470,6 +534,12 @@ export const SEED = {
           },
           {
             id: 'q2',
+            // mock: 근거 문장 (목업 PDF public/mock/ds-lecture-mock.pdf에 같은 문장이 있어요)
+            evidence: {
+              materialId: 'ds-main',
+              page: 40,
+              quote: '비어 있는 스택에서 pop을 하면 스택 언더플로가 발생한다.',
+            },
             concept: '스택', // mock: 개념
             type: 'choice',
             tag: '어제 오답',
@@ -488,6 +558,12 @@ export const SEED = {
           },
           {
             id: 'q3',
+            // mock: 근거 문장 (목업 PDF public/mock/ds-lecture-mock.pdf에 같은 문장이 있어요)
+            evidence: {
+              materialId: 'ds-main',
+              page: 82,
+              quote: '자식이 두 개인 노드는 후속자로 값을 바꾼 뒤 후속자를 원래 자리에서 삭제한다.',
+            },
             concept: '이진 탐색 트리', // mock: 개념
             type: 'essay',
             tag: null,
@@ -501,6 +577,12 @@ export const SEED = {
           },
           {
             id: 'q4',
+            // mock: 근거 문장 (목업 PDF public/mock/ds-lecture-mock.pdf에 같은 문장이 있어요)
+            evidence: {
+              materialId: 'ds-main',
+              page: 68,
+              quote: '이진 탐색 트리를 중위 순회하면 값이 오름차순으로 방문된다.',
+            },
             concept: '순회', // mock: 개념
             type: 'choice',
             tag: null,
@@ -519,6 +601,12 @@ export const SEED = {
           },
           {
             id: 'q5',
+            // mock: 근거 문장 (목업 PDF public/mock/ds-lecture-mock.pdf에 같은 문장이 있어요)
+            evidence: {
+              materialId: 'ds-main',
+              page: 79,
+              quote: '한쪽으로 치우친 편향 트리에서 탐색은 최악의 경우 O(n)이다.',
+            },
             concept: '이진 탐색 트리', // mock: 개념
             type: 'choice',
             tag: null,
@@ -532,6 +620,12 @@ export const SEED = {
           },
           {
             id: 'q6',
+            // mock: 근거 문장 (목업 PDF public/mock/ds-lecture-mock.pdf에 같은 문장이 있어요)
+            evidence: {
+              materialId: 'ds-main',
+              page: 74,
+              quote: '이진 탐색 트리에서 가장 작은 값은 가장 왼쪽 노드에 있다.',
+            },
             concept: '이진 탐색 트리', // mock: 개념
             type: 'short',
             tag: null,
@@ -544,6 +638,12 @@ export const SEED = {
           },
           {
             id: 'q7',
+            // mock: 근거 문장 (목업 PDF public/mock/ds-lecture-mock.pdf에 같은 문장이 있어요)
+            evidence: {
+              materialId: 'ds-main',
+              page: 76,
+              quote: '균형 잡힌 이진 탐색 트리의 탐색은 평균 O(log n)이다.',
+            },
             concept: '이진 탐색 트리', // mock: 개념
             type: 'choice',
             tag: null,

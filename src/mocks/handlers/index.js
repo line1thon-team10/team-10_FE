@@ -7,7 +7,9 @@ import { planHandlers } from './plan.js';
 import { quizHandlers } from './quiz.js';
 import { reviewHandlers } from './review.js';
 import { sessionHandlers } from './session.js';
+import { studyHandlers } from './study.js';
 import { todayHandlers } from './today.js';
+import { tutorHandlers } from './tutor.js';
 
 export const handlers = [
   ...sessionHandlers,
@@ -19,4 +21,6 @@ export const handlers = [
   ...quizHandlers,
   ...booksHandlers,
   ...reviewHandlers,
+  ...studyHandlers,
+  ...tutorHandlers,
 ];

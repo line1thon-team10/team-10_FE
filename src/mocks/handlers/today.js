@@ -8,8 +8,8 @@ export const todayHandlers = [
   http.get(EP.today, () => run(buildToday)),
 
   http.post(EP.records, async ({ request }) => {
-    const { taskId, result, toPage } = await request.json();
-    return run(() => ({ event: recordTask(taskId, result, toPage) }), 300);
+    const { taskId, result, toPage, sessionId } = await request.json();
+    return run(() => ({ event: recordTask(taskId, result, toPage, sessionId) }), 300);
   }),
 
   // 기록한 뒤 페이지 고치기 (HM-03 v2)

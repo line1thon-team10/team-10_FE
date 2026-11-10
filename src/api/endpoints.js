@@ -14,7 +14,7 @@ export const EP = {
   calendar: '/api/onboarding/calendar', // S2 주간 일정 · 시험 · 이번 주 요약 (ON-04)
   events: '/api/onboarding/events', // S2 일정 추가 (POST) / 수정 (PATCH :id) / 삭제 (DELETE :id)
   eventsVoice: '/api/onboarding/events/voice', // S2 말로 일정 추가 (AI)
-  materials: '/api/materials', // S3 과목별 자료 목록 · 업로드 (PDF-01) · PATCH /:id/units 시험 범위 체크 (PDF-08)
+  materials: '/api/materials', // S3 과목별 자료 목록 · 업로드 (PDF-01) · PATCH /:id/units 시험 범위 체크 (PDF-08) · GET /:id/file 원본 PDF (QZ-13)
   materialJob: '/api/materials/jobs', // S3 분석 진행 상태 (PDF-03) — /:jobId
   toc: '/api/materials/toc', // S3-2 목차 붙여넣기 → 단원 정리 (PDF-07)
   units: '/api/units', // S4 단원·개념·페이지 (PDF-04) — ?subjectId=
@@ -25,6 +25,8 @@ export const EP = {
   today: '/api/today', // 오늘 할 일 · 진행률 · 퀴즈 열림 · 시험까지 · 최근 7일 책
   records: '/api/records', // 공부 기록 저장 (HM-02, HM-03)
   tasks: '/api/tasks', // PATCH /:id/record { toPage } 기록한 뒤 페이지 고치기
+  tutor: '/api/tutor', // AI 튜터 { question, history } → { answer, pages } (TU-01·02) · GET /backup?kind=basic|easy 저장된 결과
+  sessions: '/api/study/sessions', // 집중 모드: POST 시작 · /active · /:id · /:id/pause · /resume · /end (HM-07~09)
   recordInterpret: '/api/records/interpret', // 말로 한 기록 → 페이지 (HM-04, AI)
   replan: '/api/plan/replan', // 분배안 적용 (RC-04)
 

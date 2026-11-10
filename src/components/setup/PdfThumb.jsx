@@ -1,10 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Document, Page, pdfjs } from 'react-pdf';
-
-pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.mjs',
-  import.meta.url,
-).toString();
+import { Document, Page } from 'react-pdf';
+import '@/lib/pdfWorker.js';
 
 // PDF 한 쪽 미리보기 (S4 근거). 파일이 없거나 그 쪽이 없으면 회색 자리 화면을 보여줘요.
 export default function PdfThumb({ file, page, label, width = 150 }) {

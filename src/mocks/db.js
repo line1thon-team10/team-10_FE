@@ -53,6 +53,8 @@ function build(name) {
     quizResults: {}, // { 'YYYY-MM-DD:subjectId': 결과 }
     dayClosedOn: null, // 하루 마무리 박스(P1)를 띄운 날 — 하루 한 번
     customSets: {}, // 문제 뽑기로 만든 퀴즈 세트 { c1: { subjectId, questions … } }
+    tutorPairs: [], // AI 튜터 질문·답 한 쌍씩 (TU-01 · TU-02)
+    studySessions: {}, // 집중 모드 측정 { s1: { taskId, startedAt, pausedMs, … } } (HM-07·08)
     dailyGain: {}, // 다시 풀기로 오른 점수 { 'YYYY-MM-DD:과목:단원': 점수 } (회복 모드 상한)
   };
   if (name === 'empty') s.demo.today = s.onboardingDate;
@@ -66,8 +68,13 @@ function build(name) {
 
 function load() {
   try {
-    const saved = sessionStorage.getItem(STORE_KEY);
-    if (saved) return JSON.parse(saved);
+    const raw = sessionStorage.getItem(STORE_KEY);
+    if (raw) {
+      // 예전에 저장한 상태에 새로 생긴 칸이 없으면 기본값으로 채워요
+      const saved = JSON.parse(raw);
+      const fresh = build(saved.seedName ?? 'day9');
+      return { ...fresh, ...saved, setup: { ...fresh.setup, ...saved.setup } };
+    }
   } catch {
     // 저장소를 못 쓰면 기본 시드로 시작해요
   }

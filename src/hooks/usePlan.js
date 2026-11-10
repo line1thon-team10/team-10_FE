@@ -1,6 +1,7 @@
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   getJob,
+  getMaterialFile,
   getMaterials,
   getPlanDraft,
   getUnits,
@@ -88,3 +89,13 @@ export function useApprove() {
   const qc = useQueryClient();
   return useMutation({ mutationFn: postApprove, onSuccess: () => qc.invalidateQueries() });
 }
+
+// 원본 PDF (Blob). 한 번 받으면 다시 받지 않아요
+export const useMaterialFile = (materialId) =>
+  useQuery({
+    queryKey: ['material', 'file', materialId],
+    queryFn: () => getMaterialFile(materialId),
+    enabled: Boolean(materialId),
+    staleTime: Infinity,
+    retry: false,
+  });
