@@ -2,7 +2,7 @@ import { http } from 'msw';
 import { EP } from '@/api/endpoints.js';
 import { db } from '../db.js';
 import { applyReplan, buildToday, decidePace, fixRecord, MockError, recordTask } from '../logic.js';
-import { run } from './respond.js';
+import { aiRun, run } from './respond.js';
 
 export const todayHandlers = [
   http.get(EP.today, () => run(buildToday)),
@@ -36,6 +36,21 @@ export const todayHandlers = [
   http.post(EP.pace, async ({ request }) => {
     const { subjectId, apply } = await request.json();
     return run(() => decidePace(subjectId, Boolean(apply)), 500);
+  }),
+
+  // P2 분배안 만들기 (RC-02·03, AI 설명): 계산은 규칙, 설명 문구만 AI. ?saved=1이면 저장된 설명 (NF-10)
+  http.get(`${EP.replan}/options`, ({ request }) => {
+    const saved = new URL(request.url).searchParams.get('saved') === '1';
+    return aiRun(
+      'replan',
+      () => {
+        const r = buildToday().replan;
+        if (!r) throw new MockError('NO_REPLAN', '지금은 밀린 분량이 없어요', 404);
+        return { ...r, saved };
+      },
+      1500,
+      { saved },
+    );
   }),
 
   // RC-04: 분배안 적용

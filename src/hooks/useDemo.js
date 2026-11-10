@@ -1,5 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { getDemoState, postNextDay, postResetDemo, postSeed } from '@/api/demo.js';
+import {
+  getAiSim,
+  getDemoState,
+  postAiSim,
+  postNextDay,
+  postResetDemo,
+  postSeed,
+} from '@/api/demo.js';
 import { useUiStore } from '@/stores/uiStore.js';
 import { QK } from './queryKeys.js';
 
@@ -22,3 +29,12 @@ function useDemoMutation(fn) {
 export const useNextDay = () => useDemoMutation(postNextDay);
 export const useResetDemo = () => useDemoMutation(postResetDemo);
 export const useSeed = () => useDemoMutation(postSeed);
+
+export const useAiSim = () => useQuery({ queryKey: ['demo', 'ai'], queryFn: getAiSim });
+export function useSetAiSim() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: postAiSim,
+    onSuccess: (data) => qc.setQueryData(['demo', 'ai'], data),
+  });
+}

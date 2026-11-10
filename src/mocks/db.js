@@ -30,6 +30,8 @@ const freshOnboarding = () => ({
   jobs: {}, // { jobId: { startedAt, fail, subjectId, materialId } }
   units: {}, // { subjectId: [단원] } 사용자가 고친 결과
   outOfExam: {}, // { subjectId: [단원 번호] } S4에서 시험 범위 체크를 뺀 단원 (PDF-08)
+  resplit: null, // 승인한 다시 나누기 안 (S5-2) weekday | sunday | other
+  pendingResplit: null, // 비교 중인 안 { kind, request, saved } (S5-2 승인 전)
   approved: false,
 });
 
@@ -57,6 +59,9 @@ function build(name) {
     scheduleEdits: { skips: [], untils: {}, added: [] }, // 고정 일정 이번만 삭제 · 앞으로 모두 삭제 · 말로 추가 (ON-06·07)
     pendingEmpty: null, // 삭제로 생긴 빈 시간 (P5 적용 전)
     pendingVoice: null, // 말로 일정 추가 미리보기 (S6-4 적용 전)
+    // AI 상태 재현 (/dev): 화면별 null(보통) | slow(35초 지연) | fail(실패 응답) — NF-05·10 확인용
+    aiSim: { plan: null, quiz: null, grading: null, tutor: null, replan: null },
+    pendingPlan: null, // 계획 바꾸기 미리보기 (S13 · S14 · PL-10) — 확인해야 적용 (4-12)
     paceDecided: {}, // 속도 보정 알림을 보여 준 날 { 'YYYY-MM-DD:과목': 'apply' | 'keep' } — 과목당 하루 한 번
     studySessions: {}, // 집중 모드 측정 { s1: { taskId, startedAt, pausedMs, … } } (HM-07·08)
     dailyGain: {}, // 다시 풀기로 오른 점수 { 'YYYY-MM-DD:과목:단원': 점수 } (회복 모드 상한)

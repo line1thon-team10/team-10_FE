@@ -1,10 +1,9 @@
 import { ChevronDown, FileText, Send, Sparkles } from 'lucide-react';
 import { useState } from 'react';
-import AiWait from '@/components/common/AiWait.jsx';
+import { AiFail, AiProgress, SavedTag } from '@/components/common/AiProgress.jsx';
 import { MockBadge } from '@/components/common/Badge.jsx';
 import Button from '@/components/common/Button.jsx';
 import PdfPageDialog from '@/components/common/PdfPageDialog.jsx';
-import { useAiWait } from '@/hooks/useAiWait.js';
 import { useTutor } from '@/hooks/useTutor.js';
 
 const EASY_ASK = '더 쉽게 설명해줘';
@@ -31,30 +30,26 @@ function PageChips({ pages, onOpen }) {
 }
 
 // 답 하나의 로딩(8초 안내 · 30초 다시 시도) · 실패(저장된 결과) · 결과 (NF-05·10)
+const TUTOR_STEPS = ['질문 이해', '관련 페이지 찾기', '답 쓰기'];
 function Reply({ m, startedAt, label, onRetry, onBackup, children }) {
-  const wait = useAiWait(startedAt, m.isPending);
   if (m.isPending)
     return (
-      <AiWait
-        phase={wait}
+      <AiProgress
+        key={startedAt}
+        steps={TUTOR_STEPS}
         label={label}
         retryNote="응답이 없으면 저장된 답을 보여드려요"
-        onRetry={onBackup}
+        onSaved={onBackup}
       />
     );
   if (m.isError)
     return (
-      <div className="flex flex-col gap-2 text-[12.5px]">
-        <p className="text-st-risk">답을 받지 못했어요. {m.error.message}</p>
-        <div className="flex gap-2">
-          <Button size="sm" onClick={onRetry}>
-            다시 물어보기
-          </Button>
-          <Button size="sm" onClick={onBackup}>
-            저장된 답 보기
-          </Button>
-        </div>
-      </div>
+      <AiFail
+        message="답을 찾지 못했어요 · 질문을 조금 바꿔서 다시 물어봐 주세요"
+        retryLabel="다시 물어보기"
+        onRetry={onRetry}
+        onSaved={onBackup}
+      />
     );
   return m.isSuccess ? children(m.data) : null;
 }
@@ -136,7 +131,7 @@ export default function TutorPanel({ suggestions = [] }) {
             {(p) => (
               <div className="flex flex-col gap-2 rounded-2xl rounded-bl-sm border border-line bg-bg-2 px-3.5 py-3">
                 <p className="flex flex-wrap items-center gap-1.5">
-                  {p.saved && <span className="badge">저장된 답</span>}
+                  {p.saved && <SavedTag />}
                   <MockBadge />
                 </p>
                 <p className="text-[13.5px] leading-relaxed">{p.answer}</p>
@@ -168,7 +163,7 @@ export default function TutorPanel({ suggestions = [] }) {
                     <span className="badge border-brand-line text-brand-deep">
                       <Sparkles size={11} aria-hidden="true" />더 쉽게
                     </span>
-                    {e.saved && <span className="badge">저장된 답</span>}
+                    {e.saved && <SavedTag />}
                     <MockBadge />
                   </p>
                   <p className="text-[13.5px] leading-relaxed">{e.answer}</p>

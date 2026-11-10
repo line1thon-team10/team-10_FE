@@ -3,10 +3,10 @@ import { getQuizResult, getQuizSet, getQuizToday, postMore, postQuizSubmit } fro
 import { QK } from './queryKeys.js';
 
 export const useQuizToday = () => useQuery({ queryKey: QK.quizToday, queryFn: getQuizToday });
-export const useQuizSet = (subjectId) =>
+export const useQuizSet = (subjectId, saved = false) =>
   useQuery({
-    queryKey: QK.quizSet(subjectId),
-    queryFn: () => getQuizSet(subjectId),
+    queryKey: [...QK.quizSet(subjectId), saved],
+    queryFn: () => getQuizSet(subjectId, saved),
     enabled: Boolean(subjectId),
     retry: false,
   });

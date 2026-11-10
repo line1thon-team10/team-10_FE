@@ -63,3 +63,39 @@ export const toVoicePreview = (raw) => ({
   })),
   note: raw.note,
 });
+
+// S15 월간 책장: 하루 = 책 1권 (rate = 한 페이지 ÷ 계획 페이지, 100% 상한)
+export const toMonthly = (raw) => ({
+  month: raw.month,
+  today: raw.today,
+  subjects: raw.subjects,
+  days: raw.days.map((d) => ({
+    date: d.date,
+    inMonth: d.inMonth,
+    today: d.today,
+    future: d.future, // 오늘 이후 → 점선 칸
+    planned: d.planned, // 계획 없던 날 → 빈 칸
+    plan: d.plan,
+    done: d.done,
+    rate: d.rate,
+    bySubject: d.bySubject, // [{ subjectId, pages }] 과목 비율 막대
+    labels: d.labels, // 총복습 · 시험
+    estimated: d.estimated, // 추정값 (11/8 보충)
+  })),
+  note: raw.note,
+});
+
+// S15-1 월간 리포트 (숫자만)
+export const toMonthlyReport = (raw) => ({
+  month: raw.month,
+  from: raw.from,
+  until: raw.until,
+  studyDays: raw.studyDays,
+  plannedDays: raw.plannedDays,
+  achievement: raw.achievement, // { done, plan, rate }
+  time: raw.time, // { measuredMinutes, plannedMinutes }
+  quiz: raw.quiz, // { total, wrong, unsureRight }
+  subjects: raw.subjects, // [{ subjectId, pages, share }] 새로 끝낸 범위
+  grades: raw.grades, // [{ subjectId, unitNo, title, before, after: { grade, score } }]
+  mockFilled: raw.mockFilled ?? [],
+});

@@ -1,7 +1,7 @@
 // S4 단원 확인 — 신민종
 import { Check } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import { toast } from 'sonner';
 import { ROUTES } from '@/app/screens.js';
 import AiBox from '@/components/common/AiBox.jsx';
@@ -109,7 +109,9 @@ export default function S4Units() {
   const results = useAllUnits(subjects.map((s) => s.id));
   const save = useSaveUnits();
   const exam = useUnitExam();
-  const [tab, setTab] = useState(null);
+  const [params] = useSearchParams();
+  const fromManage = params.get('from') === 'manage'; // S14 [범위 고치기]에서 왔어요
+  const [tab, setTab] = useState(params.get('subject'));
   const [drafts, setDrafts] = useState({}); // { subjectId: units[] } 고친 과목만
   const [editing, setEditing] = useState(null); // 고치는 중인 줄 번호
   const [picked, setPicked] = useState({}); // { subjectId: 고른 줄 번호 }
@@ -144,7 +146,7 @@ export default function S4Units() {
     try {
       for (const [id, list] of Object.entries(drafts))
         await save.mutateAsync({ subjectId: id, units: list });
-      navigate(ROUTES.s5);
+      navigate(fromManage ? ROUTES.manage : ROUTES.s5);
     } catch (e) {
       toast.error(`저장하지 못했어요. ${e.message}`);
     }
@@ -158,7 +160,7 @@ export default function S4Units() {
       >
         <Button onClick={() => navigate(ROUTES.s3)}>이전</Button>
         <Button variant="primary" disabled={!allValid || save.isPending} onClick={onNext}>
-          {save.isPending ? '저장하는 중…' : '다음: 분량 확인'}
+          {save.isPending ? '저장하는 중…' : fromManage ? '저장하고 돌아가기' : '다음: 분량 확인'}
         </Button>
       </SetupHead>
       <Tabs

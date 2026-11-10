@@ -2,6 +2,128 @@
 
 경로·필드는 `src/api/endpoints.js`, `src/api/adapters/`, `src/mocks/` 기준이에요. 백엔드 명세가 나오면 이 문서와 어댑터만 맞춰요.
 
+> 아래 경로는 **전부 프론트 임시값**이에요. `TODO(확인필요): [백엔드 확정 필요]`
+
+## 공통 (최종 정리 · 11/10 지시문 14)
+
+### 응답 모양
+
+```json
+{ "success": true, "data": { "…": "…" } }
+{ "success": false, "error": { "code": "AI_FAILED", "message": "AI 응답을 받지 못했어요" } }
+```
+
+- 프론트 `http`(axios)가 `data`만 꺼내요. 실패는 `error.code`로 나눠요. 시간 제한 30초 (`ECONNABORTED`).
+- 계산(진행률·이해도·등급·준비도·밀림 판정·분배안)은 전부 서버가 해요. 프론트는 받은 값을 보여줘요.
+- '오늘'은 서버의 데모 날짜(`GET /api/demo/state`의 `today`)예요.
+
+### AI 상태 (NF-05 · NF-10)
+
+AI가 만드는 응답 6곳은 같은 규칙이에요: 진행 단계(StepProgress) → 8초에 안내 → 30초에 [다시 시도] · 저장된 결과.
+
+| 화면             | 경로                               | 저장된 결과 요청                         | 실패 문구 (프론트)                                         |
+| ---------------- | ---------------------------------- | ---------------------------------------- | ---------------------------------------------------------- |
+| S5 계획 생성     | `GET /api/plan/draft`              | `?saved=1`                               | 계획을 만들지 못했어요 · 입력한 내용은 그대로 있어요       |
+| S5-1 다시 나누기 | `POST /api/plan/resplit`           | body `saved: true`                       | 다시 나누지 못했어요 · 지금 계획은 그대로예요              |
+| S8 퀴즈 준비     | `GET /api/quiz/:subjectId`         | `?saved=1`                               | 문제를 불러오지 못했어요 · 오늘 기록은 저장돼 있어요       |
+| S8-3 채점        | `POST /api/quiz/:subjectId/submit` | body `savedGrading: true` (70점 · p.82)  | 답은 저장했고 채점되면 결과에 넣을게요.                    |
+| S6-3 튜터        | `POST /api/tutor`                  | `GET /api/tutor/backup?kind=basic\|easy` | 답을 찾지 못했어요 · 질문을 조금 바꿔서 다시 물어봐 주세요 |
+| P2 분배안        | `GET /api/plan/replan/options`     | `?saved=1`                               | 분배안을 만들지 못했어요 · 지금 계획은 그대로예요          |
+
+- 저장된 결과 응답에는 `saved: true`가 붙어요 → 화면에 작은 '저장된 결과' 표시.
+- 실패 응답: `503 { code: "AI_FAILED" }`. 프론트는 `AI_FAILED`와 시간 초과(`ECONNABORTED`)를 같은 실패로 봐요.
+- S3 PDF 분석은 기존 그대로 (`GET /api/materials/jobs/:jobId` 단계 폴링).
+- TODO(확인필요): [백엔드 확정 필요] 진행 단계를 서버가 알려 줄지. 지금은 프론트가 1.2초마다 넘겨요 (mock).
+
+### 데모 · AI 상태 재현 (/dev 전용)
+
+| 경로                | 요청                                 | 응답                                                           |
+| ------------------- | ------------------------------------ | -------------------------------------------------------------- |
+| `GET /api/demo/ai`  | –                                    | `{ plan, quiz, grading, tutor, replan }` 각 `null\|slow\|fail` |
+| `POST /api/demo/ai` | `{ target: "replan", mode: "fail" }` | 위와 같음                                                      |
+
+- `slow` = 35초 뒤 응답 (8초 안내 · 30초 다시 시도 확인), `fail` = 1.2초 뒤 `AI_FAILED`. `plan`은 S5와 S5-1 모두에 걸려요.
+- 시드를 바꾸거나 초기화하면 모두 `null`로 돌아가요. 실제 서버에는 없어도 돼요.
+
+### 전체 경로 목록
+
+| 묶음        | 경로                                                                                                                        | 요청 예                                                         | 응답 예 (요약)                                                         | 화면           |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- | ---------------------------------------------------------------------- | -------------- |
+| 공통        | `POST /api/session`                                                                                                         | –                                                               | `{ anonymousId: "mock-1a2b3c4d" }` 익명 ID                             | 전체           |
+| 데모        | `GET /api/demo/state`                                                                                                       | –                                                               | `{ today, firstExam, seed, hasPlan, judgment, seeds }`                 | 헤더           |
+| 데모        | `POST /api/demo/next-day` · `/reset` · `/seed`                                                                              | `{ seed: "empty"\|"day9"\|"overdue" }`                          | 위와 같음 · next-day의 `judgment`: `carry`\|`replan`\|`none`           | /dev, 헤더     |
+| 온보딩      | `GET /api/onboarding` · `POST /api/onboarding/message`                                                                      | `{ text }`                                                      | 대화 · 과목 카드 · 칩 (아래 S1)                                        | S1             |
+| 온보딩      | `GET /api/onboarding/calendar` · `POST/PATCH/DELETE /api/onboarding/events`                                                 | `{ title, day, start, end }`                                    | 주간 일정 · 시험 · 요약                                                | S2             |
+| 온보딩      | `POST /api/onboarding/events/voice`                                                                                         | `{ text: "토요일 저녁엔 친구 약속" }`                           | 일정 후보                                                              | S2             |
+| 자료        | `GET/POST /api/materials` · `GET /api/materials/jobs/:jobId`                                                                | FormData `subjectId, file`                                      | `{ jobId }` → `{ status, step, steps }`                                | S3             |
+| 자료        | `POST /api/materials/toc` · `PATCH /api/materials/:id/units` · `GET …/:id/file`                                             | `{ subjectId, text }` · `{ unitNo, inExam }`                    | 단원 목록 · PDF Blob                                                   | S3-2, S4, S8-2 |
+| 단원        | `GET/PUT /api/units?subjectId=ds`                                                                                           | `{ subjectId, units }`                                          | `{ file, units[{ no, title, from, to, inExam, evidence }] }`           | S4             |
+| 계획        | `GET /api/plan/draft` · `POST /api/plan/approve`                                                                            | `?saved=1`                                                      | `{ summary{ totalPages: 360, taskCount: 45 }, allocation, firstWeek }` | S5             |
+| 계획        | `POST/GET/DELETE /api/plan/resplit` · `POST /api/plan/resplit/apply`                                                        | `{ request, answer?, saved? }`                                  | `{ question }` 또는 `{ ready }` → 비교 (아래 S5-1 · S5-2)              | S5-1, S5-2     |
+| 홈          | `GET /api/today`                                                                                                            | –                                                               | `{ tasks, progress{ rate: 58 }, quiz, replan, paceAlert, … }`          | S6             |
+| 기록        | `POST /api/records` · `PATCH /api/tasks/:id/record` · `POST /api/records/interpret`                                         | `{ taskId: "t1", result: "partial", toPage: 88 }`               | `{ event{ type: "box", reason: "dayClose", rate: 88 } }`               | S7, P1         |
+| 집중 모드   | `POST /api/study/sessions` · `/active` · `/:id` · `/:id/pause\|resume\|end`                                                 | `{ taskId }`                                                    | `{ id, taskId, elapsedSec, status }`                                   | S12, S12-1     |
+| 튜터        | `POST /api/tutor` · `GET /api/tutor/backup?kind=`                                                                           | `{ question, history }`                                         | `{ id, answer, pages, saved }`                                         | S6-3           |
+| 밀림        | `GET /api/plan/replan/options` · `POST /api/plan/replan`                                                                    | `?saved=1` · `{ key: "A" }`                                     | `{ options[3], saved }` · `{ event{ reason: "recover" } }`             | P2             |
+| 속도        | `POST /api/plan/pace`                                                                                                       | `{ subjectId, apply }`                                          | 오늘 · 바뀐 날                                                         | P4             |
+| 퀴즈        | `GET /api/quiz/today` · `GET /api/quiz/:subjectId`                                                                          | `?saved=1`                                                      | `{ open, openRate: 70, subjects[] }` · `{ questions[7], saved }`       | S8             |
+| 퀴즈        | `POST /api/quiz/:subjectId/submit` · `/more` · `GET …/result`                                                               | `{ answers[{ questionId, answer, confidence }], savedGrading }` | `{ summary, items, bookChanges }`                                      | S8-3, S8-2, P3 |
+| 책          | `GET /api/books`                                                                                                            | –                                                               | `{ subjects[{ units[{ blocks }] }], readiness[] }`                     | S9             |
+| 복습        | `GET /api/review/notes` · `/:id/question` · `POST /:id/retry` · `POST /api/review/custom-quiz` · `POST /api/review/relearn` | `?group=date` · `{ answer, confidence }`                        | `{ total, groups[{ items }] }`                                         | S10            |
+| 캘린더      | `GET /api/calendar?from&to` · `DELETE /api/schedules/:id?scope=` · `POST /api/plan/empty-time`                              | `{ option: "rest" }`                                            | `{ fixed, study, exams, summary }` · 빈 시간 3안                       | S11, P5        |
+| 캘린더      | `POST /api/schedules/voice` · `/voice/apply`                                                                                | `{ text: "목요일 저녁에 조모임 생겼어" }`                       | 미리보기 → 적용                                                        | S6-4           |
+| 계획 바꾸기 | `GET /api/subjects` · `PATCH/DELETE /api/subjects/:id(/preview)`                                                            | `{ examDate, goal }`                                            | 미리보기 `{ changedDays }` → 적용                                      | S14            |
+| 계획 바꾸기 | `POST /api/plan/additions(/preview)` · `POST /api/plan/today(/preview)` · `POST /api/plan/rebuild`                          | `{ action: "more30" }`                                          | 미리보기 → 적용 · rebuild는 막아 둠                                    | S13, PL-10     |
+| 월간        | `GET /api/monthly?month=2026-11` · `/report`                                                                                | –                                                               | `{ month, days, subjects, note }` · 리포트                             | S15, S15-1     |
+
+경로마다 자세한 필드는 아래 지시문별 절에 있어요.
+
+## 다시 나누기 S5-1 · S5-2 (11/10 · 지시문 14, PL-06)
+
+### 요청 — `POST /api/plan/resplit` (AI)
+
+```json
+{ "request": "토요일은 약속 있어서 쉬고 싶어" }
+→ { "question": { "text": "토요일 분량은 평일에 나눌까요, 일요일로 옮길까요?", "choices": ["평일에 나눠서", "일요일로"] } }
+
+{ "request": "토요일은 약속 있어서 쉬고 싶어", "answer": "평일에 나눠서" }
+→ { "ready": true }
+```
+
+- 후속 질문은 애매할 때만, 최대 1번. `answer`가 오면 다시 묻지 않아요. `request`가 비면 '다른 버전'으로 바로 `ready`.
+- `{ "saved": true }` = 저장된 결과 (데이터 세트 예시 요청 · 평일 안).
+- mock은 키워드만 봐요 (`일요일` → 일요일 안, `평일·화·목` → 평일 안, `토요일·주말`만 → 후속 질문, 그 밖 → 다른 버전). 실제 해석은 AI.
+
+### 비교 — `GET /api/plan/resplit`
+
+```json
+{
+  "request": "토요일은 약속 있어서 쉬고 싶어 · 평일에 나눠서",
+  "keep": "분량 조정 · 목표 · 일정 · 단원",
+  "saved": false,
+  "days": [
+    { "date": "2026-11-03", "before": 95, "after": 125, "changed": true },
+    "… 11/16까지 14일"
+  ],
+  "stats": [
+    { "label": "2주 공부 시간", "unit": "min", "before": 1025, "after": 1005 },
+    { "label": "가장 긴 날", "unit": "min", "before": 135, "after": 135 },
+    { "label": "토요일 공부", "unit": "min", "before": 110, "after": 0 },
+    { "label": "바뀐 날", "unit": "day", "before": 0, "after": 5 }
+  ],
+  "reasons": ["토요일(11/7·11/14)은 저녁 약속이 있어 공부를 뺐어요", "…"]
+}
+```
+
+- 비교할 안이 없으면 `404 NO_RESPLIT`.
+- 기존 안 = 데이터 세트 3장 날짜별 공부 시간 (11/3 95분 … 11/16 50분). 이미 승인한 안이 있으면 그 안이 기존 안이에요.
+- TODO(확인필요): [기획 확인] 데이터 세트 'S5-2 비교'(토요일 0분 · 화·목 +30분 안쪽 · 바뀜 날 5일)를 다 맞추면 2주 합계가 20분 줄어요 (1025 → 1005).
+
+### 승인 · 되돌리기
+
+- `POST /api/plan/resplit/apply` → `{ applied: "weekday" }`. S5 `firstWeek`에 새 안이 반영돼요 (계획 확정은 S5 [이대로 계획 확정]).
+- `DELETE /api/plan/resplit` → 비교 중인 안을 버려요 (이전 안 유지).
+
 ## 바뀐 키 (11/10 · 정의서 v2)
 
 | API              | 필드                             | 바뀐 내용                                                                                      |
@@ -561,3 +683,168 @@
 - `apply: false` [그대로]: 아무것도 바꾸지 않고 그날은 다시 안 떠요 (팝업을 닫아도 같아요)
 - `apply: true` [반영]: 남은 태스크 시간을 늘려요. 넘는 날이 생기면 `replan: true` → 오늘 응답의 `replan`이 `{ kind: "pace", title: "속도를 반영하니 11/11에 N분이 넘어요", options }`로 와서 P2를 띄워요 (안 문구는 mock, TODO 기획 확인)
 - P2와 같은 날이면 P2 먼저, 팝업이 다 닫힌 뒤 P4 (TODO 기획 확인)
+
+## 계획 추가 S13 · 과목·계획 관리 S14 · 오늘 계획 PL-10 (11/10 · 지시문 12)
+
+모두 미리보기 → 확인 → 적용 (4-12). 서버가 직전 미리보기를 기억했다가 적용해요. 기록·퀴즈 점수·쌓인 책은 그대로. 재배분 계산은 서버 (mock은 `src/mocks/logic.js` 계획 바꾸기 부분, 11/10 결정 A).
+
+### 과목 카드 — `GET /api/subjects`
+
+```json
+{
+  "subjects": [
+    {
+      "id": "os",
+      "name": "운영체제",
+      "examDate": "2026-11-16",
+      "dday": 7,
+      "goal": "B+ 이상",
+      "target": 80,
+      "range": { "from": 1, "to": 120, "pages": 120 },
+      "progress": { "studied": 67, "total": 120, "rate": 55.8 },
+      "removed": false,
+      "archived": false,
+      "materials": [
+        {
+          "id": "os-main",
+          "name": "운영체제_강의자료.pdf",
+          "pages": 120,
+          "toc": [{ "no": 1, "title": "운영체제 개요", "from": 1, "to": 20 }]
+        }
+      ]
+    }
+  ]
+}
+```
+
+- `archived`: 시험이 끝나면 자동 보관. `removed`: 과목 빼기를 한 과목 (기록·책은 그대로)
+- `materials`: S13 ② 자료 고르기. mock으로 컴퓨터네트워크에 `컴퓨터네트워크_실습자료.pdf`(60쪽, MOCK)가 더 있어요
+
+### 시험일 · 목표 바꾸기 — `PATCH /api/subjects/:id/preview` → `PATCH /api/subjects/:id` (PL-11)
+
+```json
+// 요청 (미리보기)
+{ "goal": "A0", "target": 85 }   // 또는 { "examDate": "2026-11-14" }
+// 응답 (미리보기)
+{
+  "subjectName": "운영체제",
+  "changes": [
+    { "label": "목표", "before": "B+ 이상 (80점)", "after": "A0 (85점)" },
+    { "label": "준비도 목표선", "before": "80%", "after": "85%" },
+    { "label": "목표까지", "before": "47% 부족", "after": "52% 부족" }
+  ],
+  "days": [],
+  "note": "바뀌는 날은 없어요 · 계획은 그대로예요"
+}
+```
+
+- 목표: 목표 점수·목표선·'목표까지'만 바뀌고 계획은 그대로. 목표 점수는 사용자가 적어요 (정의서 4-6에 A+ 90 · B+ 80 · 통과 60만 있어서 다른 학점은 지어내지 않아요)
+- 시험일: 앞당기면 새 시험일 이후 태스크를 그 전 가장 한가한 날 끝으로 옮기는 `days`. 미루면 계획 그대로
+- 적용 응답: 바뀐 과목 카드
+
+### 과목 빼기 — `DELETE /api/subjects/:id/preview` → `DELETE /api/subjects/:id` → 빈 시간 안 (P5)
+
+- 미리보기: 오늘 이후 남은 태스크 목록 (`days`), 보충도 함께 빠짐 (11/10 결정 A)
+- 적용 응답: P5 빈 시간 안 (`DELETE /api/schedules/:id`와 같은 모양, 빠진 첫 블록 시간). 남은 태스크가 없으면 `{ emptyTime: null }`
+
+### 계획 추가 — `POST /api/plan/additions/preview` → `POST /api/plan/additions` (PL-09)
+
+```json
+// 요청
+{ "subjectId": "net", "materialId": "net-lab", "from": 15, "to": 45, "minutesPerDay": 40, "days": [2, 4], "startDate": "2026-11-10", "endDate": "2026-11-12" }
+// 응답 (미리보기)
+{
+  "summary": { "subjectName": "컴퓨터네트워크", "materialName": "컴퓨터네트워크_실습자료.pdf", "from": 15, "to": 45, "pages": 31, "minutesPerDay": 40, "totalMinutes": 78 },
+  "placements": [
+    { "date": "2026-11-10", "start": "20:00", "end": "20:40", "from": 15, "to": 30, "minutes": 40, "reason": "기존 공부 뒤 빈 시간" },
+    { "date": "2026-11-12", "start": "19:45", "end": "20:25", "from": 31, "to": 45, "minutes": 40, "reason": "기존 공부 뒤 빈 시간" }
+  ],
+  "conflicts": 0,
+  "leftPages": 0,
+  "note": "겹치는 일정 0개 · 기존 계획은 그대로예요"
+}
+```
+
+- mock 배치: 하루 분량 = `minutesPerDay ÷ 2.5`쪽, 고른 요일·기간에 앞에서부터. 시각은 그날 기존 공부 뒤 빈 시간 (디자인 예시의 19:00과 다를 수 있어요 — 11/10은 자료구조가 19:00–20:00)
+- 새 과목 추가(S1·S3·S4 추가 모드)는 막아 둠 (11/10 결정 A, TODO 기획 확인)
+
+### 오늘 계획 — `POST /api/plan/today/preview` → `POST /api/plan/today` (PL-10, Could)
+
+- `{ action: "more30" }`: 오늘 마지막 남은 태스크 +30분
+- `{ action: "rest" }`: 오늘 남은 태스크를 각 과목 다음 공부일 첫 태스크로
+- `{ action: "postpone", taskId }`: 태스크 하나 미루기 (S6-2 '다른 날로 옮기기'도 이것)
+- `POST /api/plan/rebuild`: 계획 다시 만들기 — 막아 둠 (`NOT_READY` 501, TODO 기획 확인)
+
+## 월간 보기 S15 · 월간 리포트 S15-1 (11/10 · 지시문 13)
+
+집계는 서버 (mock은 `src/mocks/logic.js` 월간 부분). 화면은 숫자만 보여주고 문장으로 평가하지 않아요.
+
+### 월간 책장 — `GET /api/monthly?month=2026-11` (MO-01·02)
+
+```json
+{
+  "month": "2026-11",
+  "today": "2026-11-09",
+  "days": [
+    {
+      "date": "2026-11-08",
+      "inMonth": true,
+      "today": false,
+      "future": false,
+      "planned": true,
+      "plan": 40,
+      "done": 40,
+      "rate": 100,
+      "bySubject": [
+        { "subjectId": "ds", "pages": 17 },
+        { "subjectId": "os", "pages": 9 },
+        { "subjectId": "net", "pages": 14 }
+      ],
+      "labels": ["총복습"],
+      "estimated": true
+    },
+    { "date": "2026-11-09", "today": true, "planned": true, "plan": 57, "done": 50, "rate": 88 },
+    {
+      "date": "2026-11-12",
+      "future": true,
+      "planned": true,
+      "rate": null,
+      "labels": ["자료구조 시험"]
+    }
+  ],
+  "note": "11/8 보충 17p는 추정값이에요"
+}
+```
+
+- 칸은 그 달을 덮는 월~일 주 전체 (`inMonth: false`는 흐리게). `rate` = 한 페이지 ÷ 계획 페이지 (보충 포함, 100% 상한). 오늘 이후는 `rate: null` (점선 칸), 계획 없던 날은 `planned: false` (빈 칸)
+- 11/3~11/8은 데이터 세트 3장 범위를 페이지로 (모두 다 함). 11/8 자료구조 보충 17p는 추정값 (`estimated`)
+- `labels`: 총복습(페이지 범위 없는 태스크·오답 복습) · `과목 시험`
+
+### 월간 리포트 — `GET /api/monthly/report?month=2026-11` (MO-03, Could)
+
+```json
+{
+  "from": "2026-11-03",
+  "until": "2026-11-09",
+  "studyDays": 7,
+  "plannedDays": 7,
+  "achievement": { "done": 215, "plan": 222, "rate": 97 },
+  "time": { "measuredMinutes": 0, "plannedMinutes": 550 },
+  "quiz": { "total": 80, "wrong": 18, "unsureRight": 11 },
+  "subjects": [{ "subjectId": "ds", "pages": 88, "share": 46 }],
+  "grades": [
+    {
+      "subjectId": "ds",
+      "unitNo": 2,
+      "title": "스택과 큐",
+      "before": null,
+      "after": { "grade": "shaky", "score": 69 }
+    }
+  ],
+  "mockFilled": ["measuredMinutes", "quiz"]
+}
+```
+
+- 숫자는 오늘 상태 기준 (1번을 p.88까지 기록하면 215p / 222p = 97%, 기본 17:00이면 198p / 222p)
+- `time.measuredMinutes`: 집중 모드로 잰 시간만 (시드 측정 시간을 받기 전이라 MOCK). `plannedMinutes`: 계획 시간 합 (9시간 10분)
+- `quiz`: v2-plan 2-2 값 (MOCK). `subjects`: 새로 끝낸 범위 = 준비도의 공부한 페이지. `grades.before: null` = 계획 시작 때 퀴즈 전

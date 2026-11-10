@@ -6,6 +6,7 @@ import BooksPage from '@/pages/books/S9Books.jsx';
 import CalendarPage from '@/pages/calendar/CalendarTab.jsx';
 import DevPage from '@/pages/dev/DevPage.jsx';
 import HomePage from '@/pages/home/S6Home.jsx';
+import ManagePage from '@/pages/manage/S14Manage.jsx';
 import NotFound from '@/pages/NotFound.jsx';
 import QuizPage from '@/pages/quiz/S8Quiz.jsx';
 import QuizResultPage from '@/pages/quiz/S8_2Result.jsx';
@@ -41,6 +42,7 @@ export const router = createBrowserRouter([
     element: <MainLayout />,
     children: [
       { path: ROUTES.home, element: <HomePage /> },
+      { path: ROUTES.manage, element: <ManagePage /> },
       { path: ROUTES.quiz, element: <QuizPage /> },
       { path: ROUTES.quizResult, element: <QuizResultPage /> },
       { path: ROUTES.books, element: <BooksPage /> },

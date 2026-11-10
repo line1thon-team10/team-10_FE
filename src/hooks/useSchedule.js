@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   deleteSchedule,
+  getMonthly,
+  getMonthlyReport,
   getWeekCalendar,
   postEmptyTime,
   postVoiceApply,
@@ -23,3 +25,8 @@ export const useDeleteSchedule = () => usePlanChange(deleteSchedule);
 export const useApplyEmptyTime = () => usePlanChange(postEmptyTime);
 export const useVoiceApply = () => usePlanChange(postVoiceApply);
 export const useVoicePreview = () => useMutation({ mutationFn: postVoiceEvent });
+
+export const useMonthly = (month) =>
+  useQuery({ queryKey: QK.month(month), queryFn: () => getMonthly(month) });
+export const useMonthlyReport = (month, enabled) =>
+  useQuery({ queryKey: QK.monthReport(month), queryFn: () => getMonthlyReport(month), enabled });

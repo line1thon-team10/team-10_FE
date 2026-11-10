@@ -66,9 +66,10 @@ const toPaceAlert = (raw) =>
   };
 
 // 분배안 (P2, RC-02·03). 기준을 넘었을 때만 와요
-const toReplan = (raw) =>
+export const toReplan = (raw) =>
   raw && {
     kind: raw.kind ?? 'overdue', // overdue 밀림 · pace 속도 보정으로 넘는 날
+    saved: Boolean(raw.saved), // 저장된 결과 (분배안 설명, NF-10)
     title: raw.title ?? null,
     date: raw.date,
     totalPages: raw.totalPages,

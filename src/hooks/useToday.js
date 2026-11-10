@@ -6,6 +6,7 @@ import {
   postPace,
   postRecord,
   postReplan,
+  getReplanOptions,
 } from '@/api/today.js';
 import { QK } from './queryKeys.js';
 
@@ -32,3 +33,11 @@ export const useReplan = () => useTodayMutation(postReplan);
 export const usePace = () => useTodayMutation(postPace);
 
 export const useInterpret = () => useMutation({ mutationFn: postInterpret });
+
+export const useReplanOptions = (saved = false, enabled = true) =>
+  useQuery({
+    queryKey: ['today', 'replan', saved],
+    queryFn: () => getReplanOptions(saved),
+    enabled,
+    retry: false,
+  });

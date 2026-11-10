@@ -1,4 +1,4 @@
-import { toFixResult, toInterpret, toRecordResult, toToday } from './adapters/today.js';
+import { toFixResult, toInterpret, toRecordResult, toReplan, toToday } from './adapters/today.js';
 import { http } from './client.js';
 import { EP } from './endpoints.js';
 
@@ -21,3 +21,7 @@ export const postPace = async ({ subjectId, apply }) => http.post(EP.pace, { sub
 
 // 분배안 적용 (RC-04) → 회복 박스 연출 정보
 export const postReplan = async (key) => toRecordResult(await http.post(EP.replan, { key }));
+
+// P2 분배안 안 3개 만들기 (AI 설명). saved면 저장된 결과
+export const getReplanOptions = async (saved = false) =>
+  toReplan(await http.get(`${EP.replan}/options`, { params: saved ? { saved: 1 } : {} }));

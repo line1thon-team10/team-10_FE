@@ -94,11 +94,13 @@ export function buildToday() {
       openSubjects,
       totalCount: Object.keys(bySubject).reduce((n, id) => n + (counts[id] ?? 0), 0),
     },
-    exams: s.subjects.map((sub) => ({
-      subjectId: sub.id,
-      dday: dayjs(sub.examDate).diff(dayjs(s.demo.today), 'day'),
-      readiness: s.readiness.find((r) => r.subjectId === sub.id)?.readiness ?? null,
-    })),
+    exams: s.subjects
+      .filter((x) => !x.removed)
+      .map((sub) => ({
+        subjectId: sub.id,
+        dday: dayjs(sub.examDate).diff(dayjs(s.demo.today), 'day'),
+        readiness: s.readiness.find((r) => r.subjectId === sub.id)?.readiness ?? null,
+      })),
     recentDays: [
       ...s.recentDays.map((d) => ({ date: d.date, blocks: d.blocks.map((state) => ({ state })) })),
       {
@@ -1166,7 +1168,7 @@ export function weekCalendarView(from, to) {
     to,
     today: s.demo.today,
     exams: s.subjects
-      .filter((x) => dates.includes(x.examDate))
+      .filter((x) => !x.removed && dates.includes(x.examDate))
       .map((x) => ({ subjectId: x.id, name: x.name, color: x.color, date: x.examDate })),
     fixed: dates.flatMap((d) => fixedOn(s, d)),
     study,
@@ -1478,4 +1480,632 @@ export function decidePace(subjectId, apply) {
     };
   }
   return { applied: true, overDays: over, replan: over.length > 0 };
+}
+
+// ── 계획 바꾸기 (S13 계획 추가 · S14 과목·계획 관리 · PL-10 오늘 계획) ───────────
+// 모두 미리보기 → 확인 → 적용. 기록·퀴즈 점수·쌓인 책은 그대로 (4-12). mock 규칙은 11/10 결정 A
+const MIN_PER_PAGE_PLAN = 2.5; // 데이터 세트 3장 "약 2.5분/페이지"
+const planDays = (s) =>
+  datesBetween(s.today.date, dayjs(s.today.date).add(6, 'day').format('YYYY-MM-DD'));
+const isTodo = (t) => (t.status ?? 'todo') === 'todo';
+
+function subjectView(s, x) {
+  const r = s.readiness.find((y) => y.subjectId === x.id);
+  // 단원: S4에서 고친 값이 있으면 그것, 시험 범위에서 뺀 단원은 빼요
+  const out = s.setup.outOfExam[x.id] ?? [];
+  const units = (s.setup.units[x.id] ?? x.units)
+    .map((u, i) => ({ ...u, no: i + 1 }))
+    .filter((u) => !out.includes(u.no) && u.from && u.to);
+  return {
+    id: x.id,
+    name: x.name,
+    color: x.color,
+    examDate: x.examDate,
+    dday: dayjs(x.examDate).diff(dayjs(s.demo.today), 'day'),
+    goal: x.goal,
+    target: r?.target ?? null,
+    goalTotal: x.goalTotal,
+    range: units.length
+      ? {
+          from: units[0].from,
+          to: units.at(-1).to,
+          pages: units.reduce((n, u) => n + u.to - u.from + 1, 0),
+        }
+      : null,
+    progress:
+      r?.studiedPages != null
+        ? { studied: r.studiedPages, total: r.totalPages, rate: r.progressRate }
+        : null,
+    readiness: r?.readiness ?? null,
+    removed: Boolean(x.removed),
+    archived: dayjs(x.examDate).isBefore(dayjs(s.demo.today), 'day'), // 시험 끝난 과목은 자동 보관
+    materials: [
+      {
+        id: x.file.id,
+        name: x.file.name,
+        pages: x.file.pages,
+        toc: units.map(({ no, title, from, to }) => ({ no, title, from, to })),
+      },
+      ...(s.extraMaterials[x.id] ?? []).map((m) => ({ ...m, mock: true })),
+    ],
+  };
+}
+
+export const subjectsView = () => {
+  const s = db.get();
+  return { today: s.demo.today, subjects: s.subjects.map((x) => subjectView(s, x)) };
+};
+
+const subjectOf = (s, id) => {
+  const x = s.subjects.find((y) => y.id === id);
+  if (!x || x.removed) throw new MockError('SUBJECT_NOT_FOUND', '과목을 찾지 못했어요', 404);
+  return x;
+};
+const remember = (s, kind, payload, view) => {
+  s.pendingPlan = { kind, payload, view };
+  return view;
+};
+const takePending = (s, kind) => {
+  const p = s.pendingPlan;
+  if (!p || p.kind !== kind) throw new MockError('NO_PREVIEW', '먼저 바뀌는 것을 미리 봐 주세요');
+  s.pendingPlan = null;
+  return p;
+};
+
+// 시험일 · 목표 바꾸기 미리보기 (PL-11)
+// 목표: 목표 점수·목표선·'목표까지 부족'만 바뀌고 계획은 그대로. 시험일: 앞당기면 새 시험일 이후 태스크를 그 전 가장 한가한 날 끝으로
+export function previewSubjectEdit(id, patch) {
+  const s = db.get();
+  const x = subjectOf(s, id);
+  const r = s.readiness.find((y) => y.subjectId === id);
+  const changes = [];
+  const moves = [];
+  if (patch.goal != null || patch.target != null) {
+    const goal = patch.goal ?? x.goal;
+    const target = Number(patch.target ?? r.target);
+    if (!(target > 0 && target <= 100))
+      throw new MockError('BAD_TARGET', '목표 점수는 1~100 사이로 적어 주세요');
+    changes.push(
+      { label: '목표', before: `${x.goal} (${r.target}점)`, after: `${goal} (${target}점)` },
+      { label: '준비도 목표선', before: `${r.target}%`, after: `${target}%` },
+      {
+        label: '목표까지',
+        before: `${Math.max(0, r.target - r.readiness)}% 부족`,
+        after: `${Math.max(0, target - r.readiness)}% 부족`,
+      },
+    );
+  }
+  if (patch.examDate && patch.examDate !== x.examDate) {
+    const d = patch.examDate;
+    if (d <= s.today.date) throw new MockError('BAD_DATE', '시험일은 내일 이후로 골라 주세요');
+    changes.push(
+      { label: '시험일', before: md(x.examDate), after: md(d) },
+      {
+        label: 'D-day',
+        before: `D-${dayjs(x.examDate).diff(dayjs(s.demo.today), 'day')}`,
+        after: `D-${dayjs(d).diff(dayjs(s.demo.today), 'day')}`,
+      },
+    );
+    if (d < x.examDate) {
+      const before = planDays(s).filter((y) => y < d);
+      const load = Object.fromEntries(
+        before.map((y) => [y, dayList(s, y).reduce((n, t) => n + t.minutes, 0)]),
+      );
+      for (const day of planDays(s).filter((y) => y >= d))
+        for (const t of dayList(s, day).filter((t) => t.subjectId === id && isTodo(t))) {
+          const to = before.sort((a, b) => load[a] - load[b] || b.localeCompare(a))[0];
+          if (!to) throw new MockError('NO_DAY', '새 시험일 전에 옮길 날이 없어요');
+          load[to] += t.minutes;
+          moves.push({ taskId: t.id, title: t.title, minutes: t.minutes, from: day, to });
+        }
+    }
+  }
+  if (!changes.length) throw new MockError('NO_CHANGE', '바뀌는 것이 없어요');
+  return remember(
+    s,
+    'subject-edit',
+    { id, patch },
+    {
+      subjectName: x.name,
+      changes,
+      days: moves.map((m) => ({
+        date: m.from,
+        text: `${md(m.from)} ${m.title}(${m.minutes}분) → ${md(m.to)}`,
+      })),
+      moves,
+      note: moves.length
+        ? '새 시험일 이후 태스크를 그 전 가장 한가한 날 끝으로 옮겨요.'
+        : '바뀌는 날은 없어요 · 계획은 그대로예요',
+    },
+  );
+}
+
+export function applySubjectEdit(id) {
+  const s = db.get();
+  const { payload, view } = takePending(s, 'subject-edit');
+  if (payload.id !== id) throw new MockError('NO_PREVIEW', '먼저 바뀌는 것을 미리 봐 주세요');
+  const x = subjectOf(s, id);
+  const r = s.readiness.find((y) => y.subjectId === id);
+  if (payload.patch.goal != null) x.goal = payload.patch.goal;
+  if (payload.patch.target != null) r.target = Number(payload.patch.target);
+  if (payload.patch.goal != null) r.targetLabel = payload.patch.goal;
+  if (payload.patch.examDate) x.examDate = payload.patch.examDate;
+  for (const m of view.moves) {
+    const src = dayList(s, m.from);
+    const t = src.find((y) => y.id === m.taskId);
+    if (!t) continue;
+    src.splice(src.indexOf(t), 1);
+    delete t.start;
+    dayList(s, m.to).push(t);
+  }
+  return subjectView(s, x);
+}
+
+// 과목 빼기 미리보기 → 적용 → 빈 시간 안 (P5). 남은 태스크는 보충까지 빼고 기록·점수·책은 그대로 (11/10 결정 A)
+export function previewSubjectRemove(id) {
+  const s = db.get();
+  const x = subjectOf(s, id);
+  const removed = planDays(s).flatMap((d) =>
+    placeDay(s, d)
+      .filter((b) => b.task.subjectId === id && isTodo(b.task))
+      .map((b) => ({
+        date: d,
+        taskId: b.task.id,
+        title: b.task.title,
+        minutes: b.task.minutes,
+        start: toHM(b.start),
+        end: toHM(b.end),
+      })),
+  );
+  return remember(
+    s,
+    'subject-remove',
+    { id },
+    {
+      subjectName: x.name,
+      changes: [
+        { label: '과목', before: `${x.name} · 시험 ${md(x.examDate)}`, after: '계획에서 빠짐' },
+        { label: '남은 태스크', before: `${removed.length}개`, after: '0개' },
+      ],
+      days: removed.map((r) => ({
+        date: r.date,
+        text: `${md(r.date)} ${r.title}(${r.minutes}분) 빠짐`,
+      })),
+      removed,
+      note: '기록·퀴즈 점수·쌓인 책은 그대로예요. 빈 시간은 다음 팝업에서 어떻게 쓸지 골라요.',
+    },
+  );
+}
+
+export function applySubjectRemove(id) {
+  const s = db.get();
+  const { payload, view } = takePending(s, 'subject-remove');
+  if (payload.id !== id) throw new MockError('NO_PREVIEW', '먼저 바뀌는 것을 미리 봐 주세요');
+  const x = subjectOf(s, id);
+  for (const r of view.removed) {
+    const list = dayList(s, r.date);
+    const t = list.find((y) => y.id === r.taskId);
+    if (t) list.splice(list.indexOf(t), 1);
+  }
+  x.removed = true;
+  const first = view.removed[0];
+  if (!first) return { emptyTime: null };
+  s.pendingEmpty = { date: first.date, start: first.start, end: first.end };
+  return emptyTimeView(s, s.pendingEmpty);
+}
+
+// S13 계획 추가 (PL-09): 확인 전에는 계획 그대로, 확인 뒤 빈 시간에만 (기존 블록 뒤로)
+export function previewAddition(body) {
+  const s = db.get();
+  const x = subjectOf(s, body.subjectId);
+  const mat = subjectView(s, x).materials.find((m) => m.id === body.materialId);
+  if (!mat) throw new MockError('NO_MATERIAL', '자료를 골라 주세요');
+  const from = Number(body.from);
+  const to = Number(body.to);
+  const perDay = Number(body.minutesPerDay);
+  if (!(from >= 1 && to >= from && to <= mat.pages))
+    throw new MockError('BAD_RANGE', `p.1–${mat.pages} 안에서 골라 주세요`);
+  if (!(perDay >= 15 && perDay <= 180))
+    throw new MockError('BAD_MINUTES', '하루 15~180분 사이로 적어 주세요');
+  const dates = datesBetween(body.startDate, body.endDate).filter(
+    (d) => d >= s.today.date && body.days.includes(dow(d)),
+  );
+  if (!dates.length) throw new MockError('NO_DAYS', '기간 안에 고른 요일이 없어요');
+  const perDayPages = Math.max(1, Math.floor(perDay / MIN_PER_PAGE_PLAN));
+  const placements = [];
+  let cur = from;
+  for (const d of dates) {
+    if (cur > to) break;
+    const end = Math.min(to, cur + perDayPages - 1);
+    const minutes = Math.round(((end - cur + 1) * MIN_PER_PAGE_PLAN) / 5) * 5;
+    const last = placeDay(s, d).at(-1);
+    const start = last ? last.end : baseStart(s, d);
+    placements.push({
+      date: d,
+      start: toHM(start),
+      end: toHM(start + minutes),
+      from: cur,
+      to: end,
+      minutes,
+      reason: last ? '기존 공부 뒤 빈 시간' : '수업·알바를 피한 빈 시간',
+    });
+    cur = end + 1;
+  }
+  const conflicts = placements.filter((p) =>
+    fixedOn(s, p.date).some((f) => toMin(p.start) < toMin(f.end) && toMin(p.end) > toMin(f.start)),
+  ).length;
+  const pages = to - from + 1;
+  const left = cur <= to ? to - cur + 1 : 0;
+  return remember(s, 'addition', body, {
+    summary: {
+      subjectName: x.name,
+      materialName: mat.name,
+      from,
+      to,
+      pages,
+      minutesPerDay: perDay,
+      totalMinutes: Math.round(pages * MIN_PER_PAGE_PLAN),
+      days: body.days,
+      startDate: body.startDate,
+      endDate: body.endDate,
+    },
+    placements,
+    conflicts,
+    leftPages: left,
+    note: `겹치는 일정 ${conflicts}개 · 기존 계획은 그대로예요${left ? ` · 기간 안에 ${left}쪽이 남아요` : ''}`,
+  });
+}
+
+export function applyAddition() {
+  const s = db.get();
+  const { payload, view } = takePending(s, 'addition');
+  const short = view.summary.materialName
+    .replace(/\.pdf$/i, '')
+    .split('_')
+    .at(-1);
+  view.placements.forEach((p, i) => {
+    dayList(s, p.date).push({
+      id: `pa${Object.keys(s.weekPlan).length}${Date.now() % 10000}${i}`,
+      subjectId: payload.subjectId,
+      unitNo: null,
+      title: short,
+      from: p.from,
+      to: p.to,
+      minutes: p.minutes,
+      start: p.start,
+      reason: `계획 추가 · 하루 ${view.summary.minutesPerDay}분`,
+      status: 'todo',
+      donePages: 0,
+      added: true,
+    });
+  });
+  return { added: view.placements.length };
+}
+
+// PL-10 오늘 계획 (Could, mock): 30분 더 · 오늘 쉬기 · 태스크 미루기(그 과목 다음 공부일 첫 태스크로). 다시 만들기는 막아 둠
+function nextStudyDay(s, subjectId) {
+  const later = datesBetween(
+    dayjs(s.today.date).add(1, 'day').format('YYYY-MM-DD'),
+    dayjs(s.today.date).add(7, 'day').format('YYYY-MM-DD'),
+  );
+  return later.find((d) => dayList(s, d).some((t) => t.subjectId === subjectId)) ?? later[0];
+}
+
+function todayPlanMoves(s, action, taskId) {
+  const todo = s.today.tasks.filter(isTodo);
+  if (action === 'more30') {
+    const t = todo.at(-1);
+    if (!t) throw new MockError('NO_TASK', '오늘 남은 태스크가 없어요');
+    return {
+      changes: [{ label: t.title, before: `${t.minutes}분`, after: `${t.minutes + 30}분` }],
+      moves: [],
+      extend: t.id,
+    };
+  }
+  const targets = action === 'rest' ? todo : todo.filter((t) => t.id === taskId);
+  if (!targets.length)
+    throw new MockError(
+      'NO_TASK',
+      action === 'rest' ? '오늘 남은 태스크가 없어요' : '미룰 태스크를 골라 주세요',
+    );
+  const moves = targets.map((t) => ({
+    taskId: t.id,
+    title: t.title,
+    minutes: t.minutes,
+    to: nextStudyDay(s, t.subjectId),
+  }));
+  return {
+    changes: moves.map((m) => ({
+      label: m.title,
+      before: `오늘 ${md(s.today.date)}`,
+      after: `${md(m.to)} 첫 태스크`,
+    })),
+    moves,
+  };
+}
+
+export function previewTodayPlan(action, taskId) {
+  const s = db.get();
+  if (action === 'rebuild')
+    throw new MockError('NOT_READY', '계획 다시 만들기는 기획 확인 중이에요', 501);
+  const m = todayPlanMoves(s, action, taskId);
+  return remember(
+    s,
+    'today',
+    { action, taskId },
+    {
+      action,
+      changes: m.changes,
+      days: m.moves.map((x) => ({
+        date: x.to,
+        text: `${x.title}(${x.minutes}분) → ${md(x.to)} 첫 태스크`,
+      })),
+      moves: m.moves,
+      extend: m.extend ?? null,
+      note: '기록·퀴즈 점수·쌓인 책은 그대로예요',
+    },
+  );
+}
+
+export function applyTodayPlan(action) {
+  const s = db.get();
+  const { payload, view } = takePending(s, 'today');
+  if (payload.action !== action)
+    throw new MockError('NO_PREVIEW', '먼저 바뀌는 것을 미리 봐 주세요');
+  if (view.extend) s.today.tasks.find((t) => t.id === view.extend).minutes += 30;
+  for (const m of view.moves) {
+    const t = s.today.tasks.find((y) => y.id === m.taskId);
+    if (!t) continue;
+    s.today.tasks.splice(s.today.tasks.indexOf(t), 1);
+    delete t.start;
+    dayList(s, m.to).unshift({ ...t, carried: false, reason: '오늘에서 미뤘어요' });
+  }
+  if (s.notice?.type === 'carry' && !s.today.tasks.some((t) => t.carried)) s.notice = null;
+  return { action, moved: view.moves.length };
+}
+
+// ── 월간 보기 (S15 · MO-01·02) · 월간 리포트 (S15-1 · MO-03) ───────────
+// 하루 = 세워 꽂힌 책 1권. 높이 = 한 페이지 ÷ 계획 페이지 (보충 포함, 100% 상한). 집계는 서버, 숫자만
+const pagesOfTask = (t) => (t.from && t.to ? t.to - t.from + 1 : 0);
+function dayRecord(s, date) {
+  const log = s.monthLog.find((l) => l.date === date);
+  if (log) {
+    const plan = Object.values(log.pages).reduce((n, x) => n + x, 0);
+    return {
+      plan,
+      done: plan,
+      minutes: log.minutes,
+      bySubject: log.pages,
+      review: Boolean(log.review),
+      estimated: Boolean(log.estimated),
+    };
+  }
+  // 읽기만 해요 (dayList는 빈 날 칸을 만들어서 쓰지 않아요)
+  const tasks =
+    date === s.today.date
+      ? s.today.tasks
+      : date < s.today.date
+        ? s.pastTasks.filter((t) => t.date === date)
+        : (s.nextDayTasks[date] ?? s.weekPlan[date] ?? []);
+  if (!tasks.length) return null;
+  const bySubject = {};
+  for (const t of tasks) bySubject[t.subjectId] = (bySubject[t.subjectId] ?? 0) + pagesOfTask(t);
+  return {
+    plan: tasks.reduce((n, t) => n + pagesOfTask(t), 0),
+    done: date <= s.today.date ? tasks.reduce((n, t) => n + (t.donePages ?? 0), 0) : 0,
+    minutes: tasks.reduce((n, t) => n + t.minutes, 0),
+    bySubject,
+    review: tasks.some((t) => !t.from || /총복습/.test(t.title)),
+    estimated: false,
+  };
+}
+
+export function monthlyView(month) {
+  const s = db.get();
+  const first = dayjs(`${month}-01`);
+  const start = first.subtract((first.day() + 6) % 7, 'day'); // 그 주 월요일
+  const last = first.endOf('month');
+  const end = last.add((7 - last.day()) % 7, 'day'); // 그 주 일요일
+  const days = datesBetween(start.format('YYYY-MM-DD'), end.format('YYYY-MM-DD')).map((date) => {
+    const r = dayRecord(s, date);
+    const future = date > s.today.date;
+    const exams = s.subjects.filter((x) => !x.removed && x.examDate === date).map((x) => x.name);
+    return {
+      date,
+      inMonth: date.slice(0, 7) === month,
+      today: date === s.today.date,
+      future,
+      planned: Boolean(r),
+      plan: r?.plan ?? 0,
+      done: r?.done ?? 0,
+      rate: r && !future && r.plan ? Math.min(100, Math.round((r.done / r.plan) * 100)) : null,
+      bySubject: r
+        ? Object.entries(r.bySubject)
+            .filter(([, n]) => n > 0)
+            .map(([subjectId, pages]) => ({ subjectId, pages }))
+        : [],
+      labels: [...(r?.review ? ['총복습'] : []), ...exams.map((n) => `${n} 시험`)],
+      estimated: r?.estimated ?? false,
+    };
+  });
+  return {
+    month,
+    today: s.demo.today,
+    subjects: s.subjects.map(({ id, name, color }) => ({ id, name, color })),
+    days,
+    note: s.monthLog.some((l) => l.estimated) ? '11/8 보충 17p는 추정값이에요' : null,
+  };
+}
+
+export function monthlyReportView(month) {
+  const s = db.get();
+  const start = s.planCreatedAt ?? s.demo.planCreatedAt;
+  const until = s.today.date;
+  const dates = datesBetween(start, until).filter((d) => d.slice(0, 7) === month);
+  const recs = dates.map((d) => dayRecord(s, d)).filter(Boolean);
+  const plan = recs.reduce((n, r) => n + r.plan, 0);
+  const done = recs.reduce((n, r) => n + r.done, 0);
+  const measured = Object.values(s.studySessions)
+    .filter((x) => x.status === 'ended' && x.date.slice(0, 7) === month)
+    .reduce((n, x) => n + x.minutes, 0);
+  const studied = s.readiness.map((r) => ({ subjectId: r.subjectId, pages: r.studiedPages ?? 0 }));
+  const studiedTotal = studied.reduce((n, x) => n + x.pages, 0);
+  const grades = s.subjects.flatMap((x) =>
+    (s.bookshelf[x.id] ?? [])
+      .filter((u) => u.grade)
+      .map((u) => ({
+        subjectId: x.id,
+        unitNo: u.unitNo,
+        title: x.units.find((y) => y.no === u.unitNo)?.title ?? '',
+        before: null, // 11/3 계획 시작 때는 퀴즈 전
+        after: { grade: u.grade, score: u.score },
+      })),
+  );
+  return {
+    month,
+    from: start,
+    until,
+    studyDays: recs.filter((r) => r.done > 0).length,
+    plannedDays: recs.length,
+    achievement: { done, plan, rate: plan ? Math.round((done / plan) * 100) : 0 },
+    time: { measuredMinutes: measured, plannedMinutes: recs.reduce((n, r) => n + r.minutes, 0) },
+    quiz: s.monthQuiz,
+    subjects: studied.map((x) => ({
+      ...x,
+      share: studiedTotal ? Math.round((x.pages / studiedTotal) * 100) : 0,
+    })),
+    grades,
+    mockFilled: ['measuredMinutes', 'quiz'], // 측정 합계는 시드 측정 시간을 받기 전 · 퀴즈 수는 v2-plan 값
+  };
+}
+
+// ── 다시 나누기 (S5-1 · S5-2, PL-06) ─────────────────────
+// mock: 정해 둔 안 3개 중 하나를 골라요. 실제로는 AI가 요청을 읽고 태스크 분할 · 날짜 배치를 새로 짜요.
+// TODO(확인필요): [백엔드 확정 필요] 요청 해석 · 후속 질문 기준 · 새 안 만들기는 AI 몫이에요.
+// 기존 안: 데이터 세트 3장 날짜별 공부 시간(분) 11/3 화 ~ 11/16 월
+const PLAN_2W = [95, 40, 80, 40, 60, 100, 135, 60, 110, 45, 40, 50, 120, 50];
+const PLAN_START = '2026-11-03';
+// 안마다 바뀌는 날의 과목별 증감(분). S5 첫 주 미리보기에도 같은 값을 더해요
+// TODO(확인필요): [기획 확인] weekday는 데이터 세트(토요일 0분 · 화·목 +30분 안쪽 · 바뀜 날 5일)를 맞추느라 2주 합계가 20분 줄어요.
+const RESPLITS = {
+  weekday: {
+    moves: {
+      '2026-11-03': { os: 30 },
+      '2026-11-05': { ds: 30 },
+      '2026-11-07': { ds: -30, os: -30 },
+      '2026-11-10': { os: 30 },
+      '2026-11-14': { os: -50 },
+    },
+    reasons: [
+      '토요일(11/7·11/14)은 저녁 약속이 있어 공부를 뺐어요',
+      '빠진 분량은 수업이 끝난 화·목 오후에 30분 안쪽으로 나눠 넣었어요',
+      '자료구조는 시험(11/12) 전에 끝나도록 첫 주 목요일로 옮겼어요',
+    ],
+  },
+  sunday: {
+    moves: {
+      '2026-11-07': { ds: -30, os: -30 },
+      '2026-11-08': { ds: 30, os: 30 },
+      '2026-11-14': { os: -50 },
+      '2026-11-15': { os: 50 },
+    },
+    reasons: [
+      '토요일(11/7·11/14)은 저녁 약속이 있어 공부를 뺐어요',
+      '빠진 분량은 고정 일정이 없는 다음 날 일요일로 옮겼어요',
+    ],
+  },
+  other: {
+    moves: {
+      '2026-11-08': { ds: 30 },
+      '2026-11-09': { ds: -30 },
+      '2026-11-10': { os: 30 },
+      '2026-11-15': { os: -30 },
+    },
+    reasons: [
+      '2시간이 넘는 날(11/9·11/15)을 30분씩 줄여 앞뒤 날로 옮겼어요',
+      '알바가 있는 날에는 더 넣지 않았어요',
+    ],
+  },
+};
+const RESPLIT_ASK = {
+  text: '토요일 분량은 평일에 나눌까요, 일요일로 옮길까요?',
+  choices: ['평일에 나눠서', '일요일로'],
+};
+const SAVED_REQUEST = '토요일은 약속 있어서 쉬고 싶어 · 평일에 나눠서';
+
+const sumMoves = (m) => Object.values(m ?? {}).reduce((n, v) => n + v, 0);
+// S5 첫 주 미리보기에 승인한 안을 더해요
+export function resplitMinutes(date, minutes) {
+  const m = RESPLITS[db.get().setup.resplit]?.moves[date];
+  if (!m) return minutes;
+  const out = { ...minutes };
+  for (const [k, v] of Object.entries(m)) out[k] = (out[k] ?? 0) + v;
+  return out;
+}
+
+// 요청 한 줄 → 안 고르기. 비우면 다른 버전, 토요일만 말하고 옮길 곳이 없으면 후속 질문 1개 (최대 1번)
+// ponytail: 키워드 몇 개만 봐요. 그 밖의 요청은 다른 버전으로 — 실제 해석은 AI
+function resplitKind(request, answer) {
+  const t = `${request} ${answer ?? ''}`;
+  if (!request.trim() && !answer) return 'other';
+  if (/일요일/.test(t)) return 'sunday';
+  if (/평일|화·목|화요일|목요일/.test(t)) return 'weekday';
+  if (/토요일|주말/.test(t)) return answer ? 'weekday' : null;
+  return 'other';
+}
+
+export function requestResplit({ request = '', answer, saved }) {
+  const s = db.get();
+  if (saved) {
+    s.setup.pendingResplit = { kind: 'weekday', request: SAVED_REQUEST, saved: true };
+    return { ready: true };
+  }
+  const kind = resplitKind(request, answer);
+  if (!kind) return { question: RESPLIT_ASK };
+  const text = [request.trim(), answer].filter(Boolean).join(' · ') || '다른 버전으로';
+  s.setup.pendingResplit = { kind, request: text, saved: false };
+  return { ready: true };
+}
+
+export function resplitView() {
+  const s = db.get();
+  const p = s.setup.pendingResplit;
+  if (!p) throw new MockError('NO_RESPLIT', '비교할 새 안이 없어요', 404);
+  const base = RESPLITS[s.setup.resplit]?.moves ?? {};
+  const next = RESPLITS[p.kind].moves;
+  const days = PLAN_2W.map((min, i) => {
+    const date = dayjs(PLAN_START).add(i, 'day').format('YYYY-MM-DD');
+    const before = min + sumMoves(base[date]);
+    const after = min + sumMoves(next[date]);
+    return { date, before, after, changed: before !== after };
+  });
+  const total = (k) => days.reduce((n, d) => n + d[k], 0);
+  const max = (k) => Math.max(...days.map((d) => d[k]));
+  const sat = (k) => days.filter((d) => dayjs(d.date).day() === 6).reduce((n, d) => n + d[k], 0);
+  return {
+    request: p.request,
+    keep: '분량 조정 · 목표 · 일정 · 단원',
+    saved: p.saved,
+    days,
+    stats: [
+      { label: '2주 공부 시간', unit: 'min', before: total('before'), after: total('after') },
+      { label: '가장 긴 날', unit: 'min', before: max('before'), after: max('after') },
+      { label: '토요일 공부', unit: 'min', before: sat('before'), after: sat('after') },
+      { label: '바뀐 날', unit: 'day', before: 0, after: days.filter((d) => d.changed).length },
+    ],
+    reasons: RESPLITS[p.kind].reasons,
+  };
+}
+
+export function applyResplit() {
+  const setup = db.get().setup;
+  if (!setup.pendingResplit) throw new MockError('NO_RESPLIT', '비교할 새 안이 없어요', 404);
+  setup.resplit = setup.pendingResplit.kind;
+  setup.pendingResplit = null;
+  return { applied: setup.resplit };
+}
+
+export function cancelResplit() {
+  db.get().setup.pendingResplit = null;
+  return { applied: db.get().setup.resplit };
 }

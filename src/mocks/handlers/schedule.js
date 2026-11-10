@@ -4,6 +4,8 @@ import {
   applyEmptyTime,
   applyVoiceEvent,
   deleteSchedule,
+  monthlyReportView,
+  monthlyView,
   previewVoiceEvent,
   weekCalendarView,
 } from '../logic.js';
@@ -31,4 +33,11 @@ export const scheduleHandlers = [
     return run(() => previewVoiceEvent(text), 900);
   }),
   http.post(`${EP.schedules}/voice/apply`, () => run(applyVoiceEvent, 500)),
+  // 월간 보기 · 리포트 (MO-01~03). 집계는 서버
+  http.get(EP.monthly, ({ request }) =>
+    run(() => monthlyView(new URL(request.url).searchParams.get('month'))),
+  ),
+  http.get(`${EP.monthly}/report`, ({ request }) =>
+    run(() => monthlyReportView(new URL(request.url).searchParams.get('month'))),
+  ),
 ];

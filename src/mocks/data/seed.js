@@ -765,6 +765,42 @@ export const SEED = {
     ],
   },
 
+  // S13 계획 추가 ② 자료 고르기 — 과목 강의자료 말고 더 올린 자료 (mock: 예시 값)
+  extraMaterials: {
+    net: [
+      {
+        id: 'net-lab',
+        name: '컴퓨터네트워크_실습자료.pdf',
+        pages: 60,
+        toc: [
+          { no: 1, title: '실습 1 · 패킷 캡처', from: 1, to: 14 },
+          { no: 2, title: '실습 2 · 서브넷 계산', from: 15, to: 30 },
+          { no: 3, title: '실습 3 · 라우팅 테이블', from: 31, to: 45 },
+          { no: 4, title: '실습 4 · TCP 흐름', from: 46, to: 60 },
+        ],
+      },
+    ],
+  },
+
+  // 월간 책장 (S15 · MO-01·02) — 지난 날 기록. 데이터 세트 3장 11/3~11/8 계획 범위를 페이지로, 모두 다 했어요
+  // pages: 과목별 계획 페이지 (보충 포함) · minutes: 계획 시간. 11/8 자료구조 보충 17p는 데이터 세트에 없어서 추정값 (2-1 결정 로그)
+  monthLog: [
+    { date: '2026-11-03', pages: { ds: 18, os: 20 }, minutes: 95 },
+    { date: '2026-11-04', pages: { ds: 17 }, minutes: 40 },
+    { date: '2026-11-05', pages: { ds: 25, net: 8 }, minutes: 80 },
+    { date: '2026-11-06', pages: { os: 15 }, minutes: 40 },
+    { date: '2026-11-07', pages: { ds: 11, os: 11 }, minutes: 60 },
+    {
+      date: '2026-11-08',
+      pages: { ds: 17, os: 9, net: 14 },
+      minutes: 100,
+      review: true,
+      estimated: { ds: 17 },
+    },
+  ],
+  // 월간 리포트 (S15-1 · MO-03) — mock: 퀴즈 문항·오답 수는 v2-plan 2-2 S15-1 값
+  monthQuiz: { total: 80, wrong: 18, unsureRight: 11 },
+
   // 속도 보정 (PL-07 · P4) — mock: 11/9 기본 시드에서 '다음 날로' 한 11/10에만 자료구조 1.4배 알림
   paceMock: {
     date: '2026-11-10',

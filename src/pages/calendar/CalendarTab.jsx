@@ -1,7 +1,7 @@
 // S11 캘린더 (주간) — 신민종
 // 고정 일정(회색) + 공부 블록(과목 색 띠) + 시험일, 블록을 누르면 범위·배치 이유 (ON-04 · 디자인 calendar WeekGrid)
 // 반복 일정은 이번만 / 앞으로 모두 삭제 (ON-07) → 빈 시간 안 P5 (ON-08). 아래에서 말로 일정 추가 → S6-4 (ON-06)
-// [월]은 지시문 13(S15 월간 보기) 전까지 숨겨요. 블록 시각은 목업 규칙이에요 (MOCK)
+// [월] = S15 월간 책장 · [월간 리포트] = S15-1. 블록 시각은 목업 규칙이에요 (MOCK)
 import koLocale from '@fullcalendar/core/locales/ko';
 import FullCalendar from '@fullcalendar/react';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -19,6 +19,8 @@ import { toDay } from '@/config/date.js';
 import { useDemoState } from '@/hooks/useDemo.js';
 import { useDeleteSchedule, useVoicePreview, useWeekCalendar } from '@/hooks/useSchedule.js';
 import S6_4Reschedule from '@/pages/home/modals/S6_4Reschedule.jsx';
+import MonthReport from './MonthReport.jsx';
+import MonthShelf from './MonthShelf.jsx';
 
 const weekStartOf = (d) => toDay(d).subtract((toDay(d).day() + 6) % 7, 'day'); // 월요일
 const hm = (m) => (m >= 60 ? `${Math.floor(m / 60)}시간${m % 60 ? ` ${m % 60}분` : ''}` : `${m}분`);
@@ -276,51 +278,81 @@ function Week({ from }) {
   );
 }
 
+// [주] [월] 보기 (S11 · S15). [월]에서 [월간 리포트] (S15-1)
+const VIEWS = [
+  ['week', '주'],
+  ['month', '월'],
+];
+
 export default function CalendarTab() {
   const { data: demo } = useDemoState();
   const [offset, setOffset] = useState(0); // 이번 주에서 몇 주 떨어졌는지
+  const [view, setView] = useState('week'); // week | month | report
   if (!demo) return <LoadingState />;
   const from = weekStartOf(demo.today).add(offset * 7, 'day');
   const to = from.add(6, 'day');
+  const month = toDay(demo.today).format('YYYY-MM');
   return (
     <>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="label text-brand-deep">캘린더</p>
           <h1 className="mt-1 flex items-center gap-2 text-[28px]">
-            {from.format('M월 D일')} –{' '}
-            {to.month() === from.month() ? to.format('D일') : to.format('M월 D일')}
-            <MockBadge />
+            {view === 'week' ? (
+              <>
+                {from.format('M월 D일')} –{' '}
+                {to.month() === from.month() ? to.format('D일') : to.format('M월 D일')}
+                <MockBadge />
+              </>
+            ) : (
+              `${toDay(demo.today).format('YYYY년 M월')} ${view === 'report' ? '리포트' : '책장'}`
+            )}
           </h1>
-          <p className="mt-1 text-[12px] text-fg-2">공부 블록 시각은 목업 규칙으로 놓았어요</p>
+          {view === 'week' && (
+            <p className="mt-1 text-[12px] text-fg-2">공부 블록 시각은 목업 규칙으로 놓았어요</p>
+          )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {/* [월]은 지시문 13 전까지 숨김 */}
           <div
             className="inline-flex rounded-full border border-line p-1"
             role="tablist"
             aria-label="보기"
           >
-            <span
-              role="tab"
-              aria-selected="true"
-              className="rounded-full bg-white/[0.08] px-3.5 py-1 text-[12.5px] font-semibold"
-            >
-              주
-            </span>
+            {VIEWS.map(([k, label]) => (
+              <button
+                key={k}
+                type="button"
+                role="tab"
+                aria-selected={view === k || (k === 'month' && view === 'report')}
+                onClick={() => setView(k)}
+                className={`rounded-full px-3.5 py-1 text-[12.5px] font-semibold ${view === k || (k === 'month' && view === 'report') ? 'bg-white/[0.08] text-fg' : 'text-fg-2 hover:text-fg'}`}
+              >
+                {label}
+              </button>
+            ))}
           </div>
-          <Button size="sm" onClick={() => setOffset((o) => o - 1)}>
-            이전 주
-          </Button>
-          <Button size="sm" disabled={offset === 0} onClick={() => setOffset(0)}>
-            이번 주
-          </Button>
-          <Button size="sm" onClick={() => setOffset((o) => o + 1)}>
-            다음 주
-          </Button>
+          {view === 'week' ? (
+            <>
+              <Button size="sm" onClick={() => setOffset((o) => o - 1)}>
+                이전 주
+              </Button>
+              <Button size="sm" disabled={offset === 0} onClick={() => setOffset(0)}>
+                이번 주
+              </Button>
+              <Button size="sm" onClick={() => setOffset((o) => o + 1)}>
+                다음 주
+              </Button>
+            </>
+          ) : (
+            <Button size="sm" disabled={view === 'report'} onClick={() => setView('report')}>
+              월간 리포트
+            </Button>
+          )}
         </div>
       </div>
-      <Week key={from.format('YYYY-MM-DD')} from={from.format('YYYY-MM-DD')} />
+      {view === 'week' && <Week key={from.format('YYYY-MM-DD')} from={from.format('YYYY-MM-DD')} />}
+      {view === 'month' && <MonthShelf month={month} />}
+      {view === 'report' && <MonthReport month={month} onBack={() => setView('month')} />}
     </>
   );
 }

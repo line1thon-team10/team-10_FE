@@ -23,6 +23,7 @@ export const toQuizToday = (raw) => ({
 });
 
 export const toQuizSet = (raw) => ({
+  saved: Boolean(raw.saved), // 저장된 결과 (NF-10)
   subjectId: raw.subjectId,
   custom: Boolean(raw.custom), // 문제 뽑기·더 풀기로 만든 세트 (RV-02 · QZ-11)
   resultFor: raw.resultFor ?? raw.subjectId, // 풀고 나서 볼 결과 (더 풀기는 원래 퀴즈 결과)

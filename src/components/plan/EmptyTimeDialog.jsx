@@ -33,8 +33,7 @@ export default function EmptyTimeDialog({ data, onClose, onApplied }) {
       }
     >
       <p className="-mt-2 flex items-center gap-2 text-[12.5px] text-fg-2">
-        <span className="ai-chip">AI</span>빈 시간을 어떻게 쓸지 골라 주세요. 공부 블록은 지우지
-        않아요.
+        <span className="ai-chip">AI</span>빈 시간을 어떻게 쓸지 골라 주세요.
         <MockBadge />
       </p>
       <fieldset className="flex flex-col gap-2">

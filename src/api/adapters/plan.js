@@ -56,6 +56,7 @@ export const toTocUnits = (raw) =>
   raw.units.map((u) => ({ no: u.no, title: u.title, from: u.from, to: u.to }));
 
 export const toPlanDraft = (raw) => ({
+  saved: Boolean(raw.saved), // 저장된 결과 (NF-10)
   today: raw.today,
   summary: raw.summary,
   // 과목별 배분 + 단원별 태스크 블록 (S5 분할 장면)
@@ -89,4 +90,24 @@ export const toUnitExam = (raw) => ({
   subjectId: raw.subjectId,
   unitNo: raw.unitNo,
   inExam: raw.inExam,
+});
+
+// S5-1 다시 나누기 요청: 후속 질문이 있으면 question, 없으면 비교 화면으로
+export const toResplitAsk = (raw) => ({
+  question: raw.question ? { text: raw.question.text, choices: raw.question.choices ?? [] } : null,
+});
+
+// S5-2 비교 (PL-06)
+export const toResplit = (raw) => ({
+  request: raw.request,
+  keep: raw.keep,
+  saved: Boolean(raw.saved), // 저장된 결과 (NF-10)
+  days: raw.days.map((d) => ({
+    date: d.date,
+    before: d.before,
+    after: d.after,
+    changed: Boolean(d.changed),
+  })),
+  stats: raw.stats.map((x) => ({ label: x.label, unit: x.unit, before: x.before, after: x.after })),
+  reasons: raw.reasons ?? [],
 });

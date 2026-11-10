@@ -1,12 +1,16 @@
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  deleteResplit,
   getJob,
   getMaterialFile,
   getMaterials,
   getPlanDraft,
+  getResplit,
   getUnits,
   patchUnitExam,
   postApprove,
+  postResplit,
+  postResplitApply,
   postToc,
   putUnits,
   uploadMaterial,
@@ -83,7 +87,13 @@ export function useUnitExam() {
   });
 }
 
-export const usePlanDraft = () => useQuery({ queryKey: QK.planDraft, queryFn: getPlanDraft });
+// S5 계획 생성 (AI). saved면 저장된 결과
+export const usePlanDraft = (saved = false) =>
+  useQuery({
+    queryKey: [...QK.planDraft, saved],
+    queryFn: () => getPlanDraft(saved),
+    retry: false,
+  });
 
 export function useApprove() {
   const qc = useQueryClient();
@@ -99,3 +109,30 @@ export const useMaterialFile = (materialId) =>
     staleTime: Infinity,
     retry: false,
   });
+
+// 다시 나누기 (S5-1 · S5-2, PL-06)
+export function useResplitRequest() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: postResplit,
+    onSuccess: (data) => {
+      if (!data.question) qc.removeQueries({ queryKey: QK.resplit });
+    },
+  });
+}
+export const useResplit = () =>
+  useQuery({ queryKey: QK.resplit, queryFn: getResplit, retry: false });
+
+// 승인 · 되돌리기: S5 첫 주 미리보기를 다시 받아요
+function useResplitDecide(fn) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: fn,
+    onSuccess: () => {
+      qc.removeQueries({ queryKey: QK.resplit });
+      qc.invalidateQueries({ queryKey: QK.planDraft });
+    },
+  });
+}
+export const useApplyResplit = () => useResplitDecide(postResplitApply);
+export const useCancelResplit = () => useResplitDecide(deleteResplit);

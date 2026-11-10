@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { ROUTES } from '@/app/screens.js';
 import { MockBadge } from '@/components/common/Badge.jsx';
+import { AiFail, AiProgress, SavedTag } from '@/components/common/AiProgress.jsx';
 import AiWait from '@/components/common/AiWait.jsx';
 import Button from '@/components/common/Button.jsx';
 import Card from '@/components/common/Card.jsx';
@@ -14,6 +15,7 @@ import { EmptyState, ErrorState, LoadingState } from '@/components/common/StateV
 import { POLICY } from '@/config/app.js';
 import { CONFIDENCE, QUIZ_TYPE } from '@/config/labels.js';
 import { useAiWait } from '@/hooks/useAiWait.js';
+import { isAiFail } from '@/lib/aiError.js';
 import { useQuizSet, useQuizToday, useSubmitQuiz } from '@/hooks/useQuiz.js';
 import P3BookColor from './P3BookColor.jsx';
 
@@ -145,14 +147,15 @@ function Grading({ startedAt, failed, onRetry, onSaved }) {
         답은 저장했어요. 서술형은 AI가 표현이 아니라 맥락과 핵심 개념으로 0~100점을 매겨요.
       </p>
       {failed ? (
+        // 채점 실패 (NF-10): 답은 저장돼 있어요. 결과는 저장된 채점(70점 · 빠진 단계 · 근거 p.82)으로
         <div className="flex flex-col gap-2">
-          <p className="text-[12.5px] text-st-risk">채점을 받지 못했어요.</p>
+          <p className="text-[12.5px]">답은 저장했고 채점되면 결과에 넣을게요.</p>
           <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="primary" onClick={onSaved}>
+              결과 보기
+            </Button>
             <Button size="sm" onClick={onRetry}>
               다시 시도
-            </Button>
-            <Button size="sm" variant="primary" onClick={onSaved}>
-              저장된 채점으로 보기
             </Button>
           </div>
         </div>
@@ -170,14 +173,35 @@ function Grading({ startedAt, failed, onRetry, onSaved }) {
 
 function Player({ subjectId }) {
   const navigate = useNavigate();
-  const { data: set, isPending, isError, error, refetch } = useQuizSet(subjectId);
+  const [savedSet, setSavedSet] = useState(false); // AI 출제가 안 되면 저장된 결과 (NF-10)
+  const { data: set, isPending, isError, error, refetch } = useQuizSet(subjectId, savedSet);
   const submit = useSubmitQuiz();
   const [idx, setIdx] = useState(0);
   const [answers, setAnswers] = useState({}); // { questionId: { choice, text, confidence } }
   const [startedAt, setStartedAt] = useState(null);
   const [result, setResult] = useState(null); // 제출 응답 → P3
 
-  if (isPending) return <LoadingState title="문항을 불러오는 중이에요" />;
+  // AI 상태 (NF-05·10): 퀴즈 준비 / 실패 / 저장된 결과
+  if (isPending)
+    return (
+      <Card className="mx-auto flex w-full max-w-[560px] flex-col gap-3">
+        <h2 className="text-[18px]">오늘의 퀴즈를 준비하고 있어요</h2>
+        <AiProgress
+          label="오늘 공부한 범위에서 문제를 고르고 있어요"
+          onSaved={() => setSavedSet(true)}
+        />
+      </Card>
+    );
+  if (isError && isAiFail(error))
+    return (
+      <Card className="mx-auto w-full max-w-[560px]">
+        <AiFail
+          message="문제를 불러오지 못했어요 · 오늘 기록은 저장돼 있어요"
+          onRetry={refetch}
+          onSaved={() => setSavedSet(true)}
+        />
+      </Card>
+    );
   if (isError)
     return error?.code === 'NO_QUIZ' ? (
       <EmptyState
@@ -236,6 +260,7 @@ function Player({ subjectId }) {
               {set.round} · 난이도 {set.difficulty}
             </span>
             <span className="badge">한 화면에 한 문제</span>
+            {set.saved && <SavedTag />}
           </div>
         </div>
         <Link className="btn btn-sm" to={ROUTES.quiz}>

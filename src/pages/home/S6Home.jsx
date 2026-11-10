@@ -2,6 +2,7 @@
 import { ArrowRight, Flag, Plus, X } from 'lucide-react';
 import { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router';
+import { toast } from 'sonner';
 import { ROUTES } from '@/app/screens.js';
 import BookBlock from '@/components/book/BookBlock.jsx';
 import Shelf from '@/components/book/Shelf.jsx';
@@ -13,6 +14,7 @@ import TaskCard from '@/components/home/TaskCard.jsx';
 import TutorPanel from '@/components/home/TutorPanel.jsx';
 import { fmtFull, toDay } from '@/config/date.js';
 import { PLAN_OPTION } from '@/config/labels.js';
+import { useApplyTodayPlan, usePreviewTodayPlan } from '@/hooks/useManage.js';
 import { useToday } from '@/hooks/useToday.js';
 import { useUiStore } from '@/stores/uiStore.js';
 
@@ -104,11 +106,15 @@ function QuizGuideBox({ today, subjectsById, onContinue }) {
 function CarryNotice({ today, subjectsById }) {
   const ackOn = useUiStore((s) => s.noticeAckOn);
   const ack = useUiStore((s) => s.ackNotice);
+  const preview = usePreviewTodayPlan();
+  const apply = useApplyTodayPlan();
   const n = today.notice;
   if (n?.type !== 'carry' || ackOn === today.date) return null;
+  const carried = today.tasks.find((t) => t.carried && t.status === 'todo');
+  const fail = { onError: (e) => toast.error(e.message) };
   return (
     <section
-      className="flex flex-col gap-3 rounded-xl border border-line-2 bg-white/[0.03] px-3.5 py-3 sm:flex-row sm:items-center sm:justify-between"
+      className="flex flex-col flex-wrap gap-3 rounded-xl border border-line-2 bg-white/[0.03] px-3.5 py-3 sm:flex-row sm:items-center sm:justify-between"
       aria-label="이월 안내"
     >
       <div className="flex min-w-0 flex-col gap-2">
@@ -129,14 +135,47 @@ function CarryNotice({ today, subjectsById }) {
         })}
       </div>
       <div className="flex shrink-0 flex-wrap gap-2">
-        {/* TODO(확인필요): [기획 확인] '다른 날로 옮기기'를 누르면 어디로 가는지(캘린더에서 고르기 등) 정해지면 연결해요 */}
-        <Button size="sm" disabled title="옮기는 방식 확인 중이에요">
+        {/* 다른 날로 옮기기 = 태스크 하나 미루기: 그 과목 다음 공부일 첫 태스크로 (PL-10 · 4-12) */}
+        <Button
+          size="sm"
+          disabled={!carried || preview.isPending}
+          onClick={() => preview.mutate({ action: 'postpone', taskId: carried.id }, fail)}
+        >
           다른 날로 옮기기
         </Button>
         <Button size="sm" variant="primary" onClick={() => ack(today.date)}>
           확인
         </Button>
       </div>
+      {preview.data && (
+        <div className="flex w-full flex-col gap-2 rounded-xl border border-dashed border-line-2 px-3 py-2.5 text-[12.5px] sm:basis-full">
+          {preview.data.days.map((d, i) => (
+            <p key={i}>{d.text}</p>
+          ))}
+          <p className="text-[11.5px] text-fg-2">{preview.data.note}</p>
+          <div className="flex gap-2">
+            <Button size="sm" onClick={() => preview.reset()}>
+              취소
+            </Button>
+            <Button
+              size="sm"
+              variant="primary"
+              disabled={apply.isPending}
+              onClick={() =>
+                apply.mutate('postpone', {
+                  onSuccess: () => {
+                    preview.reset();
+                    toast('다른 날로 옮겼어요');
+                  },
+                  ...fail,
+                })
+              }
+            >
+              옮기기
+            </Button>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
@@ -185,11 +224,10 @@ function ExamsCard({ today, subjectsById }) {
           </span>
         </div>
       ))}
-      {/* S14 과목·계획 관리 — 지시문 12 전까지 막아 둠 */}
-      <Button size="sm" className="self-start" disabled title="과목·계획 관리는 준비 중이에요">
+      <Link className="btn btn-sm self-start" to={ROUTES.manage}>
         과목·계획 관리
         <ArrowRight size={12} aria-hidden="true" />
-      </Button>
+      </Link>
     </Card>
   );
 }
@@ -326,11 +364,9 @@ export default function S6Home() {
                       ({progress.donePages}/{progress.totalPages}p)
                     </span>
                   </h1>
-                  {/* S13 계획 추가 — 지시문 12 전까지 막아 둠 */}
                   <button
                     type="button"
-                    disabled
-                    title="계획 추가는 준비 중이에요"
+                    onClick={() => openModal('S13')}
                     className="inline-flex items-center gap-1 rounded-full border border-dashed border-line-2 px-2.5 py-1 text-[11px] font-semibold text-fg-2 disabled:opacity-50"
                   >
                     <Plus size={11} aria-hidden="true" />

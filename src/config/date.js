@@ -23,3 +23,7 @@ export const fmtTimeRange = (start, end) => {
   const b = part(end);
   return a.ap === b.ap ? `${a.ap} ${a.t}–${b.t}` : `${a.ap} ${a.t}–${b.ap} ${b.t}`;
 };
+
+// 75 → '1시간 15분', 40 → '40분'
+export const minutesLabel = (m) =>
+  m >= 60 ? `${Math.floor(m / 60)}시간${m % 60 ? ` ${m % 60}분` : ''}` : `${m}분`;

@@ -87,15 +87,12 @@ function AppHeader() {
             <span className="text-[11px] whitespace-nowrap text-fg-2">{fmtFull(data.today)}</span>
           </span>
         )}
-        {/* S14 과목·계획 관리 — 지시문 12 전까지 막아 둠 */}
-        <button
-          type="button"
-          className="btn btn-sm"
-          disabled
-          title="과목·계획 관리는 준비 중이에요"
+        <NavLink
+          to={ROUTES.manage}
+          className={({ isActive }) => `btn btn-sm ${isActive ? 'border-fg-soft text-fg' : ''}`}
         >
           과목·계획 관리
-        </button>
+        </NavLink>
         {/* 목업 서버로 돌 때는 화면 전체가 목업 데이터라는 표시 */}
         {ENV.useMock && <MockBadge />}
         <DemoMenu />

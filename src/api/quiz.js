@@ -3,7 +3,9 @@ import { http } from './client.js';
 import { EP } from './endpoints.js';
 
 export const getQuizToday = async () => toQuizToday(await http.get(EP.quizToday));
-export const getQuizSet = async (subjectId) => toQuizSet(await http.get(`${EP.quiz}/${subjectId}`));
+// saved: AI 출제가 안 될 때 저장된 결과 (시드의 오늘 퀴즈, NF-10)
+export const getQuizSet = async (subjectId, saved = false) =>
+  toQuizSet(await http.get(`${EP.quiz}/${subjectId}`, { params: saved ? { saved: 1 } : {} }));
 export const postQuizSubmit = async ({ subjectId, answers, savedGrading = false }) =>
   toQuizResult(
     await http.post(`${EP.quiz}/${subjectId}/submit`, {

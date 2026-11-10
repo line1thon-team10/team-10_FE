@@ -1,4 +1,10 @@
-import { toEmptyTime, toVoicePreview, toWeekCalendar } from './adapters/schedule.js';
+import {
+  toEmptyTime,
+  toMonthly,
+  toMonthlyReport,
+  toVoicePreview,
+  toWeekCalendar,
+} from './adapters/schedule.js';
 import { http } from './client.js';
 import { EP } from './endpoints.js';
 
@@ -11,3 +17,8 @@ export const postEmptyTime = async (option) => http.post(EP.emptyTime, { option 
 export const postVoiceEvent = async (text) =>
   toVoicePreview(await http.post(`${EP.schedules}/voice`, { text }));
 export const postVoiceApply = async () => http.post(`${EP.schedules}/voice/apply`);
+
+export const getMonthly = async (month) =>
+  toMonthly(await http.get(EP.monthly, { params: { month } }));
+export const getMonthlyReport = async (month) =>
+  toMonthlyReport(await http.get(`${EP.monthly}/report`, { params: { month } }));
