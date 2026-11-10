@@ -1,0 +1,72 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@500;600;700&display=swap');
+
+.plan-add-btn {
+  position: fixed;
+  right: 20px;
+  bottom: 22px;
+  z-index: 50;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 18px 11px 11px;
+  border: 1px solid rgba(255, 119, 16, 0.5);
+  border-radius: 999px;
+  background: #ff7710;
+  color: #180f05;
+  font-family: 'IBM Plex Sans KR', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 0 14px 30px -12px rgba(255, 119, 16, 0.8), 0 3px 10px rgba(0, 0, 0, 0.45);
+  transition: transform 0.18s ease, background-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.plan-add-btn:hover {
+  transform: translateY(-2px);
+  background: #ff8b2e;
+  box-shadow: 0 18px 34px -12px rgba(255, 119, 16, 0.9), 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.plan-add-btn:active {
+  transform: translateY(0);
+}
+
+.plan-add-btn:focus-visible {
+  outline: 2px solid #ff7710;
+  outline-offset: 3px;
+}
+
+.plan-add-btn__icon {
+  display: flex;
+  width: 26px;
+  height: 26px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(24, 15, 5, 0.16);
+}
+
+.plan-add-btn__label {
+  line-height: 1;
+}
+
+@media (max-width: 640px) {
+  .plan-add-btn {
+    right: 14px;
+    bottom: 16px;
+    padding: 10px 15px 10px 10px;
+    font-size: 12.5px;
+  }
+  .plan-add-btn__icon {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plan-add-btn:hover {
+    transform: none;
+  }
+}

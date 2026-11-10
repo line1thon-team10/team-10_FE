@@ -1,0 +1,258 @@
+/* Flash 站专用样式：只放 Tailwind 工具类表达不了的东西（字体/变量应用、动效、风格包差异、遮罩）。 */
+html { scroll-behavior: smooth; scroll-padding-top: 5rem; }
+
+.flash-site {
+  background: rgb(var(--f-bg));
+  color: rgb(var(--f-fg));
+  min-height: 100vh;
+  font-family: var(--f-font-body), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", "Helvetica Neue", Arial, sans-serif;
+  font-size: 17px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+.flash-site img { max-width: 100%; }
+
+/* 标题统一用风格包的标题字体、字重、字距、大小写；CJK 等字体里没有的字形自动回落到系统字体 */
+.flash-site :where(h1, h2, h3, .font-display) {
+  font-family: var(--f-font-display), ui-sans-serif, system-ui, "Noto Sans", sans-serif;
+  font-weight: var(--f-head-weight);
+  letter-spacing: var(--f-head-tracking);
+  text-transform: var(--f-head-transform);
+  font-feature-settings: "lnum" 1; /* 衬线字体默认的老式数字(1 2 3 高低不齐)换成等高数字 */
+  text-wrap: balance;
+}
+.flash-site :where(p, li, blockquote) { text-wrap: pretty; }
+
+/* 品牌深色底：hero / CTA / 深色联系区。颜色是主题色算出来的，不写死 */
+.flash-deep {
+  color: #fff;
+  background-image: linear-gradient(135deg, rgb(var(--f-deep)), color-mix(in srgb, rgb(var(--f-deep)) 58%, #000));
+}
+.flash-site[data-style="rugged"] .flash-deep {
+  background-image: linear-gradient(135deg, color-mix(in srgb, rgb(var(--f-deep)) 70%, #111), #111114);
+}
+/* 浅色底：品牌色的淡染（hero 浅色版、浅色联系区） */
+.flash-tint { background-color: color-mix(in srgb, rgb(var(--f-primary)) 7%, rgb(var(--f-bg))); }
+.flash-site[data-style="warm"] .flash-tint { background-color: rgb(var(--f-muted)); }
+
+/* 整幅照片 hero 的遮罩：左深右浅保证文字可读，底部再压一层让信任条浮上来 */
+.flash-hero-overlay {
+  background:
+    linear-gradient(90deg, color-mix(in srgb, rgb(var(--f-deep)) 82%, #000) 0%, color-mix(in srgb, rgb(var(--f-deep)) 55%, #000 ) 45%, transparent 100%),
+    linear-gradient(0deg, rgb(0 0 0 / .35), transparent 40%);
+}
+[dir="rtl"] .flash-hero-overlay {
+  background:
+    linear-gradient(270deg, color-mix(in srgb, rgb(var(--f-deep)) 82%, #000) 0%, color-mix(in srgb, rgb(var(--f-deep)) 55%, #000) 45%, transparent 100%),
+    linear-gradient(0deg, rgb(0 0 0 / .35), transparent 40%);
+}
+
+/* 优雅风：照片本身是主角，遮罩用中性的深色暗角，不给照片罩品牌色；深色底也压暗压灰，更沉稳 */
+.flash-site[data-style="elegant"] .flash-hero-overlay,
+.flash-site[data-style="warm"] .flash-hero-overlay,
+.flash-site[data-style="clean"] .flash-hero-overlay {
+  background:
+    linear-gradient(90deg, rgb(24 18 16 / .74) 0%, rgb(24 18 16 / .46) 46%, rgb(24 18 16 / .06) 100%),
+    linear-gradient(0deg, rgb(0 0 0 / .28), transparent 38%);
+}
+[dir="rtl"] .flash-site[data-style="elegant"] .flash-hero-overlay,
+[dir="rtl"] .flash-site[data-style="warm"] .flash-hero-overlay,
+[dir="rtl"] .flash-site[data-style="clean"] .flash-hero-overlay {
+  background:
+    linear-gradient(270deg, rgb(24 18 16 / .74) 0%, rgb(24 18 16 / .46) 46%, rgb(24 18 16 / .06) 100%),
+    linear-gradient(0deg, rgb(0 0 0 / .28), transparent 38%);
+}
+.flash-site[data-style="elegant"] .flash-deep {
+  background-image: linear-gradient(135deg, color-mix(in srgb, rgb(var(--f-deep)) 58%, #1c1917), #1c1917);
+}
+
+/* 图片占位：没有图/还没生成好/加载失败时的底，用品牌色淡染 + 柔光，不是灰点阵 */
+.flash-placeholder {
+  background-color: color-mix(in srgb, rgb(var(--f-primary)) 9%, rgb(var(--f-muted)));
+  background-image:
+    radial-gradient(120% 90% at 20% 10%, rgb(var(--f-primary) / .18), transparent 60%),
+    radial-gradient(90% 80% at 90% 100%, rgb(var(--f-primary) / .12), transparent 55%);
+}
+
+/* 小节标题上方的短饰线：每个风格一种写法 */
+.flash-bar { display: block; height: 4px; width: 48px; border-radius: 999px; background: rgb(var(--f-primary)); }
+.flash-site[data-style="elegant"] .flash-bar { height: 1px; width: 64px; border-radius: 0; }
+.flash-site[data-style="rugged"] .flash-bar { height: 5px; width: 44px; border-radius: 0; transform: skewX(-24deg); }
+.flash-site[data-style="warm"] .flash-bar { height: 8px; width: 8px; box-shadow: 14px 0 0 rgb(var(--f-primary) / .55), 28px 0 0 rgb(var(--f-primary) / .25); }
+.flash-site[data-style="clean"] .flash-bar { height: 3px; width: 36px; }
+.flash-site[data-style="corporate"] .flash-bar { height: 3px; width: 40px; border-radius: 0; }
+.flash-site[data-style="editorial"] .flash-bar { height: 2px; width: 100%; border-radius: 0; background: rgb(var(--f-fg)); }
+.flash-site[data-style="tech"] .flash-bar { height: 3px; width: 32px; box-shadow: 0 0 14px rgb(var(--f-primary) / .9); }
+.flash-site[data-style="organic"] .flash-bar { height: 14px; width: 14px; border-radius: 0 100% 0 100%; }
+.flash-site[data-style="luxe"] .flash-bar { height: 1px; width: 72px; border-radius: 0; }
+.flash-site[data-style="playful"] .flash-bar { height: 8px; width: 60px; background: repeating-linear-gradient(90deg, rgb(var(--f-primary)) 0 14px, transparent 14px 20px); }
+.flash-site[data-style="vintage"] .flash-bar { height: 7px; width: 64px; border-radius: 0; background: none; border-block: 2px solid rgb(var(--f-fg)); }
+.flash-bar-invert { background: rgb(255 255 255 / .75) !important; box-shadow: none; }
+.flash-bar-invert[style], .flash-site .flash-bar-invert { border-color: rgb(255 255 255 / .75); }
+
+/* 粘性头部：滚动后加阴影和毛玻璃 */
+.flash-header { position: sticky; top: 0; z-index: 40; background: rgb(var(--f-bg) / .92); backdrop-filter: saturate(1.4) blur(10px); transition: box-shadow .2s ease; }
+.flash-header.is-stuck { box-shadow: 0 1px 0 rgb(var(--f-border)), 0 8px 24px rgb(0 0 0 / .06); }
+
+/* 入场动效：只有脚本跑起来(.flash-js)才先隐藏，所以无脚本/爬虫看到的内容始终完整；尊重减少动效偏好 */
+.flash-js [data-reveal] { opacity: 0; transform: translateY(16px); transition: opacity .6s ease, transform .6s cubic-bezier(.2, .7, .2, 1); transition-delay: var(--d, 0ms); }
+.flash-js [data-reveal].is-in { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .flash-js [data-reveal] { opacity: 1; transform: none; transition: none; }
+}
+
+/* 卡片悬浮上浮、按钮按下反馈 */
+.flash-lift { transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease; }
+.flash-lift:hover { transform: translateY(-3px); box-shadow: var(--f-shadow-lift); }
+@media (prefers-reduced-motion: reduce) { .flash-lift:hover { transform: none; } }
+.flash-site a:active, .flash-site button:active { transform: translateY(1px); }
+
+/* 无障碍：跳到正文、键盘焦点 */
+.flash-skip { position: absolute; inset-inline-start: 1rem; top: -4rem; z-index: 100; padding: .6rem 1rem; border-radius: 8px; background: rgb(var(--f-primary)); color: rgb(var(--f-primary-fg)); font-weight: 600; transition: top .15s ease; }
+.flash-skip:focus { top: .75rem; }
+.flash-site :focus-visible { outline: 2px solid rgb(var(--f-primary)); outline-offset: 2px; }
+
+.flash-site details > summary { list-style: none; }
+.flash-site details > summary::-webkit-details-marker { display: none; }
+
+
+/* ───────────────── 风格包的结构差异 ─────────────────
+   字体/圆角/色板在 theme.ts 里；这里是卡片、按钮、图片框、深色底、页脚等「长相」上的区别。 */
+
+/* 按钮：大小写、字距按风格；特定风格再加描边/光晕 */
+.flash-btn { text-transform: var(--f-btn-transform); letter-spacing: var(--f-btn-tracking); }
+.flash-site[data-style="playful"] .flash-btn { border: 2px solid rgb(var(--f-fg)); box-shadow: 3px 3px 0 rgb(var(--f-fg)); transition: transform .15s ease, box-shadow .15s ease; }
+.flash-site[data-style="playful"] .flash-btn:hover { transform: translate(-1px, -1px); box-shadow: 5px 5px 0 rgb(var(--f-fg)); }
+.flash-site[data-style="playful"] .flash-btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 rgb(var(--f-fg)); }
+.flash-site[data-style="tech"] .flash-btn[class*="bg-primary"] { box-shadow: 0 0 0 1px rgb(var(--f-primary) / .5), 0 8px 28px rgb(var(--f-primary) / .35); }
+.flash-site[data-style="luxe"] .flash-btn, .flash-site[data-style="vintage"] .flash-btn, .flash-site[data-style="editorial"] .flash-btn { font-weight: 500; }
+.flash-site[data-style="vintage"] .flash-btn { box-shadow: 0 0 0 1px rgb(var(--f-fg) / .55) inset; }
+.flash-site[data-style="rugged"] .flash-btn { box-shadow: 0 2px 0 rgb(0 0 0 / .25); }
+
+/* 卡片 */
+.flash-site[data-style="elegant"] .flash-card { box-shadow: none; }
+.flash-site[data-style="rugged"] .flash-card { border-inline-start: 4px solid rgb(var(--f-primary)); }
+.flash-site[data-style="corporate"] .flash-card { box-shadow: none; border-top: 3px solid rgb(var(--f-primary)); }
+.flash-site[data-style="editorial"] .flash-card:not(.flash-card-solid):not(.flash-card-hi) { background: transparent; border-width: 0; border-top: 2px solid rgb(var(--f-fg)); padding-inline: 0; box-shadow: none; }
+.flash-site[data-style="editorial"] .flash-card-solid, .flash-site[data-style="editorial"] .flash-card-hi { box-shadow: none; border-color: rgb(var(--f-fg)); }
+.flash-site[data-style="tech"] .flash-card { background-image: linear-gradient(180deg, rgb(255 255 255 / .05), rgb(255 255 255 / .01)); border-color: rgb(255 255 255 / .1); box-shadow: 0 1px 0 rgb(255 255 255 / .06) inset; }
+.flash-site[data-style="tech"] .flash-card:hover { border-color: rgb(var(--f-primary) / .55); }
+.flash-site[data-style="organic"] .flash-card:not(.flash-card-hi) { border-color: transparent; background-color: color-mix(in srgb, rgb(var(--f-card)) 72%, rgb(var(--f-muted))); }
+.flash-site[data-style="luxe"] .flash-card { box-shadow: none; border-color: color-mix(in srgb, rgb(var(--f-primary)) 38%, rgb(var(--f-border))); }
+.flash-site[data-style="playful"] .flash-card { border: 2px solid rgb(var(--f-fg)); }
+.flash-site[data-style="vintage"] .flash-card { box-shadow: none; border: 2px solid rgb(var(--f-fg) / .75); outline: 1px solid rgb(var(--f-fg) / .45); outline-offset: -7px; }
+.flash-site[data-style="playful"] .flash-lift:hover { transform: translate(-2px, -2px); }
+
+/* 图片框(.flash-img)：拱形 / 双线边 / 细线外框 / 斜贴 / 发光 */
+.flash-site[data-style="elegant"] .flash-img { box-shadow: none; outline: 1px solid rgb(var(--f-border)); outline-offset: 10px; }
+.flash-site[data-style="organic"] .flash-img, .flash-site[data-style="warm"] .flash-arch { border-radius: 999px 999px var(--f-radius) var(--f-radius); }
+.flash-site[data-style="organic"] .flash-img { border-radius: 50% 50% var(--f-radius) var(--f-radius) / 36% 36% var(--f-radius) var(--f-radius); }
+.flash-site[data-style="luxe"] .flash-img { box-shadow: none; outline: 1px solid rgb(var(--f-primary) / .55); outline-offset: 10px; }
+.flash-site[data-style="vintage"] .flash-img { border: 3px solid rgb(var(--f-fg)); box-shadow: 0 0 0 6px rgb(var(--f-bg)), 0 0 0 8px rgb(var(--f-fg) / .8); }
+.flash-site[data-style="vintage"] .flash-img img { filter: sepia(.2) saturate(.95) contrast(1.03); }
+.flash-site[data-style="playful"] .flash-img { border: 3px solid rgb(var(--f-fg)); box-shadow: 6px 6px 0 rgb(var(--f-fg)); transform: rotate(-1.2deg); }
+.flash-site[data-style="editorial"] .flash-img { box-shadow: none; }
+.flash-site[data-style="editorial"] .flash-img img { filter: grayscale(.22) contrast(1.04); }
+.flash-site[data-style="tech"] .flash-img { box-shadow: 0 0 0 1px rgb(255 255 255 / .12), 0 28px 64px -16px rgb(var(--f-primary) / .4); }
+.flash-site[data-style="corporate"] .flash-img { box-shadow: 8px 8px 0 rgb(var(--f-primary) / .14); }
+
+/* 深色底(品牌深色 / hero / CTA / 深色联系区)：各风格自己的质感 */
+.flash-site[data-style="corporate"] .flash-deep {
+  background-image: repeating-linear-gradient(135deg, rgb(255 255 255 / .035) 0 2px, transparent 2px 16px), linear-gradient(135deg, rgb(var(--f-deep)), color-mix(in srgb, rgb(var(--f-deep)) 70%, #02040a));
+}
+.flash-site[data-style="editorial"] .flash-deep { background-image: none; background-color: #111; }
+.flash-site[data-style="tech"] .flash-deep {
+  background-color: rgb(var(--f-bg));
+  background-image:
+    linear-gradient(rgb(255 255 255 / .035) 1px, transparent 1px), linear-gradient(90deg, rgb(255 255 255 / .035) 1px, transparent 1px),
+    radial-gradient(60% 70% at 15% 0%, rgb(var(--f-primary) / .38), transparent 70%), radial-gradient(50% 60% at 95% 100%, rgb(var(--f-primary) / .2), transparent 70%);
+  background-size: 48px 48px, 48px 48px, auto, auto;
+}
+.flash-site[data-style="organic"] .flash-deep { background-image: linear-gradient(135deg, rgb(var(--f-deep)), color-mix(in srgb, rgb(var(--f-deep)) 60%, #0f1a12)); }
+.flash-site[data-style="luxe"] .flash-deep { background-color: #0a0a0b; background-image: radial-gradient(70% 90% at 50% 0%, rgb(var(--f-primary) / .2), transparent 70%); }
+.flash-site[data-style="playful"] .flash-deep { background-image: none; background-color: rgb(var(--f-primary)); color: rgb(var(--f-primary-fg)); }
+.flash-site[data-style="vintage"] .flash-deep { background-image: none; background-color: color-mix(in srgb, rgb(var(--f-deep)) 45%, #2a1c14); }
+.flash-site[data-style="playful"] .flash-tint { background-color: rgb(var(--f-muted)); }
+.flash-site[data-style="organic"] .flash-tint { background-color: color-mix(in srgb, rgb(var(--f-primary)) 9%, rgb(var(--f-bg))); }
+.flash-site[data-style="editorial"] .flash-tint { background-color: rgb(var(--f-muted)); }
+.flash-site[data-style="luxe"] .flash-tint, .flash-site[data-style="tech"] .flash-tint { background-color: rgb(var(--f-muted)); }
+.flash-site[data-style="vintage"] .flash-tint { background-color: rgb(var(--f-muted)); }
+
+/* framed hero：照片 + 居中暗角遮罩 + 内框(奢华一根细金线，复古双线) */
+.flash-hero-center-overlay { background: radial-gradient(80% 90% at 50% 50%, rgb(8 8 10 / .38), rgb(8 8 10 / .72)); }
+.flash-frame { position: absolute; inset: 1.25rem; pointer-events: none; border: 1px solid rgb(255 255 255 / .45); }
+@media (min-width: 768px) { .flash-frame { inset: 2rem; } }
+.flash-site[data-style="luxe"] .flash-frame { border-color: rgb(var(--f-primary) / .7); }
+.flash-site[data-style="vintage"] .flash-frame { border: 3px double rgb(255 255 255 / .75); }
+.flash-gradient-text { background-image: linear-gradient(120deg, rgb(var(--f-fg)) 30%, rgb(var(--f-primary))); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.flash-mono { font-family: var(--f-font-mono); letter-spacing: .02em; }
+.flash-site[data-style="rugged"] .flash-hero-cut { clip-path: polygon(0 0, 100% 0, 100% calc(100% - 2.5rem), 0 100%); }
+
+/* 导航：悬浮胶囊 / 居中品牌 */
+.flash-header-float { background: rgb(var(--f-bg)); backdrop-filter: none; padding: .75rem .75rem 0; }
+.flash-header-float .flash-nav-pill { border: 1px solid rgb(var(--f-border)); border-radius: 999px; background: rgb(var(--f-card) / .7); backdrop-filter: blur(14px); box-shadow: var(--f-shadow); }
+.flash-site[data-style="vintage"] .flash-header, .flash-site[data-style="luxe"] .flash-header, .flash-site[data-style="elegant"] .flash-header, .flash-site[data-style="editorial"] .flash-header { border-bottom: 1px solid rgb(var(--f-border)); }
+.flash-site[data-style="editorial"] .flash-header { border-bottom-color: rgb(var(--f-fg)); }
+.flash-site[data-style="vintage"] .flash-header { border-bottom: 3px double rgb(var(--f-fg) / .6); }
+
+/* 页脚：每个风格自己的底色 */
+.flash-site { --ft-bg: #020617; --ft-fg: #cbd5e1; --ft-muted: #94a3b8; --ft-strong: #fff; --ft-line: rgb(255 255 255 / .1); }
+.flash-footer { background: var(--ft-bg); color: var(--ft-fg); }
+.flash-footer .ft-muted { color: var(--ft-muted); }
+.flash-footer .ft-strong, .flash-footer a.ft-link:hover { color: var(--ft-strong); }
+.flash-footer .ft-line { border-color: var(--ft-line); }
+.flash-site[data-style="elegant"] { --ft-bg: #1c1917; --ft-fg: #d6d3d1; --ft-muted: #a8a29e; }
+.flash-site[data-style="warm"] { --ft-bg: #3b2a20; --ft-fg: #eadfce; --ft-muted: #c2ae96; }
+.flash-site[data-style="clean"] { --ft-bg: #0f172a; --ft-fg: #cbd5e1; --ft-muted: #94a3b8; }
+.flash-site[data-style="rugged"] { --ft-bg: #111113; --ft-fg: #d4d4d8; --ft-muted: #8b8b93; }
+.flash-site[data-style="corporate"] { --ft-bg: color-mix(in srgb, rgb(var(--f-deep)) 38%, #050912); --ft-fg: #d3dae6; --ft-muted: #9aa6ba; }
+.flash-site[data-style="editorial"] { --ft-bg: #111; --ft-fg: #d4d2cc; --ft-muted: #9b988f; }
+.flash-site[data-style="tech"] { --ft-bg: rgb(4 6 14); --ft-fg: #aeb7cc; --ft-muted: #7480a0; }
+.flash-site[data-style="organic"] { --ft-bg: color-mix(in srgb, rgb(var(--f-deep)) 70%, #0d170f); --ft-fg: #dfe8d9; --ft-muted: #a9b8a2; }
+.flash-site[data-style="luxe"] { --ft-bg: #060607; --ft-fg: #cfc9bb; --ft-muted: #8f8979; --ft-strong: rgb(var(--f-primary)); --ft-line: rgb(255 255 255 / .12); }
+.flash-site[data-style="playful"] { --ft-bg: rgb(var(--f-fg)); --ft-fg: #f1ebfb; --ft-muted: #b9aed3; }
+.flash-site[data-style="vintage"] { --ft-bg: #2a1c14; --ft-fg: #eadcc2; --ft-muted: #b9a284; }
+.flash-site[data-style="tech"] .flash-footer, .flash-site[data-style="luxe"] .flash-footer { border-top: 1px solid rgb(255 255 255 / .08); }
+.flash-site[data-style="vintage"] .flash-footer { border-top: 6px double rgb(var(--f-primary)); }
+
+/* 公告条 */
+.flash-site[data-style="luxe"] .flash-announce, .flash-site[data-style="editorial"] .flash-announce { text-transform: uppercase; letter-spacing: .14em; font-size: .72rem; }
+.flash-site[data-style="tech"] .flash-announce { font-family: var(--f-font-mono); }
+
+/* 表格(对比/时间表)的横向滚动提示阴影不做，保持内容始终可读 */
+.flash-table th, .flash-table td { padding: .9rem 1.1rem; }
+.flash-site[data-style="editorial"] .flash-table-box { border-radius: 0; box-shadow: none; border-color: rgb(var(--f-fg)); }
+.flash-site[data-style="playful"] .flash-table-box { border: 2px solid rgb(var(--f-fg)); }
+.flash-site[data-style="vintage"] .flash-table-box { border: 2px solid rgb(var(--f-fg) / .75); box-shadow: none; }
+
+
+/* ───────────────── 整幅照片首屏：各风格自己的遮罩、标签、收边 ───────────────── */
+.flash-hero-eyebrow { letter-spacing: .01em; }
+.flash-site[data-style="corporate"] .flash-hero-eyebrow { border-radius: 0; border-width: 0 0 0 4px; border-color: rgb(255 255 255 / .7); background: none; backdrop-filter: none; padding-inline: .9rem 0; text-transform: uppercase; letter-spacing: .14em; font-weight: 600; font-size: .8rem; }
+.flash-site[data-style="editorial"] .flash-hero-eyebrow { border-radius: 0; border: 0; background: none; backdrop-filter: none; padding: 0; text-transform: uppercase; letter-spacing: .22em; font-weight: 600; font-size: .8rem; }
+.flash-site[data-style="tech"] .flash-hero-eyebrow { font-family: var(--f-font-mono); color: rgb(var(--f-primary)); border-color: rgb(255 255 255 / .18); background: rgb(255 255 255 / .06); }
+.flash-site[data-style="elegant"] .flash-hero-eyebrow { border-radius: 0; border-width: 0 0 1px; background: none; backdrop-filter: none; padding-inline: 0; text-transform: uppercase; letter-spacing: .26em; font-size: .78rem; }
+.flash-site[data-style="playful"] .flash-hero-eyebrow { background: rgb(var(--f-card)); color: rgb(var(--f-fg)); border: 2px solid rgb(var(--f-fg)); box-shadow: 3px 3px 0 rgb(var(--f-fg)); transform: rotate(-2deg); font-weight: 700; backdrop-filter: none; }
+.flash-site[data-style="rugged"] .flash-hero-eyebrow { border-radius: 2px; text-transform: uppercase; letter-spacing: .1em; font-weight: 600; }
+
+/* 居中版式的遮罩按风格换色：优雅=暖黑暗角，科技=深蓝光晕+网格，俏皮=主色罩 */
+.flash-site[data-style="elegant"] .flash-hero-center-overlay { background: radial-gradient(85% 100% at 50% 50%, rgb(22 17 15 / .5), rgb(22 17 15 / .78)); }
+.flash-site[data-style="tech"] .flash-hero-center-overlay {
+  background-image:
+    linear-gradient(rgb(255 255 255 / .04) 1px, transparent 1px), linear-gradient(90deg, rgb(255 255 255 / .04) 1px, transparent 1px),
+    radial-gradient(60% 80% at 50% 0%, rgb(var(--f-primary) / .35), transparent 70%), linear-gradient(rgb(7 9 20 / .62), rgb(7 9 20 / .86));
+  background-size: 48px 48px, 48px 48px, auto, auto;
+}
+.flash-site[data-style="playful"] .flash-hero-center-overlay { background: linear-gradient(rgb(var(--f-primary) / .62), rgb(var(--f-deep) / .8)); }
+
+/* 杂志：标题压在照片左下，底部黑色渐变；照片轻微去色 */
+.flash-hero-overlay-end { background: linear-gradient(0deg, rgb(10 10 10 / .82) 0%, rgb(10 10 10 / .35) 55%, rgb(10 10 10 / .1) 100%) !important; }
+.flash-site[data-style="editorial"] .flash-hero-photo img { filter: grayscale(.35) contrast(1.05); }
+/* 自然：底边做成大弧形收边 */
+.flash-site[data-style="organic"] .flash-hero-curve { border-bottom-left-radius: 50% 3rem; border-bottom-right-radius: 50% 3rem; }
+/* 技术/奢华/复古的主标题字重与大小写交给风格包，这里不再覆盖 */
+
+/* 表单防垃圾字段：真人看不见也点不到 */
+.flash-aux { position: absolute; inset-inline-start: -9999px; width: 1px; height: 1px; overflow: hidden; opacity: 0; pointer-events: none; }

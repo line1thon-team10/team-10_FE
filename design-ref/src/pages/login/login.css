@@ -1,0 +1,118 @@
+@import url('https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap');
+
+/* 로그인 첫 화면 전용 브랜드 토큰: 밤의 서재(검정) · #ff7710 · 책 색 */
+.lk-scope {
+  --lk-brand: #ff7710;
+  --lk-brand-deep: #ffa257;
+  --lk-brand-tint: rgba(255, 119, 16, 0.13);
+  --lk-brand-line: rgba(255, 119, 16, 0.32);
+  --lk-brand-soft: rgba(255, 119, 16, 0.18);
+  --lk-ink: #f2ece1;
+  --lk-ink-soft: #ffffff;
+  --lk-paper: #0b0b0d;
+  --lk-card: #131316;
+  --lk-line: #26262b;
+  --lk-line-strong: #3a3a41;
+  --lk-muted: #96918a;
+  --lk-solid: #f2ece1;
+  --lk-solid-ink: #141416;
+  --lk-kakao: #fee500;
+  font-family: 'IBM Plex Sans KR', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color: var(--lk-ink);
+  background: var(--lk-paper);
+  -webkit-font-smoothing: antialiased;
+}
+
+.lk-scope :where(h1, h2, h3, .lk-display) {
+  font-family: 'Black Han Sans', 'IBM Plex Sans KR', ui-sans-serif, system-ui, sans-serif;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  line-height: 1.28;
+}
+
+/* 흰 배경 위 은은한 오렌지 광원 */
+.lk-glow {
+  background-image:
+    radial-gradient(58% 72% at 50% 0%, rgba(255, 119, 16, 0.22), transparent 70%),
+    radial-gradient(40% 60% at 92% 8%, rgba(255, 119, 16, 0.12), transparent 72%);
+}
+
+/* 로고 판: 밝은 종이 위에 얹어 어떤 로고든 또렷하게 */
+.lk-logo-plate {
+  background: linear-gradient(180deg, #fbf7ef 0%, #efe8db 100%);
+  box-shadow:
+    0 24px 60px -28px rgba(0, 0, 0, 0.85),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.lk-logo-mark {
+  filter: drop-shadow(0 6px 14px rgba(120, 70, 20, 0.18));
+}
+
+@media (min-width: 1024px) {
+  .lk-logo-mark {
+    max-width: 380px;
+  }
+}
+
+.lk-action {
+  transition: transform 0.18s ease, background-color 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+.lk-action:hover {
+  transform: translateY(-1px);
+}
+.lk-action:active {
+  transform: translateY(0);
+}
+
+.lk-g-mark {
+  font-family: 'IBM Plex Sans KR', sans-serif;
+  font-weight: 700;
+  font-size: 17px;
+  line-height: 1;
+  background: linear-gradient(120deg, #4285f4 0%, #ea4335 38%, #fbbc05 68%, #34a853 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@keyframes lkRise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.lk-rise {
+  animation: lkRise 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.lk-d1 { animation-delay: 0.06s; }
+.lk-d2 { animation-delay: 0.14s; }
+.lk-d3 { animation-delay: 0.22s; }
+.lk-d4 { animation-delay: 0.3s; }
+
+@keyframes lkFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-7px); }
+}
+.lk-float {
+  animation: lkFloat 7s ease-in-out infinite;
+}
+
+.lk-scope :focus-visible {
+  outline: 2px solid var(--lk-brand);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lk-rise,
+  .lk-float {
+    animation: none;
+  }
+  .lk-action:hover {
+    transform: none;
+  }
+}

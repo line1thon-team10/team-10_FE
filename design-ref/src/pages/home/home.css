@@ -1,0 +1,870 @@
+@import url('https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap');
+
+/* 다크 서재: 검정 바탕 + 오렌지 불빛 + 책 색(초록/빨강/파랑) */
+.hp-scope {
+  --hp-ink: #f2ece1;
+  --hp-ink-soft: #d9d3c8;
+  --hp-brand: #ff7710;
+  --hp-brand-deep: #ffa257;
+  --hp-brand-tint: rgba(255, 119, 16, 0.13);
+  --hp-brand-line: rgba(255, 119, 16, 0.32);
+  --hp-paper: #0b0b0d;
+  --hp-paper-warm: #131316;
+  --hp-card: #121215;
+  --hp-line: #26262b;
+  --hp-line-strong: #3a3a41;
+  --hp-muted: #96918a;
+  --hp-solid: #f2ece1;
+  --hp-solid-hover: #ffffff;
+  --hp-solid-ink: #141416;
+  font-family: 'IBM Plex Sans KR', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color: var(--hp-ink);
+  background: var(--hp-paper);
+  -webkit-font-smoothing: antialiased;
+}
+
+.hp-scope :where(h1, h2, h3, .hp-display) {
+  font-family: 'Black Han Sans', 'IBM Plex Sans KR', ui-sans-serif, system-ui, sans-serif;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+
+/* 책 한 권: 나무판 위에 눕혀 쌓인 모습 */
+.hp-book {
+  position: relative;
+  border-radius: 2px 4px 4px 2px;
+  background-color: var(--bk-mid);
+  background-image: linear-gradient(180deg, var(--bk-hi) 0%, var(--bk-mid) 44%, var(--bk-lo) 100%);
+  box-shadow:
+    0 2px 4px -1px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.26),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.4);
+  transform-origin: left center;
+  animation: hpDrop 0.42s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+/* 책등의 금장 띠와 제목 자리 */
+.hp-book::before {
+  content: '';
+  position: absolute;
+  left: 10%;
+  right: 30%;
+  top: 30%;
+  height: 40%;
+  border-radius: 1px;
+  background: linear-gradient(90deg, rgba(255, 242, 218, 0.5), rgba(255, 242, 218, 0.1));
+  opacity: 0.6;
+}
+
+/* 책 오른쪽의 종이 단면 */
+.hp-book::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 10%;
+  bottom: 10%;
+  width: 7px;
+  border-radius: 0 3px 3px 0;
+  background: repeating-linear-gradient(180deg, #e8dfcd 0 1px, #bcae94 1px 2px);
+  box-shadow: inset -1px 0 0 rgba(0, 0, 0, 0.4);
+}
+
+.hp-bk-green { --bk-hi: #59a06f; --bk-mid: #33774e; --bk-lo: #1d4a30; }
+.hp-bk-green-dark { --bk-hi: #3f8459; --bk-mid: #275c3c; --bk-lo: #123322; }
+.hp-bk-red { --bk-hi: #d05a44; --bk-mid: #ab3730; --bk-lo: #742020; }
+.hp-bk-red-dark { --bk-hi: #b14634; --bk-mid: #8b2c27; --bk-lo: #5c1a18; }
+.hp-bk-blue { --bk-hi: #5486c2; --bk-mid: #2e538f; --bk-lo: #1b3562; }
+.hp-bk-blue-dark { --bk-hi: #4270a8; --bk-mid: #254476; --bk-lo: #132846; }
+
+/* 같은 색 계열 안에서 한 단계씩 달라지는 책 색: 쌓였을 때 더 자연스럽게 섞이도록 */
+.hp-bk-forest { --bk-hi: #4f9464; --bk-mid: #2e6b46; --bk-lo: #16402a; }
+.hp-bk-moss { --bk-hi: #7dab6a; --bk-mid: #4f8544; --bk-lo: #2c5a28; }
+.hp-bk-teal { --bk-hi: #4f9b8b; --bk-mid: #2e7365; --bk-lo: #184a41; }
+.hp-bk-sky { --bk-hi: #6f9fd4; --bk-mid: #43709f; --bk-lo: #274a70; }
+.hp-bk-indigo { --bk-hi: #6a7fc0; --bk-mid: #40548f; --bk-lo: #263562; }
+.hp-bk-steel { --bk-hi: #7d97a8; --bk-mid: #4f6b7d; --bk-lo: #2c4450; }
+.hp-bk-brick { --bk-hi: #b96a4a; --bk-mid: #94462f; --bk-lo: #642b1a; }
+.hp-bk-amber { --bk-hi: #d38a4a; --bk-mid: #a76232; --bk-lo: #713d1c; }
+.hp-bk-plum { --bk-hi: #a85d68; --bk-mid: #7d3b46; --bk-lo: #53222a; }
+
+/* 작은 범례용 책 조각 */
+.hp-chip {
+  display: inline-block;
+  width: 18px;
+  height: 8px;
+  border-radius: 2px;
+  background-image: linear-gradient(180deg, var(--bk-hi) 0%, var(--bk-mid) 44%, var(--bk-lo) 100%);
+  box-shadow: 0 1px 2px -1px rgba(0, 0, 0, 0.7), inset 0 0 0 1px rgba(0, 0, 0, 0.18);
+}
+
+/* 월간 보기: 아주 작은 책 */
+.hp-book--xs {
+  border-radius: 1px 2px 2px 1px;
+  box-shadow:
+    0 1px 2px -1px rgba(0, 0, 0, 0.7),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  animation-duration: 0.3s;
+}
+.hp-book--xs::before,
+.hp-book--xs::after {
+  display: none;
+}
+
+/* 오늘의 공부 태스크 한 줄 */
+.hp-task {
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+.hp-task:hover {
+  border-color: var(--hp-line-strong);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* 아직 오지 않은 날의 학습 예정 문구 */
+.hp-plan {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: keep-all;
+  transition: color 0.2s ease;
+}
+.hp-day:hover .hp-plan {
+  color: var(--hp-ink-soft);
+}
+
+/* 월간 보기의 오늘 빛: 더 작고 은은하게 */
+.hp-beam--sm {
+  top: -8px;
+  bottom: -2px;
+  left: -18%;
+  right: -18%;
+  filter: blur(16px);
+}
+
+/* 긴 나무판자 하나 */
+.hp-plank {
+  position: relative;
+  z-index: 10;
+  height: 20px;
+  border-radius: 3px;
+  background-image:
+    repeating-linear-gradient(90deg, rgba(60, 34, 10, 0.16) 0 1px, transparent 1px 42px),
+    linear-gradient(180deg, #c9955c 0%, #ad7740 34%, #8d5c2c 76%, #6f4620 100%);
+  box-shadow:
+    0 18px 28px -16px rgba(0, 0, 0, 0.85),
+    inset 0 1px 0 rgba(255, 238, 208, 0.4),
+    inset 0 -3px 6px rgba(40, 22, 6, 0.5);
+}
+
+/* 판자 앞면(두께) */
+.hp-plank::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  top: 100%;
+  height: 7px;
+  border-radius: 0 0 4px 4px;
+  background: linear-gradient(180deg, #6d4520, #4a2f14);
+  box-shadow: 0 10px 16px -8px rgba(0, 0, 0, 0.9);
+}
+
+/* 월간 보기의 얇은 판자: 다섯 줄이 한 화면에 들어오도록 두께를 줄임 */
+.hp-plank--thin {
+  height: 9px;
+  border-radius: 2px;
+  box-shadow:
+    0 8px 12px -9px rgba(0, 0, 0, 0.9),
+    inset 0 1px 0 rgba(255, 238, 208, 0.32),
+    inset 0 -2px 4px rgba(40, 22, 6, 0.45);
+}
+.hp-plank--thin::after {
+  left: 2px;
+  right: 2px;
+  height: 4px;
+  border-radius: 0 0 3px 3px;
+}
+
+/* 오늘 칸에 내려오는 전등 빛: 사각 테두리 없이 둥근 빛 웅덩이만 */
+.hp-beam {
+  position: absolute;
+  top: -20px;
+  bottom: -4px;
+  left: -26%;
+  right: -26%;
+  pointer-events: none;
+  background:
+    radial-gradient(44% 26% at 50% 100%, rgba(255, 206, 134, 0.5), rgba(255, 206, 134, 0) 72%),
+    radial-gradient(76% 62% at 50% 98%, rgba(255, 214, 158, 0.15), rgba(255, 214, 158, 0) 74%);
+  filter: blur(26px);
+}
+
+/* 판자 위에 번지는 불빛 */
+.hp-plank-light {
+  position: absolute;
+  bottom: 100%;
+  width: 21%;
+  height: 30px;
+  transform: translateX(-50%);
+  background: radial-gradient(ellipse at center bottom, rgba(255, 219, 158, 0.85), rgba(255, 219, 158, 0) 72%);
+  filter: blur(5px);
+  pointer-events: none;
+}
+
+/* 오늘 칸 책에 스며드는 빛: 가장자리 없이 책에만 번지는 둥근 빛 */
+.hp-beam-wash {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+  background: radial-gradient(
+    66% 74% at 50% 94%,
+    rgba(255, 222, 168, 0.62) 0%,
+    rgba(255, 216, 156, 0.16) 58%,
+    rgba(255, 216, 156, 0) 78%
+  );
+  mix-blend-mode: soft-light;
+}
+
+/* 요일: 연한 한 글자 */
+.hp-weekday {
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: #6e6961;
+  transition: color 0.2s ease;
+}
+.hp-weekday.is-today {
+  color: var(--hp-brand-deep);
+  font-weight: 700;
+}
+.hp-day {
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* 선택 박스는 마우스를 올렸을 때만 */
+.hp-day:hover {
+  background: rgba(255, 255, 255, 0.045);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+.hp-day:hover .hp-weekday {
+  color: var(--hp-ink-soft);
+}
+.hp-day.is-today:hover {
+  background: rgba(255, 173, 92, 0.09);
+  box-shadow: inset 0 0 0 1px rgba(255, 173, 92, 0.26);
+}
+
+@keyframes hpDrop {
+  from {
+    opacity: 0;
+    transform: translateY(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes hpRise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.hp-rise {
+  animation: hpRise 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.hp-d1 { animation-delay: 0.05s; }
+.hp-d2 { animation-delay: 0.12s; }
+.hp-d3 { animation-delay: 0.19s; }
+
+.hp-scope :focus-visible {
+  outline: 2px solid var(--hp-brand);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hp-book,
+  .hp-rise {
+    animation: none;
+  }
+}
+
+/* 색 견본: 과목 색 막대에 쓰는 작은 색 조각 */
+.hp-swatch {
+  display: inline-block;
+  border-radius: 2px;
+  background-image: linear-gradient(180deg, var(--bk-hi) 0%, var(--bk-mid) 48%, var(--bk-lo) 100%);
+}
+
+/* 월간 책장: 한 칸 */
+.hp-month-cell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  height: 96px;
+  border: 1px solid var(--hp-line);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.015);
+  cursor: pointer;
+  transition: border-color 0.18s ease, background-color 0.18s ease;
+}
+
+.hp-month-cell:hover {
+  border-color: var(--hp-line-strong);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.hp-month-cell.is-selected {
+  border-color: var(--hp-brand-line);
+  background: rgba(255, 173, 92, 0.07);
+}
+
+.hp-month-cell.is-today {
+  border-color: rgba(255, 173, 92, 0.3);
+}
+
+.hp-month-cell.is-empty,
+.hp-month-cell.is-empty:hover {
+  border-color: transparent;
+  background: transparent;
+  cursor: default;
+}
+
+/* 아직 오지 않은 날: 점선 책 한 권 */
+.hp-plan-dash {
+  display: block;
+  width: 68%;
+  height: 34px;
+  margin-bottom: 2px;
+  border: 1px dashed var(--hp-line-strong);
+  border-radius: 3px;
+}
+
+/* 주간 책장: 선택한 요일 */
+.hp-day.is-selected {
+  background: rgba(255, 173, 92, 0.055);
+  box-shadow: inset 0 0 0 1px var(--hp-brand-line);
+}
+
+/* 월간 리포트: 책장으로 돌아가기 */
+.hp-report-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  cursor: pointer;
+  border: 1px solid var(--hp-line-strong);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--hp-ink-soft);
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.hp-report-back:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--hp-ink);
+}
+
+/* 월간 리포트: 단원 등급 표 */
+.hp-grade-table th {
+  padding: 0 8px 8px;
+  text-align: left;
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--hp-muted);
+  border-bottom: 1px solid var(--hp-line);
+  white-space: nowrap;
+}
+
+.hp-grade-table td {
+  padding: 9px 8px;
+  font-size: 11.5px;
+  border-bottom: 1px solid var(--hp-line);
+}
+
+.hp-grade-table tr:last-child td {
+  border-bottom: 0;
+}
+
+@media (max-width: 640px) {
+  .hp-month-cell {
+    height: 80px;
+  }
+}
+
+/* ── 공부 기록 팝업 (홈 톤) ─────────────────────────────── */
+.hp-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  overflow-y: auto;
+  background: rgba(6, 6, 8, 0.76);
+  backdrop-filter: blur(4px);
+}
+
+.hp-modal {
+  width: 100%;
+  max-width: 560px;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  border: 1px solid var(--hp-line-strong);
+  border-radius: 16px;
+  background: #151518;
+  padding: 22px;
+  box-shadow: 0 40px 80px -40px rgba(0, 0, 0, 0.95);
+}
+
+.hp-modal--sm {
+  max-width: 460px;
+}
+
+/* 팝업 버튼 */
+.hp-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 7px 14px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.hp-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.hp-btn--solid {
+  background: var(--hp-solid);
+  color: var(--hp-solid-ink);
+}
+
+.hp-btn--solid:hover:not(:disabled) {
+  background: var(--hp-solid-hover);
+}
+
+.hp-btn--ghost {
+  border: 1px solid var(--hp-line-strong);
+  background: transparent;
+  color: var(--hp-ink-soft);
+}
+
+.hp-btn--ghost:hover:not(:disabled) {
+  border-color: var(--hp-ink-soft);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--hp-ink);
+}
+
+.hp-btn--quiet {
+  background: transparent;
+  color: var(--hp-muted);
+}
+
+.hp-btn--quiet:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--hp-ink);
+}
+
+.hp-btn--lg {
+  padding: 9px 18px;
+  font-size: 12.5px;
+}
+
+/* 팝업 입력 */
+.hp-field {
+  width: 100%;
+  border: 1px solid var(--hp-line-strong);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.02);
+  padding: 8px 11px;
+  font-family: inherit;
+  font-size: 12.5px;
+  color: var(--hp-ink);
+  outline: none;
+  transition: border-color 0.18s ease;
+}
+
+.hp-field::placeholder {
+  color: #6f6a63;
+}
+
+.hp-field:focus {
+  border-color: var(--hp-brand-line);
+}
+
+input.hp-field[type='number']::-webkit-outer-spin-button,
+input.hp-field[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input.hp-field[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* 팝업 선택 항목 */
+.hp-opt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  border: 1px solid var(--hp-line);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.02);
+  padding: 11px 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.18s ease, background-color 0.18s ease;
+}
+
+.hp-opt:hover {
+  border-color: var(--hp-line-strong);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.hp-opt.is-selected {
+  border-color: var(--hp-brand-line);
+  background: var(--hp-brand-tint);
+}
+
+.hp-dot {
+  display: flex;
+  width: 14px;
+  height: 14px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--hp-line-strong);
+  border-radius: 50%;
+}
+
+.hp-opt.is-selected .hp-dot {
+  border-color: var(--hp-brand);
+}
+
+.hp-dot::after {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.hp-opt.is-selected .hp-dot::after {
+  background: var(--hp-brand);
+}
+
+/* 팝업 칩 */
+.hp-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--hp-line-strong);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--hp-ink-soft);
+  white-space: nowrap;
+}
+
+.hp-tag--brand {
+  border-color: var(--hp-brand-line);
+  background: var(--hp-brand-tint);
+  color: var(--hp-brand-deep);
+}
+
+.hp-ai-mark {
+  display: inline-flex;
+  height: 17px;
+  min-width: 20px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: 5px;
+  background: var(--hp-solid);
+  padding: 0 4px;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: var(--hp-solid-ink);
+}
+
+/* 팝업 진행 막대 */
+.hp-meter {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--hp-line);
+}
+
+.hp-meter > span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--hp-brand);
+  transition: width 0.45s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+/* 팝업 책 쌓기 */
+.hp-book-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.hp-book--stack {
+  display: block;
+  width: 100%;
+  height: 22px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.hp-book--stack:nth-child(1) {
+  width: 92%;
+  animation-delay: 0.05s;
+}
+
+.hp-book--stack:nth-child(2) {
+  width: 100%;
+  animation-delay: 0.16s;
+}
+
+.hp-book--stack:nth-child(3) {
+  width: 86%;
+  animation-delay: 0.27s;
+}
+
+/* ── 과목 색: 모든 화면 공통 3색 ─────────────────────── */
+:root {
+  --sub-data: #4f46e5;
+  --sub-data-hi: #7a72f2;
+  --sub-data-lo: #31279f;
+  --sub-os: #2563eb;
+  --sub-os-hi: #5a8cf5;
+  --sub-os-lo: #163fa8;
+  --sub-net: #7c3aed;
+  --sub-net-hi: #a273f6;
+  --sub-net-lo: #5321a3;
+}
+
+.hp-sub-data { --bk-hi: var(--sub-data-hi); --bk-mid: var(--sub-data); --bk-lo: var(--sub-data-lo); }
+.hp-sub-os { --bk-hi: var(--sub-os-hi); --bk-mid: var(--sub-os); --bk-lo: var(--sub-os-lo); }
+.hp-sub-net { --bk-hi: var(--sub-net-hi); --bk-mid: var(--sub-net); --bk-lo: var(--sub-net-lo); }
+
+/* ── 책 색 = 단원 상태 6가지 ─────────────────────────── */
+/* 완료·퀴즈 전: 회색 */
+.hp-bk-gray { --bk-hi: #8b8b93; --bk-mid: #61616a; --bk-lo: #3c3c44; }
+
+/* 진행 중: 회색 점 무늬 */
+.hp-bk-progress {
+  --bk-hi: #8b8b93;
+  --bk-mid: #5b5b64;
+  --bk-lo: #36363d;
+  background-image:
+    radial-gradient(rgba(255, 255, 255, 0.32) 1px, transparent 1.3px),
+    linear-gradient(180deg, var(--bk-hi) 0%, var(--bk-mid) 44%, var(--bk-lo) 100%);
+  background-size: 5px 5px, 100% 100%;
+}
+
+/* 흔들림: 노랑 빗금 */
+.hp-bk-yellow {
+  --bk-hi: #e2b847;
+  --bk-mid: #c79a2b;
+  --bk-lo: #8a6514;
+  background-image:
+    repeating-linear-gradient(135deg, rgba(0, 0, 0, 0.2) 0 4px, rgba(255, 255, 255, 0.08) 4px 8px),
+    linear-gradient(180deg, var(--bk-hi) 0%, var(--bk-mid) 44%, var(--bk-lo) 100%);
+}
+
+/* 붕괴 위기: 빨강 격자 빗금 */
+.hp-bk-crisis {
+  --bk-hi: #d05a44;
+  --bk-mid: #a83430;
+  --bk-lo: #6e1d1c;
+  background-image:
+    repeating-linear-gradient(45deg, rgba(0, 0, 0, 0.26) 0 3px, transparent 3px 7px),
+    repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.1) 0 3px, transparent 3px 7px),
+    linear-gradient(180deg, var(--bk-hi) 0%, var(--bk-mid) 44%, var(--bk-lo) 100%);
+}
+
+/* 예정: 점선 윤곽 (공통) */
+.hp-book--dash {
+  border: 1px dashed var(--hp-line-strong);
+  background-color: transparent;
+  background-image: none;
+  box-shadow: none;
+  animation: none;
+}
+.hp-book--dash::before,
+.hp-book--dash::after {
+  display: none;
+}
+.hp-chip--dash {
+  border: 1px dashed var(--hp-line-strong);
+  background: transparent;
+  box-shadow: none;
+}
+
+/* ── 월간: 세워 꽂힌 책 한 권 ─────────────────────────── */
+.hp-vbook-track {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 100%;
+  height: 46px;
+}
+
+.hp-vbook {
+  position: relative;
+  width: 62%;
+  min-height: 7px;
+  border-radius: 2px 2px 1px 1px;
+  background-color: var(--bk-mid);
+  background-image: linear-gradient(90deg, var(--bk-lo) 0%, var(--bk-mid) 34%, var(--bk-hi) 78%, var(--bk-mid) 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 2px 4px -2px rgba(0, 0, 0, 0.8);
+  transition: height 0.35s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.hp-vbook::after {
+  content: '';
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  top: 22%;
+  height: 16%;
+  border-radius: 1px;
+  background: rgba(255, 242, 218, 0.4);
+}
+
+.hp-vbook--dash {
+  background: transparent;
+  border: 1px dashed var(--hp-line-strong);
+  box-shadow: none;
+}
+.hp-vbook--dash::after {
+  display: none;
+}
+
+/* ── 기록 직후: 책이 위에서 떨어져 오늘 칸에 쌓임 ─────────── */
+.hp-book--drop {
+  animation: hpDropIn 0.62s cubic-bezier(0.24, 0.9, 0.24, 1) both;
+}
+
+@keyframes hpDropIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-64px) rotate(-5deg);
+  }
+  62% {
+    opacity: 1;
+    transform: translateY(2px) rotate(0.6deg);
+  }
+  80% {
+    transform: translateY(-3px) rotate(-0.4deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) rotate(0deg);
+  }
+}
+
+/* 우상단 작은 알림 */
+.hp-toast {
+  position: fixed;
+  top: 78px;
+  right: 16px;
+  z-index: 75;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: calc(100vw - 32px);
+  border: 1px solid var(--hp-brand-line);
+  border-radius: 12px;
+  background: #1b1b1f;
+  padding: 10px 14px;
+  box-shadow: 0 24px 48px -28px rgba(0, 0, 0, 0.95);
+  animation: hpToastIn 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@media (min-width: 768px) {
+  .hp-toast {
+    right: 32px;
+  }
+}
+
+.hp-toast__shelf {
+  display: flex;
+  width: 46px;
+  flex: none;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 2px;
+  padding-bottom: 2px;
+  border-bottom: 2px solid #4a2f14;
+}
+
+.hp-book--toast {
+  display: block;
+  height: 5px;
+  width: 100%;
+  border-radius: 1px 2px 2px 1px;
+  animation: none;
+}
+
+.hp-book--toast::before,
+.hp-book--toast::after {
+  display: none;
+}
+
+.hp-book--toast-drop {
+  width: 92%;
+  margin-left: auto;
+  margin-right: auto;
+  animation: hpDropIn 0.6s cubic-bezier(0.24, 0.9, 0.24, 1) both;
+}
+
+@keyframes hpToastIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hp-book--drop,
+  .hp-book--toast-drop {
+    animation: none;
+  }
+  .hp-toast {
+    animation: none;
+  }
+}
+
+/* 월간 책장: 한 칸 */

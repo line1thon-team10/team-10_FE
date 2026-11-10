@@ -1,0 +1,14 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 서비스 전체 다크 모드 기본 바탕 */
+html {
+  color-scheme: dark;
+  background-color: #0b0b0d;
+}
+
+body {
+  background-color: #0b0b0d;
+  color: #f2ece1;
+}

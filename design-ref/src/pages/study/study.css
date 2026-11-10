@@ -1,0 +1,238 @@
+@import url('https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap');
+
+/* 집중 모드: 기록 화면과 같은 밤의 서재 톤, 숫자만 숨긴 화면 */
+.st-scope {
+  --st-ink: #f2ece1;
+  --st-ink-soft: #d9d3c8;
+  --st-brand: #ff7710;
+  --st-brand-deep: #ffa257;
+  --st-brand-tint: rgba(255, 119, 16, 0.13);
+  --st-brand-line: rgba(255, 119, 16, 0.32);
+  --st-paper: #0b0b0d;
+  --st-paper-warm: #131316;
+  --st-card: #121215;
+  --st-line: #26262b;
+  --st-line-strong: #3a3a41;
+  --st-muted: #96918a;
+  --st-solid: #f2ece1;
+  --st-solid-ink: #141416;
+  font-family: 'IBM Plex Sans KR', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color: var(--st-ink);
+  background: var(--st-paper);
+  -webkit-font-smoothing: antialiased;
+}
+
+.st-scope :where(h1, h2, .st-display) {
+  font-family: 'Black Han Sans', 'IBM Plex Sans KR', ui-sans-serif, system-ui, sans-serif;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  line-height: 1.34;
+}
+
+/* 펼친 책: 선으로만 그린 아이콘 느낌 */
+.st-book {
+  display: flex;
+  width: 92px;
+  height: 78px;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid var(--st-line-strong);
+  border-radius: 8px 8px 6px 6px;
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--st-ink-soft);
+}
+.st-book--closed {
+  width: 74px;
+  height: 92px;
+  border-radius: 4px 6px 6px 4px;
+}
+
+.st-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--st-line-strong);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 4px 9px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--st-ink-soft);
+  white-space: nowrap;
+}
+
+.st-timebtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px dashed var(--st-line-strong);
+  border-radius: 9px;
+  background: transparent;
+  padding: 6px 11px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--st-ink-soft);
+  cursor: pointer;
+  transition: border-color 0.18s ease, color 0.18s ease;
+}
+.st-timebtn:hover {
+  border-color: var(--st-ink-soft);
+  color: var(--st-ink);
+}
+
+.st-btn-solid {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 10px;
+  background: var(--st-solid);
+  color: var(--st-solid-ink);
+  padding: 10px 20px;
+  font-size: 12.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.18s ease, transform 0.18s ease;
+}
+.st-btn-solid:hover {
+  background: #ffffff;
+  transform: translateY(-1px);
+}
+
+.st-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--st-line-strong);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--st-ink-soft);
+  padding: 9px 18px;
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 0.18s ease, color 0.18s ease, background-color 0.18s ease;
+}
+.st-btn-ghost:hover {
+  border-color: var(--st-ink-soft);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--st-ink);
+}
+
+.st-card {
+  border: 1px solid var(--st-line);
+  border-radius: 18px;
+  background: var(--st-card);
+}
+
+/* 시간 보기: 3초 동안만 떠 있는 알약 */
+.st-timepill {
+  position: fixed;
+  top: 74px;
+  right: 24px;
+  z-index: 50;
+  border: 1px solid var(--st-brand-line);
+  border-radius: 999px;
+  background: var(--st-brand-tint);
+  padding: 7px 14px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--st-brand-deep);
+  box-shadow: 0 12px 24px -18px rgba(0, 0, 0, 0.9);
+  animation: stFade 0.2s ease both;
+}
+
+.st-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(6, 6, 8, 0.72);
+  backdrop-filter: blur(4px);
+}
+
+.st-modal {
+  width: 100%;
+  max-width: 420px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  border: 1px solid var(--st-line-strong);
+  border-radius: 18px;
+  background: #151518;
+  padding: 20px;
+  box-shadow: 0 30px 60px -30px rgba(0, 0, 0, 0.9);
+}
+
+.st-modal--pdf {
+  max-width: 520px;
+}
+
+.st-file-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid var(--st-line);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+/* 예상 시간의 2배가 지나면 오른쪽 아래에 조용히 뜨는 확인 카드 */
+.st-checkin {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 45;
+  width: min(320px, calc(100vw - 40px));
+  border: 1px dashed var(--st-line-strong);
+  border-radius: 16px;
+  background: var(--st-card);
+  padding: 15px 16px;
+  box-shadow: 0 24px 48px -28px rgba(0, 0, 0, 0.9);
+}
+
+@keyframes stFade {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes stRise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.st-rise {
+  animation: stRise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.st-scope :focus-visible {
+  outline: 2px solid var(--st-brand);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .st-rise,
+  .st-timepill {
+    animation: none;
+  }
+  .st-btn-solid:hover {
+    transform: none;
+  }
+}

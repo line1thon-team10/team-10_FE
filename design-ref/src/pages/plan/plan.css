@@ -1,0 +1,641 @@
+@import url('https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap');
+
+/* 학습 계획 설정 화면: 기록 화면과 같은 밤의 서재 톤 */
+.ps-scope {
+  --ps-brand: #ff7710;
+  --ps-brand-deep: #ffa257;
+  --ps-brand-tint: rgba(255, 119, 16, 0.13);
+  --ps-brand-line: rgba(255, 119, 16, 0.34);
+  --ps-ink: #f2ece1;
+  --ps-ink-soft: #d9d3c8;
+  --ps-paper: #0b0b0d;
+  --ps-paper-warm: #131316;
+  --ps-card: #121215;
+  --ps-line: #26262b;
+  --ps-line-strong: #3a3a41;
+  --ps-muted: #96918a;
+  --ps-solid: #f2ece1;
+  --ps-solid-ink: #141416;
+  --ps-slot: rgba(255, 255, 255, 0.055);
+  font-family: 'IBM Plex Sans KR', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color: var(--ps-ink);
+  background: var(--ps-paper);
+  -webkit-font-smoothing: antialiased;
+}
+
+.ps-scope :where(h1, h2, h3, .ps-display) {
+  font-family: 'Black Han Sans', 'IBM Plex Sans KR', ui-sans-serif, system-ui, sans-serif;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+
+.ps-card {
+  border: 1px solid var(--ps-line);
+  border-radius: 18px;
+  background: var(--ps-card);
+}
+
+.ps-soft {
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* ── 단계 표시 ───────────────────────────────── */
+.ps-steps {
+  display: flex;
+  align-items: flex-start;
+  min-width: 520px;
+}
+
+.ps-step {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.ps-step-track {
+  display: flex;
+  width: 100%;
+  align-items: center;
+}
+
+.ps-step-line {
+  flex: 1 1 0;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--ps-line-strong);
+  transition: background-color 0.25s ease;
+}
+.ps-step-line.is-on {
+  background: var(--ps-ink-soft);
+}
+.ps-step-line.is-hidden {
+  background: transparent;
+}
+
+.ps-step-dot {
+  display: flex;
+  width: 29px;
+  height: 29px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--ps-line-strong);
+  border-radius: 50%;
+  background: var(--ps-paper);
+  color: var(--ps-muted);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  transition: all 0.25s ease;
+}
+.ps-step.is-active .ps-step-dot {
+  border-color: var(--ps-ink);
+  color: var(--ps-ink);
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.06);
+}
+.ps-step.is-done .ps-step-dot {
+  border-color: var(--ps-ink);
+  background: var(--ps-ink);
+  color: var(--ps-solid-ink);
+}
+.ps-step-label {
+  font-size: 11.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  color: var(--ps-muted);
+  transition: color 0.25s ease;
+}
+.ps-step.is-active .ps-step-label {
+  color: var(--ps-ink);
+  font-weight: 700;
+}
+.ps-step.is-done .ps-step-label {
+  color: var(--ps-ink-soft);
+}
+
+/* ── 표시 요소 ──────────────────────────────── */
+.ps-ai-mark {
+  display: flex;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: var(--ps-solid);
+  color: var(--ps-solid-ink);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.ps-mark {
+  display: flex;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: var(--ps-brand-tint);
+  color: var(--ps-brand-deep);
+}
+
+.ps-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--ps-line-strong);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 5px 11px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--ps-ink-soft);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 0.18s ease, color 0.18s ease, background-color 0.18s ease;
+}
+.ps-chip:hover {
+  border-color: var(--ps-brand-line);
+  background: var(--ps-brand-tint);
+  color: var(--ps-brand-deep);
+}
+
+.ps-bubble {
+  max-width: 88%;
+  padding: 11px 14px;
+  font-size: 13px;
+  line-height: 1.62;
+  word-break: keep-all;
+}
+.ps-bubble--ai {
+  border-radius: 4px 16px 16px 16px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--ps-ink-soft);
+}
+.ps-bubble--user {
+  border-radius: 16px 4px 16px 16px;
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--ps-ink);
+}
+
+/* ── 캘린더 ─────────────────────────────────── */
+.ps-cal-scroll {
+  overflow-x: auto;
+}
+.ps-cal-min {
+  min-width: 660px;
+}
+
+.ps-cal-head {
+  display: grid;
+  grid-template-columns: 46px repeat(7, minmax(0, 1fr));
+  border-bottom: 1px solid var(--ps-line);
+}
+.ps-cal-head-cell {
+  padding: 9px 0;
+  text-align: center;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ps-muted);
+}
+
+.ps-cal-body {
+  display: grid;
+  grid-template-columns: 46px repeat(7, minmax(0, 1fr));
+  padding-bottom: 6px;
+}
+
+.ps-cal-axis {
+  position: relative;
+}
+.ps-cal-time {
+  padding-right: 8px;
+  text-align: right;
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ps-muted);
+  transform: translateY(-6px);
+}
+
+.ps-cal-col {
+  position: relative;
+  border-left: 1px solid rgba(255, 255, 255, 0.06);
+}
+.ps-cal-slot {
+  border-top: 1px solid rgba(255, 255, 255, 0.055);
+}
+
+.ps-free-slot {
+  display: flex;
+  height: 100%;
+  align-items: center;
+  gap: 3px;
+  padding-left: 6px;
+  border-radius: 5px;
+  background: rgba(255, 119, 16, 0.09);
+  border-left: 2px solid rgba(255, 119, 16, 0.22);
+  font-size: 9.5px;
+  line-height: 1;
+  color: var(--ps-brand-deep);
+  opacity: 0.9;
+}
+
+.ps-block {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  overflow: hidden;
+  padding: 5px 7px;
+  border-radius: 8px;
+  text-align: left;
+  font-size: 10.5px;
+  line-height: 1.35;
+  cursor: pointer;
+  transition: box-shadow 0.18s ease, filter 0.18s ease;
+}
+.ps-block:hover {
+  filter: brightness(1.14);
+}
+.ps-block.is-selected {
+  box-shadow: 0 0 0 2px var(--ps-brand);
+}
+.ps-block-title {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-weight: 600;
+  word-break: keep-all;
+}
+.ps-block-time {
+  margin-top: 2px;
+  font-size: 9.5px;
+  opacity: 0.82;
+  font-variant-numeric: tabular-nums;
+}
+
+.ps-block--fixed {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--ps-ink);
+}
+.ps-block--class {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.045);
+  color: var(--ps-ink-soft);
+}
+.ps-block--appointment {
+  border: 1px solid var(--ps-brand-line);
+  background: var(--ps-brand-tint);
+  color: var(--ps-brand-deep);
+}
+.ps-block--custom {
+  border: 1px dashed var(--ps-brand-line);
+  background: rgba(255, 119, 16, 0.08);
+  color: var(--ps-brand-deep);
+}
+
+.ps-legend-chip {
+  display: inline-block;
+  width: 16px;
+  height: 11px;
+  flex: none;
+  border-radius: 3px;
+}
+.ps-legend-chip--fixed {
+  background: rgba(255, 255, 255, 0.16);
+}
+.ps-legend-chip--class {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.05);
+}
+.ps-legend-chip--appointment {
+  background: var(--ps-brand-tint);
+  border: 1px solid var(--ps-brand-line);
+}
+.ps-legend-chip--custom {
+  border: 1px dashed var(--ps-brand-line);
+  background: transparent;
+}
+
+/* ── 공통 버튼 ──────────────────────────────── */
+.ps-btn-solid {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 10px;
+  background: var(--ps-solid);
+  color: var(--ps-solid-ink);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  padding: 10px 18px;
+  cursor: pointer;
+  transition: background-color 0.18s ease, transform 0.18s ease;
+}
+.ps-btn-solid:hover {
+  background: #ffffff;
+  transform: translateY(-1px);
+}
+
+.ps-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--ps-line-strong);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ps-ink-soft);
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  padding: 9px 14px;
+  cursor: pointer;
+  transition: border-color 0.18s ease, color 0.18s ease, background-color 0.18s ease;
+}
+.ps-btn-ghost:hover {
+  border-color: var(--ps-ink-soft);
+  color: var(--ps-ink);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.ps-field {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--ps-line-strong);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 9px 11px;
+  font-size: 12.5px;
+  color: var(--ps-ink);
+  transition: border-color 0.18s ease;
+}
+.ps-field::placeholder {
+  color: #7b756d;
+}
+.ps-field:focus {
+  border-color: var(--ps-brand);
+  outline: none;
+}
+.ps-field option {
+  background: #17171b;
+  color: var(--ps-ink);
+}
+
+/* ── 안내/모달 ──────────────────────────────── */
+.ps-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  border: 1px solid var(--ps-brand-line);
+  border-radius: 12px;
+  background: var(--ps-brand-tint);
+  padding: 10px 13px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--ps-brand-deep);
+}
+
+.ps-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(6, 6, 8, 0.72);
+  backdrop-filter: blur(4px);
+}
+.ps-modal {
+  width: 100%;
+  max-width: 380px;
+  border: 1px solid var(--ps-line-strong);
+  border-radius: 18px;
+  background: #151518;
+  padding: 22px;
+  box-shadow: 0 30px 60px -30px rgba(0, 0, 0, 0.9);
+}
+
+.ps-modal--wide {
+  max-width: 560px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+}
+
+/* ── 5단계: 태스크 블록 분할 ───────────────── */
+.ps-split-panel {
+  border: 1px dashed var(--ps-line-strong);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.012);
+  padding: 16px;
+}
+
+.ps-split-scroll {
+  overflow-x: auto;
+}
+
+.ps-split-track {
+  display: flex;
+  min-width: 640px;
+  align-items: flex-end;
+  gap: 20px;
+  padding: 22px 6px 4px;
+}
+
+.ps-split-source {
+  display: flex;
+  width: 54px;
+  height: 84px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.075);
+  font-size: 10px;
+  color: var(--ps-muted);
+  text-align: center;
+  line-height: 1.3;
+}
+
+.ps-split-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.ps-split-stack {
+  display: flex;
+  height: 104px;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 3px;
+}
+
+.ps-split-block {
+  display: block;
+  width: 46px;
+  border: 1px dashed var(--ps-line-strong);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.ps-split-title {
+  border-radius: 4px;
+  background: var(--ps-brand-tint);
+  padding: 2px 6px;
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--ps-brand-deep);
+  white-space: nowrap;
+}
+
+.ps-split-meta {
+  font-size: 10px;
+  color: var(--ps-muted);
+  white-space: nowrap;
+}
+
+.ps-split-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 18px;
+  border: 1px solid var(--ps-line);
+  border-radius: 12px;
+  background: var(--ps-card);
+  padding: 12px 16px;
+  font-size: 11.5px;
+  color: var(--ps-ink-soft);
+}
+
+/* ── 5-1: 다시 나누기 요청 ─────────────────── */
+.ps-resplit-box {
+  border: 1px dashed var(--ps-line-strong);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.018);
+  padding: 13px 14px;
+}
+
+.ps-resplit-box .ps-bubble {
+  max-width: 86%;
+  font-size: 12px;
+}
+
+/* ── 5-2: 기존 안 · 새 안 비교 ─────────────── */
+.ps-compare-chip {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--ps-line-strong);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 5px 9px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ps-ink-soft);
+}
+
+.ps-compare-new {
+  border-style: dashed;
+  border-color: var(--ps-line-strong);
+}
+
+.ps-compare-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--ps-line);
+  border-radius: 9px;
+  padding: 7px 2px 5px;
+}
+.ps-compare-day.is-changed {
+  border-color: var(--ps-ink-soft);
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.ps-compare-label {
+  font-size: 10px;
+  color: var(--ps-muted);
+}
+
+.ps-compare-bar-wrap {
+  display: flex;
+  height: 40px;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.ps-compare-bar {
+  display: block;
+  width: 11px;
+  border-radius: 2px;
+  background: var(--ps-ink-soft);
+}
+
+.ps-compare-hours {
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ps-ink-soft);
+}
+
+.ps-compare-tag {
+  border-radius: 999px;
+  background: var(--ps-brand-tint);
+  padding: 1px 5px;
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--ps-brand-deep);
+}
+.ps-compare-tag.is-empty {
+  visibility: hidden;
+}
+
+.ps-compare-notes {
+  border: 1px dashed var(--ps-line-strong);
+  border-radius: 16px;
+  padding: 14px 16px;
+}
+
+@keyframes psRise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.ps-rise {
+  animation: psRise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.ps-d1 { animation-delay: 0.06s; }
+.ps-d2 { animation-delay: 0.13s; }
+
+.ps-scope :focus-visible {
+  outline: 2px solid var(--ps-brand);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ps-rise {
+    animation: none;
+  }
+  .ps-btn-solid:hover {
+    transform: none;
+  }
+}

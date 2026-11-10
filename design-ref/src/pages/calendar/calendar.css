@@ -1,0 +1,338 @@
+/* 주간 캘린더: 시간 축 + 요일 7열 그리드 */
+.cl-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.cl-min {
+  min-width: 780px;
+}
+
+.cl-head {
+  display: grid;
+  grid-template-columns: 52px repeat(7, minmax(0, 1fr));
+  gap: 0 4px;
+  padding-bottom: 8px;
+}
+
+.cl-dhead {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+  padding: 4px 2px 5px;
+  border-radius: 8px 8px 0 0;
+}
+
+.cl-dhead.is-today {
+  background: rgba(255, 173, 92, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(255, 173, 92, 0.24);
+}
+
+.cl-dhead-day {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--hp-ink-soft);
+  white-space: nowrap;
+}
+
+.cl-dhead.is-today .cl-dhead-day {
+  color: var(--hp-brand-deep);
+}
+
+.cl-dhead-date {
+  font-size: 10.5px;
+  color: var(--hp-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.cl-dhead-exam {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border-radius: 999px;
+  border: 1px solid var(--hp-line-strong);
+  padding: 1px 6px;
+  font-size: 9.5px;
+  color: var(--hp-ink-soft);
+}
+
+.cl-dhead-memo {
+  font-size: 9.5px;
+  color: var(--hp-brand-deep);
+  white-space: nowrap;
+}
+
+.cl-body {
+  display: grid;
+  grid-template-columns: 52px repeat(7, minmax(0, 1fr));
+  gap: 0 4px;
+  border-top: 1px solid var(--hp-line);
+}
+
+.cl-axis-cell {
+  padding-right: 8px;
+  text-align: right;
+  font-size: 10px;
+  color: var(--hp-muted);
+  font-variant-numeric: tabular-nums;
+  transform: translateY(-7px);
+}
+
+.cl-col {
+  position: relative;
+  border-left: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.cl-col.is-today {
+  background: rgba(255, 173, 92, 0.035);
+}
+
+.cl-slot {
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.045);
+}
+
+.cl-block {
+  position: absolute;
+  left: 1px;
+  right: 1px;
+  display: block;
+  overflow: hidden;
+  border: 0;
+  border-left: 3px solid transparent;
+  border-radius: 5px;
+  padding: 3px 5px;
+  text-align: left;
+  cursor: pointer;
+  line-height: 1.3;
+  transition: filter 0.15s ease, outline-color 0.15s ease;
+}
+
+.cl-block:hover {
+  filter: brightness(1.16);
+}
+
+.cl-block.is-selected {
+  outline: 1px solid var(--hp-brand-deep);
+  outline-offset: 1px;
+}
+
+.cl-block-title {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cl-block-time {
+  display: block;
+  font-size: 9px;
+  opacity: 0.72;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.cl-block--tight .cl-block-time {
+  display: none;
+}
+
+/* 고정 일정: 이름표처럼 회색 */
+.cl-fixed {
+  background: rgba(255, 255, 255, 0.075);
+  border-left-color: #6f6a62;
+  color: var(--hp-ink-soft);
+}
+
+.cl-class {
+  background: rgba(255, 255, 255, 0.11);
+  border-left-color: #918b82;
+  color: var(--hp-ink);
+}
+
+.cl-appointment {
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px dashed var(--hp-line-strong);
+  border-left: 3px solid #6f6a62;
+  color: var(--hp-muted);
+}
+
+/* 공부 블록: 왼쪽 띠가 과목 색 */
+.cl-sub-data {
+  background: rgba(79, 70, 229, 0.17);
+  border-left-color: #4f46e5;
+  color: #cfccfb;
+}
+
+.cl-sub-os {
+  background: rgba(37, 99, 235, 0.17);
+  border-left-color: #2563eb;
+  color: #c8dcfb;
+}
+
+.cl-sub-net {
+  background: rgba(124, 58, 237, 0.17);
+  border-left-color: #7c3aed;
+  color: #ded0fb;
+}
+
+.cl-sub-etc {
+  background: rgba(255, 255, 255, 0.09);
+  border-left-color: #8f8a82;
+  color: var(--hp-ink-soft);
+}
+
+.cl-custom {
+  background: rgba(255, 119, 16, 0.14);
+  border: 1px dashed var(--hp-brand-line);
+  border-left: 3px solid var(--hp-brand);
+  color: var(--hp-ink);
+}
+
+.cl-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: 2px;
+}
+
+.cl-dot-data { background: #4f46e5; }
+.cl-dot-os { background: #2563eb; }
+.cl-dot-net { background: #7c3aed; }
+.cl-dot-etc { background: #6f6a62; }
+
+/* 오른쪽 안내 카드 */
+.cl-card {
+  border: 1px solid var(--hp-line);
+  border-radius: 14px;
+  background: var(--hp-card);
+  padding: 16px;
+}
+
+.cl-ai-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 20px;
+  flex: none;
+  border-radius: 5px;
+  background: var(--hp-brand-tint);
+  border: 1px solid var(--hp-brand-line);
+  color: var(--hp-brand-deep);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.cl-field {
+  width: 100%;
+  border: 1px solid var(--hp-line-strong);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 8px 10px;
+  font-size: 12px;
+  color: var(--hp-ink);
+  box-sizing: border-box;
+  transition: border-color 0.15s ease;
+}
+
+.cl-field::placeholder {
+  color: var(--hp-muted);
+}
+
+.cl-field:focus {
+  border-color: var(--hp-brand-line);
+  outline: none;
+}
+
+.cl-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  cursor: pointer;
+  white-space: nowrap;
+  border-radius: 999px;
+  padding: 7px 12px;
+  font-size: 11.5px;
+  font-weight: 600;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.cl-btn--ghost {
+  border: 1px solid var(--hp-line-strong);
+  background: transparent;
+  color: var(--hp-ink-soft);
+}
+
+.cl-btn--ghost:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--hp-ink);
+}
+
+.cl-btn--solid {
+  border: 1px solid transparent;
+  background: var(--hp-solid);
+  color: var(--hp-solid-ink);
+}
+
+.cl-btn--solid:hover {
+  background: var(--hp-solid-hover);
+}
+
+.cl-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.cl-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  border-radius: 999px;
+  border: 1px solid var(--hp-line-strong);
+  padding: 3px;
+}
+
+.cl-toggle button {
+  cursor: pointer;
+  white-space: nowrap;
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--hp-muted);
+  background: transparent;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.cl-toggle button.is-active {
+  background: var(--hp-solid);
+  color: var(--hp-solid-ink);
+}
+
+.cl-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 26px;
+  z-index: 60;
+  transform: translateX(-50%);
+  border: 1px solid var(--hp-line-strong);
+  border-radius: 999px;
+  background: var(--hp-paper-warm);
+  padding: 9px 18px;
+  font-size: 12px;
+  color: var(--hp-ink);
+  box-shadow: 0 18px 34px -18px rgba(0, 0, 0, 0.9);
+}
+
+@media (max-width: 640px) {
+  .cl-min {
+    min-width: 700px;
+  }
+}

@@ -1,0 +1,191 @@
+/* 책 쌓기: 홈의 책(hp-book)과 같은 재질로 세로로 쌓는 블록 */
+.bk-block {
+  position: relative;
+  width: 100%;
+  height: 22px;
+  flex: none;
+  border-radius: 2px 4px 4px 2px;
+  background-color: var(--bk-mid);
+  background-image: linear-gradient(180deg, var(--bk-hi) 0%, var(--bk-mid) 46%, var(--bk-lo) 100%);
+  box-shadow:
+    0 2px 4px -1px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+  transition: filter 0.18s ease, box-shadow 0.18s ease;
+}
+
+.bk-block::before {
+  content: '';
+  position: absolute;
+  left: 8%;
+  right: 36%;
+  top: 32%;
+  height: 36%;
+  border-radius: 1px;
+  background: linear-gradient(90deg, rgba(255, 242, 218, 0.45), rgba(255, 242, 218, 0.08));
+  opacity: 0.55;
+}
+
+.bk-block::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 14%;
+  bottom: 14%;
+  width: 5px;
+  border-radius: 0 3px 3px 0;
+  background: repeating-linear-gradient(180deg, #e8dfcd 0 1px, #bcae94 1px 2px);
+}
+
+.bk-block:hover {
+  filter: brightness(1.14);
+}
+
+.bk-block.is-picked {
+  outline: 2px solid var(--hp-brand);
+  outline-offset: 1px;
+}
+
+/* 예정: 점선 */
+.bk-block--planned {
+  border: 1px dashed var(--hp-line-strong);
+  background: rgba(255, 255, 255, 0.015);
+  box-shadow: none;
+}
+.bk-block--planned::before,
+.bk-block--planned::after {
+  display: none;
+}
+
+/* 진행 중: 반쯤 쌓인 블록 */
+.bk-block--progress {
+  border: 1px dashed var(--hp-brand-line);
+  background-image: repeating-linear-gradient(
+    135deg,
+    rgba(255, 167, 92, 0.24) 0 4px,
+    rgba(255, 167, 92, 0.06) 4px 9px
+  );
+  box-shadow: inset 0 0 0 1px rgba(255, 167, 92, 0.16);
+}
+.bk-block--progress::before,
+.bk-block--progress::after {
+  display: none;
+}
+
+/* 보충: 막대 위에 새로 올라간 블록 */
+.bk-block--supplement {
+  height: 16px;
+  border: 1px dashed rgba(211, 164, 74, 0.7);
+  background: rgba(211, 164, 74, 0.16);
+  box-shadow: none;
+}
+.bk-block--supplement::before {
+  content: '+';
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  color: #ecc583;
+  background: none;
+  opacity: 0.9;
+}
+.bk-block--supplement::after {
+  display: none;
+}
+
+/* 흔들림 · 붕괴 위기 */
+.bk-wobble {
+  animation: bkSway 2.9s ease-in-out infinite;
+}
+.bk-risk {
+  animation: bkRisk 2.2s ease-in-out infinite;
+  transform-origin: bottom center;
+}
+
+@keyframes bkSway {
+  0%,
+  100% {
+    transform: translateX(-1.5px) rotate(-0.7deg);
+  }
+  50% {
+    transform: translateX(1.5px) rotate(0.7deg);
+  }
+}
+
+@keyframes bkRisk {
+  0%,
+  100% {
+    transform: rotate(-7deg) translateX(-2px);
+  }
+  50% {
+    transform: rotate(-3deg) translateX(2px);
+  }
+}
+
+/* 단원 이름표의 과목 색 띠 */
+.bk-ribbon {
+  display: inline-block;
+  width: 3px;
+  height: 14px;
+  flex: none;
+  border-radius: 2px;
+  background-image: linear-gradient(180deg, var(--bk-hi) 0%, var(--bk-mid) 50%, var(--bk-lo) 100%);
+}
+
+/* 이해도 숫자 */
+.bk-score {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+  font-size: 12.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--hp-ink);
+}
+.bk-score small {
+  font-size: 9.5px;
+  font-weight: 500;
+  color: var(--hp-muted);
+}
+
+/* 범례 블록 */
+.bk-legend-block {
+  display: inline-block;
+  width: 26px;
+  height: 9px;
+  flex: none;
+  border-radius: 1px 2px 2px 1px;
+  background-image: linear-gradient(180deg, var(--bk-hi) 0%, var(--bk-mid) 46%, var(--bk-lo) 100%);
+}
+.bk-legend-block.bk-block--planned,
+.bk-legend-block.bk-block--progress,
+.bk-legend-block.bk-block--supplement {
+  height: 9px;
+}
+.bk-legend-block.bk-block--supplement::before {
+  font-size: 8px;
+}
+
+/* 시험 준비도 목표선 */
+.bk-target-line {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--hp-ink-soft);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bk-wobble,
+  .bk-risk {
+    animation: none;
+  }
+}
