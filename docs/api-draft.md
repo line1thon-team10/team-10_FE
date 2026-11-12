@@ -1,5 +1,7 @@
 # API 초안 (프론트 임시값)
 
+> **11/12부터 백엔드 구현 기준.** 기준 = 이 문서 + `src/mocks` 응답. 필드를 바꾸거나 못 주면 구현 전에 프론트에 알려 주세요.
+
 경로·필드는 `src/api/endpoints.js`, `src/api/adapters/`, `src/mocks/` 기준이에요. 백엔드 명세가 나오면 이 문서와 어댑터만 맞춰요.
 
 > 아래 경로는 **전부 프론트 임시값**이에요. `TODO(확인필요): [백엔드 확정 필요]`
@@ -47,34 +49,34 @@ AI가 만드는 응답 6곳은 같은 규칙이에요: 진행 단계(StepProgres
 
 ### 전체 경로 목록
 
-| 묶음        | 경로                                                                                                                        | 요청 예                                                         | 응답 예 (요약)                                                         | 화면           |
-| ----------- | --------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- | ---------------------------------------------------------------------- | -------------- |
-| 공통        | `POST /api/session`                                                                                                         | –                                                               | `{ anonymousId: "mock-1a2b3c4d" }` 익명 ID                             | 전체           |
-| 데모        | `GET /api/demo/state`                                                                                                       | –                                                               | `{ today, firstExam, seed, hasPlan, judgment, seeds }`                 | 헤더           |
-| 데모        | `POST /api/demo/next-day` · `/reset` · `/seed`                                                                              | `{ seed: "empty"\|"day9"\|"overdue" }`                          | 위와 같음 · next-day의 `judgment`: `carry`\|`replan`\|`none`           | /dev, 헤더     |
-| 온보딩      | `GET /api/onboarding` · `POST /api/onboarding/message`                                                                      | `{ text }`                                                      | 대화 · 과목 카드 · 칩 (아래 S1)                                        | S1             |
-| 온보딩      | `GET /api/onboarding/calendar` · `POST/PATCH/DELETE /api/onboarding/events`                                                 | `{ title, day, start, end }`                                    | 주간 일정 · 시험 · 요약                                                | S2             |
-| 온보딩      | `POST /api/onboarding/events/voice`                                                                                         | `{ text: "토요일 저녁엔 친구 약속" }`                           | 일정 후보                                                              | S2             |
-| 자료        | `GET/POST /api/materials` · `GET /api/materials/jobs/:jobId`                                                                | FormData `subjectId, file`                                      | `{ jobId }` → `{ status, step, steps }`                                | S3             |
-| 자료        | `POST /api/materials/toc` · `PATCH /api/materials/:id/units` · `GET …/:id/file`                                             | `{ subjectId, text }` · `{ unitNo, inExam }`                    | 단원 목록 · PDF Blob                                                   | S3-2, S4, S8-2 |
-| 단원        | `GET/PUT /api/units?subjectId=ds`                                                                                           | `{ subjectId, units }`                                          | `{ file, units[{ no, title, from, to, inExam, evidence }] }`           | S4             |
-| 계획        | `GET /api/plan/draft` · `POST /api/plan/approve`                                                                            | `?saved=1`                                                      | `{ summary{ totalPages: 360, taskCount: 45 }, allocation, firstWeek }` | S5             |
-| 계획        | `POST/GET/DELETE /api/plan/resplit` · `POST /api/plan/resplit/apply`                                                        | `{ request, answer?, saved? }`                                  | `{ question }` 또는 `{ ready }` → 비교 (아래 S5-1 · S5-2)              | S5-1, S5-2     |
-| 홈          | `GET /api/today`                                                                                                            | –                                                               | `{ tasks, progress{ rate: 58 }, quiz, replan, paceAlert, … }`          | S6             |
-| 기록        | `POST /api/records` · `PATCH /api/tasks/:id/record` · `POST /api/records/interpret`                                         | `{ taskId: "t1", result: "partial", toPage: 88 }`               | `{ event{ type: "box", reason: "dayClose", rate: 88 } }`               | S7, P1         |
-| 집중 모드   | `POST /api/study/sessions` · `/active` · `/:id` · `/:id/pause\|resume\|end`                                                 | `{ taskId }`                                                    | `{ id, taskId, elapsedSec, status }`                                   | S12, S12-1     |
-| 튜터        | `POST /api/tutor` · `GET /api/tutor/backup?kind=`                                                                           | `{ question, history }`                                         | `{ id, answer, pages, saved }`                                         | S6-3           |
-| 밀림        | `GET /api/plan/replan/options` · `POST /api/plan/replan`                                                                    | `?saved=1` · `{ key: "A" }`                                     | `{ options[3], saved }` · `{ event{ reason: "recover" } }`             | P2             |
-| 속도        | `POST /api/plan/pace`                                                                                                       | `{ subjectId, apply }`                                          | 오늘 · 바뀐 날                                                         | P4             |
-| 퀴즈        | `GET /api/quiz/today` · `GET /api/quiz/:subjectId`                                                                          | `?saved=1`                                                      | `{ open, openRate: 70, subjects[] }` · `{ questions[7], saved }`       | S8             |
-| 퀴즈        | `POST /api/quiz/:subjectId/submit` · `/more` · `GET …/result`                                                               | `{ answers[{ questionId, answer, confidence }], savedGrading }` | `{ summary, items, bookChanges }`                                      | S8-3, S8-2, P3 |
-| 책          | `GET /api/books`                                                                                                            | –                                                               | `{ subjects[{ units[{ blocks }] }], readiness[] }`                     | S9             |
-| 복습        | `GET /api/review/notes` · `/:id/question` · `POST /:id/retry` · `POST /api/review/custom-quiz` · `POST /api/review/relearn` | `?group=date` · `{ answer, confidence }`                        | `{ total, groups[{ items }] }`                                         | S10            |
-| 캘린더      | `GET /api/calendar?from&to` · `DELETE /api/schedules/:id?scope=` · `POST /api/plan/empty-time`                              | `{ option: "rest" }`                                            | `{ fixed, study, exams, summary }` · 빈 시간 3안                       | S11, P5        |
-| 캘린더      | `POST /api/schedules/voice` · `/voice/apply`                                                                                | `{ text: "목요일 저녁에 조모임 생겼어" }`                       | 미리보기 → 적용                                                        | S6-4           |
-| 계획 바꾸기 | `GET /api/subjects` · `PATCH/DELETE /api/subjects/:id(/preview)`                                                            | `{ examDate, goal }`                                            | 미리보기 `{ changedDays }` → 적용                                      | S14            |
-| 계획 바꾸기 | `POST /api/plan/additions(/preview)` · `POST /api/plan/today(/preview)` · `POST /api/plan/rebuild`                          | `{ action: "more30" }`                                          | 미리보기 → 적용 · rebuild는 막아 둠                                    | S13, PL-10     |
-| 월간        | `GET /api/monthly?month=2026-11` · `/report`                                                                                | –                                                               | `{ month, days, subjects, note }` · 리포트                             | S15, S15-1     |
+| 묶음        | 경로                                                                                                                        | 요청 예                                                               | 응답 예 (요약)                                                         | 화면           |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- | ---------------------------------------------------------------------- | -------------- |
+| 공통        | `POST /api/session`                                                                                                         | –                                                                     | `{ anonymousId: "mock-1a2b3c4d" }` 익명 ID                             | 전체           |
+| 데모        | `GET /api/demo/state`                                                                                                       | –                                                                     | `{ today, firstExam, seed, hasPlan, judgment, seeds }`                 | 헤더           |
+| 데모        | `POST /api/demo/next-day` · `POST /api/demo/reset` · `POST /api/demo/seed`                                                  | `{ seed: "empty"\|"day9"\|"overdue" }`                                | 위와 같음 · next-day의 `judgment`: `carry`\|`replan`\|`none`           | /dev, 헤더     |
+| 온보딩      | `GET /api/onboarding` · `POST /api/onboarding/message`                                                                      | `{ text }`                                                            | 대화 · 과목 카드 · 칩 (아래 S1)                                        | S1             |
+| 온보딩      | `GET /api/onboarding/calendar` · `POST/PATCH/DELETE /api/onboarding/events`                                                 | `{ title, day, start, end }`                                          | 주간 일정 · 시험 · 요약                                                | S2             |
+| 온보딩      | `POST /api/onboarding/events/voice`                                                                                         | `{ text: "토요일 저녁엔 친구 약속" }`                                 | 일정 후보                                                              | S2             |
+| 자료        | `GET/POST /api/materials` · `GET /api/materials/jobs/:jobId`                                                                | FormData `subjectId, file`                                            | `{ jobId }` → `{ status, step, steps }`                                | S3             |
+| 자료        | `POST /api/materials/toc` · `PATCH /api/materials/:id/units` · `GET …/:id/file`                                             | `{ subjectId, text }` · `{ unitNo, inExam }`                          | 단원 목록 · PDF Blob                                                   | S3-2, S4, S8-2 |
+| 단원        | `GET/PUT /api/units?subjectId=ds`                                                                                           | `{ subjectId, units }`                                                | `{ file, units[{ no, title, from, to, inExam, evidence }] }`           | S4             |
+| 계획        | `GET /api/plan/draft` · `POST /api/plan/approve`                                                                            | `?saved=1`                                                            | `{ summary{ totalPages: 360, taskCount: 45 }, allocation, firstWeek }` | S5             |
+| 계획        | `POST/GET/DELETE /api/plan/resplit` · `POST /api/plan/resplit/apply`                                                        | `{ request, answer?, saved? }`                                        | `{ question }` 또는 `{ ready }` → 비교 (아래 S5-1 · S5-2)              | S5-1, S5-2     |
+| 홈          | `GET /api/today`                                                                                                            | –                                                                     | `{ tasks, progress{ rate: 58 }, quiz, replan, paceAlert, … }`          | S6             |
+| 기록        | `POST /api/records` · `PATCH /api/tasks/:id/record` · `POST /api/records/interpret`                                         | `{ taskId: "t1", result: "partial", toPage: 88 }`                     | `{ event{ type: "box", reason: "dayClose", rate: 88 } }`               | S7, P1         |
+| 집중 모드   | `POST /api/study/sessions` · `/active` · `/:id` · `/:id/pause\|resume\|end`                                                 | `{ taskId }`                                                          | `{ id, taskId, status, minutes, pausedMinutes, checkIn, … }`           | S12, S12-1     |
+| 튜터        | `POST /api/tutor` · `GET /api/tutor/backup?kind=`                                                                           | `{ question, history }`                                               | `{ id, answer, pages, saved }`                                         | S6-3           |
+| 밀림        | `GET /api/plan/replan/options` · `POST /api/plan/replan`                                                                    | `?saved=1` · `{ key: "A" }`                                           | `{ options[3], saved }` · `{ event{ reason: "recover" } }`             | P2             |
+| 속도        | `POST /api/plan/pace`                                                                                                       | `{ subjectId, apply }`                                                | 오늘 · 바뀐 날                                                         | P4             |
+| 퀴즈        | `GET /api/quiz/today` · `GET /api/quiz/:subjectId`                                                                          | `?saved=1`                                                            | `{ open, openRate: 70, subjects[] }` · `{ questions[7], saved }`       | S8             |
+| 퀴즈        | `POST /api/quiz/:subjectId/submit` · `/more` · `GET …/result`                                                               | `{ answers[{ questionId, choice, text, confidence }], savedGrading }` | `{ summary, items, bookChanges }`                                      | S8-3, S8-2, P3 |
+| 책          | `GET /api/books`                                                                                                            | –                                                                     | `{ subjects[{ units[{ blocks }] }], readiness[] }`                     | S9             |
+| 복습        | `GET /api/review/notes` · `/:id/question` · `POST /:id/retry` · `POST /api/review/custom-quiz` · `POST /api/review/relearn` | `?group=date` · `{ answer, confidence }`                              | `{ total, groups[{ items }] }`                                         | S10            |
+| 캘린더      | `GET /api/calendar?from&to` · `DELETE /api/schedules/:id?scope=` · `POST /api/plan/empty-time`                              | `{ option: "rest" }`                                                  | `{ fixed, study, exams, summary }` · 빈 시간 3안                       | S11, P5        |
+| 캘린더      | `POST /api/schedules/voice` · `/voice/apply`                                                                                | `{ text: "목요일 저녁에 조모임 생겼어" }`                             | 미리보기 → 적용                                                        | S6-4           |
+| 계획 바꾸기 | `GET /api/subjects` · `PATCH/DELETE /api/subjects/:id(/preview)`                                                            | `{ examDate, goal }`                                                  | 미리보기 `{ changedDays }` → 적용                                      | S14            |
+| 계획 바꾸기 | `POST /api/plan/additions(/preview)` · `POST /api/plan/today(/preview)` · `POST /api/plan/rebuild`                          | `{ action: "more30" }`                                                | 미리보기 → 적용 · rebuild는 막아 둠                                    | S13, PL-10     |
+| 월간        | `GET /api/monthly?month=2026-11` · `/report`                                                                                | –                                                                     | `{ month, days, subjects, note }` · 리포트                             | S15, S15-1     |
 
 경로마다 자세한 필드는 아래 지시문별 절에 있어요.
 
@@ -848,3 +850,875 @@ AI가 만드는 응답 6곳은 같은 규칙이에요: 진행 단계(StepProgres
 - 숫자는 오늘 상태 기준 (1번을 p.88까지 기록하면 215p / 222p = 97%, 기본 17:00이면 198p / 222p)
 - `time.measuredMinutes`: 집중 모드로 잰 시간만 (시드 측정 시간을 받기 전이라 MOCK). `plannedMinutes`: 계획 시간 합 (9시간 10분)
 - `quiz`: v2-plan 2-2 값 (MOCK). `subjects`: 새로 끝낸 범위 = 준비도의 공부한 페이지. `grades.before: null` = 계획 시작 때 퀴즈 전
+
+---
+
+## 공통 규칙 (11/12 보강 · 백엔드 구현 기준)
+
+### 익명 ID
+
+- 첫 접속에 `POST /api/session` → `{ anonymousId }`. 프론트가 브라우저에 저장하고, 이후 **모든 요청에 `X-Anonymous-Id` 헤더**로 보내요 (`src/api/client.js`).
+- 같은 브라우저로 다시 오면 저장한 ID를 그대로 써요. 이름 · 전화번호 같은 개인정보는 받지 않아요.
+- TODO(확인필요): [백엔드 확정 필요] 익명 ID 헤더 이름, 필드 이름 `anonymousId`
+
+### 응답 틀
+
+- 성공 `{ "success": true, "data": … }` → 프론트는 `data`만 꺼내 adapter에 넘겨요.
+- 실패 `{ "success": false, "error": { "code": "…", "message": "…" } }` + HTTP 4xx/5xx. 프론트는 **HTTP 상태가 아니라 `error.code`로** 흐름을 나눠요. `message`가 없으면 '요청을 처리하지 못했어요'.
+- `success` 필드가 없는 응답(예: PDF 파일)은 본문 그대로 써요.
+- TODO(확인필요): [백엔드 확정 필요] 공통 응답 형식 `{ success, data, error }`
+
+### 오류 코드 (목업 · 코드 기준 48개)
+
+화면 흐름을 나누는 코드 — **서버가 이 코드 그대로 보내야 함** (HTTP 상태는 목업 값. 프론트는 상태가 아니라 code로 나눠요)
+
+| code        | HTTP                         | 나오는 곳                                                            | 프론트 동작                            |
+| ----------- | ---------------------------- | -------------------------------------------------------------------- | -------------------------------------- |
+| `AI_FAILED` | 503                          | AI가 만드는 응답 6곳 (AI 상태 표)                                    | 실패 문구 + [다시 시도] · 저장된 결과  |
+| `NO_PLAN`   | 404 (today) · 400 (next-day) | `GET /api/today` (계획 없음) · `POST /api/demo/next-day`             | 홈: '아직 계획이 없어요' + 계획 만들기 |
+| `NO_QUIZ`   | 404                          | `GET /api/quiz/:subjectId` · `POST /api/quiz/:subjectId/submit`      | '이 과목 문항은 아직 준비 중이에요'    |
+| `NO_RESULT` | 404 (result) · 400 (more)    | `GET /api/quiz/:subjectId/result` · `POST /api/quiz/:subjectId/more` | 결과 화면: '아직 푼 퀴즈가 없어요'     |
+
+서버 코드가 아님
+
+| code           | 설명                                                                                                |
+| -------------- | --------------------------------------------------------------------------------------------------- |
+| `ECONNABORTED` | 브라우저(axios)의 **30초 시간 초과**. 서버가 보내지 않아요. 프론트는 `AI_FAILED`와 같은 실패로 봐요 |
+
+나머지 — 화면에 `error.message`가 그대로 보이는지 (코드 확인)
+
+- **보임** = 화면이 알림(toast)이나 안내 문구에 `message`를 그대로 띄워요 → **`message`는 사용자에게 보여줄 한국어 문구로**
+- **안 보임** = 화면이 '불러오지 못했어요' 같은 고정 문구를 써요 → `message`는 화면에 안 나와요 (한국어 권장, 필수 아님)
+
+| code                  | 나오는 경로 (목업)                                                                                               | message |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------- | ------- |
+| `ALREADY`             | `POST /api/quiz/:subjectId/more` · `POST /api/review/relearn`                                                    | 보임    |
+| `BAD_DATE`            | `PATCH /api/subjects/:id/preview`                                                                                | 보임    |
+| `BAD_KEY`             | `POST /api/plan/replan`                                                                                          | 보임    |
+| `BAD_MINUTES`         | `POST /api/plan/additions/preview`                                                                               | 보임    |
+| `BAD_OPTION`          | `POST /api/plan/empty-time`                                                                                      | 보임    |
+| `BAD_PAGE`            | `PATCH /api/tasks/:id/record`                                                                                    | 보임    |
+| `BAD_RANGE`           | `POST /api/plan/additions/preview`                                                                               | 보임    |
+| `BAD_REQUEST`         | `POST /api/materials`                                                                                            | 보임    |
+| `BAD_SEED`            | `POST /api/demo/seed`                                                                                            | 보임    |
+| `BAD_TARGET`          | `PATCH /api/subjects/:id/preview` (보임) · `POST /api/demo/ai` (/dev, 안 보임)                                   | 보임    |
+| `CONFIDENCE_REQUIRED` | `POST /api/review/notes/:id/retry` (보임) · `POST /api/quiz/:subjectId/submit` (채점 대기 화면, 안 보임)         | 보임    |
+| `DEMO_END`            | `POST /api/demo/next-day`                                                                                        | 보임    |
+| `EMPTY`               | `POST /api/onboarding/message` · `POST /api/materials/toc` · `POST /api/tutor` (튜터는 AI 실패 화면)             | 보임    |
+| `ENDED`               | `POST /api/study/sessions/:id/resume`                                                                            | 보임    |
+| `EVENT_NOT_FOUND`     | `PATCH /api/onboarding/events/:id`                                                                               | 보임    |
+| `JOB_NOT_FOUND`       | `GET /api/materials/jobs/:jobId`                                                                                 | 안 보임 |
+| `MATERIAL_NOT_FOUND`  | `PATCH /api/materials/:id/units`                                                                                 | 보임    |
+| `NOT_ACTIVE`          | `POST /api/study/sessions/:id/pause`                                                                             | 보임    |
+| `NOT_PDF`             | `POST /api/materials`                                                                                            | 보임    |
+| `NOT_READY`           | `POST /api/plan/today/preview`                                                                                   | 보임    |
+| `NOT_RECORDED`        | `PATCH /api/tasks/:id/record`                                                                                    | 보임    |
+| `NO_CHANGE`           | `PATCH /api/subjects/:id/preview`                                                                                | 보임    |
+| `NO_DAY`              | `PATCH /api/subjects/:id/preview`                                                                                | 보임    |
+| `NO_DAYS`             | `POST /api/plan/additions/preview`                                                                               | 보임    |
+| `NO_EMPTY_TIME`       | `POST /api/plan/empty-time`                                                                                      | 보임    |
+| `NO_FILE`             | `GET /api/materials/:id/file` (PDF 미리보기 안내 문구)                                                           | 보임    |
+| `NO_MATERIAL`         | `POST /api/plan/additions/preview`                                                                               | 보임    |
+| `NO_PACE`             | `POST /api/plan/pace`                                                                                            | 보임    |
+| `NO_PREVIEW`          | `PATCH/DELETE /api/subjects/:id` · `POST /api/plan/today`                                                        | 보임    |
+| `NO_QUESTION`         | `GET /api/review/notes/:id/question` (안 보임) · `POST /api/review/notes/:id/retry` (보임)                       | 보임    |
+| `NO_QUESTIONS`        | `POST /api/quiz/:subjectId/more` · `POST /api/review/custom-quiz`                                                | 보임    |
+| `NO_REPLAN`           | `GET /api/plan/replan/options` (AI 실패 화면, 안 보임) · `POST /api/plan/replan` (보임)                          | 보임    |
+| `NO_RESPLIT`          | `GET /api/plan/resplit` (고정 문구 '비교할 새 안이 없어요', 안 보임) · `POST /apply` · `DELETE` (보임)           | 보임    |
+| `NO_TASK`             | `POST /api/plan/today/preview`                                                                                   | 보임    |
+| `NO_UNITS`            | `POST /api/review/custom-quiz`                                                                                   | 보임    |
+| `OTHER_ACTIVE`        | `POST /api/study/sessions` (집중 모드 시작 오류 화면 설명)                                                       | 보임    |
+| `PARSE_FAILED`        | `POST /api/schedules/voice`                                                                                      | 보임    |
+| `SCHEDULE_NOT_FOUND`  | `DELETE /api/schedules/:id`                                                                                      | 보임    |
+| `SESSION_NOT_FOUND`   | `GET /api/study/sessions/:id` (안 보임) · `POST …/:id/pause\|resume\|end` (보임)                                 | 보임    |
+| `SUBJECT_NOT_FOUND`   | `GET /api/units` (안 보임) · `POST /api/review/custom-quiz` (보임)                                               | 보임    |
+| `TASK_NOT_FOUND`      | `POST /api/records` · `PATCH /api/tasks/:id/record` · `POST /api/study/sessions` · `POST /api/records/interpret` | 보임    |
+| `UNIT_NOT_FOUND`      | `POST /api/review/relearn`                                                                                       | 보임    |
+
+- 한 코드가 '보임' 경로와 '안 보임' 경로에 모두 나오면 '보임'으로 적었어요 (한국어 문구로 보내 주세요).
+- `/dev` 전용 `POST /api/demo/ai`의 오류는 화면에 안 나와요.
+
+### AI 응답 30초 제한 · 저장된 결과 (saved)
+
+- 프론트 요청 시간 제한은 **30초**예요. 30초 안에 응답이 없으면 `ECONNABORTED`로 끊고 실패 화면을 보여요. AI 화면은 8초에 '조금 걸려요' 안내, 30초에 [다시 시도] · [저장된 결과 보기].
+- 저장된 결과 요청 방법은 위 'AI 상태' 표 (`?saved=1` · body `saved: true` · `savedGrading: true` · `GET /api/tutor/backup`).
+- 저장된 결과 응답에는 `saved: true`를 붙여요 (튜터 · 퀴즈 세트 · 계획 초안 · 다시 나누기 비교 · 분배안). 채점은 결과의 `essayGrading: "saved"`.
+- 30초를 넘길 수 있는 작업은 '같이 정할 것' 절에 있어요.
+
+### 날짜 · 시각 · ID
+
+| 값   | 형식                  | 예 (mock)                   |
+| ---- | --------------------- | --------------------------- |
+| 날짜 | `YYYY-MM-DD` 문자열   | `"2026-11-09"`              |
+| 시각 | `HH:mm` 24시간 문자열 | `"17:00"`                   |
+| 달   | `YYYY-MM`             | `"2026-11"`                 |
+| 요일 | 숫자 1=월 … 7=일      | `days: [1, 3]`              |
+| ID   | 모두 문자열           | 과목 `"ds"` · 태스크 `"t1"` |
+
+- `ds`(자료구조) · `os` · `t1` 같은 ID와 과목 이름은 **mock 예시**예요. 실제 서버는 자기 ID를 쓰면 돼요 (문자열이면 됨).
+- '오늘'은 서버 데모 날짜(`GET /api/demo/state`의 `today`)예요. 프론트는 브라우저 시계를 쓰지 않아요.
+
+---
+
+## 경로별 필드 표 (11/12 · 코드 기준)
+
+읽는 법: **요청**은 프론트가 보내는 값, **응답**은 adapter(`src/api/adapters/`)가 읽는 `data` 안 필드 전부예요. 예시 값은 모두 mock이에요.
+'null 가능'이 '예'인 필드는 없거나 null이어도 화면이 동작해요 (adapter가 `?? 기본값`으로 받음).
+
+### 공통 · 데모
+
+#### `POST /api/session` — 익명 ID 발급
+
+| 응답          | 타입   | null 가능 | 설명                 |
+| ------------- | ------ | --------- | -------------------- |
+| `anonymousId` | string | 아니요    | 예 `"mock-1a2b3c4d"` |
+
+#### `GET /api/demo/state` · `POST /api/demo/next-day` · `POST /api/demo/reset` · `POST /api/demo/seed` — 데모 상태
+
+| 요청 (`/seed`만) | 타입   | 필수 | 허용 값                      |
+| ---------------- | ------ | ---- | ---------------------------- |
+| `seed`           | string | 예   | `empty` · `day9` · `overdue` |
+
+| 응답 (네 경로 같음)   | 타입   | null 가능 | 설명                                                |
+| --------------------- | ------ | --------- | --------------------------------------------------- |
+| `today`               | string | 아니요    | 데모 날짜 `YYYY-MM-DD`                              |
+| `firstExam.subjectId` | string | 아니요    | 가장 가까운 시험 (헤더 D-day)                       |
+| `firstExam.name`      | string | 아니요    | 과목 이름                                           |
+| `firstExam.examDate`  | string | 아니요    | 시험일                                              |
+| `seed`                | string | 예        | 지금 시드 이름                                      |
+| `seeds`               | object | 예        | `{ 시드이름: 메뉴 표시명 }` (데모 메뉴)             |
+| `hasPlan`             | bool   | 예 (true) | 계획이 있는지                                       |
+| `judgment`            | string | 예        | next-day 직후 자정 판정 `carry` · `replan` · `none` |
+
+#### `GET /api/demo/ai` · `POST /api/demo/ai` — AI 상태 재현 (/dev 전용)
+
+| 요청     | 타입   | 필수 | 허용 값                                          |
+| -------- | ------ | ---- | ------------------------------------------------ |
+| `target` | string | 예   | `plan` · `quiz` · `grading` · `tutor` · `replan` |
+| `mode`   | string | 예   | `null` · `slow` · `fail`                         |
+
+응답: `{ plan, quiz, grading, tutor, replan }` 각 `null | "slow" | "fail"`. 실제 서버에는 없어도 돼요.
+
+### 온보딩 S1 · S2
+
+#### `GET /api/onboarding` · `POST /api/onboarding/message`
+
+| 요청 (`message`) | 타입   | 필수 | 설명           |
+| ---------------- | ------ | ---- | -------------- |
+| `text`           | string | 예   | 사용자가 쓴 말 |
+
+| 응답                   | 타입     | null 가능 | 설명                                  |
+| ---------------------- | -------- | --------- | ------------------------------------- |
+| `messages[].role`      | string   | 아니요    | `ai` · `user`                         |
+| `messages[].text`      | string   | 아니요    |                                       |
+| `chips`                | string[] | 예 ([])   | 추가 질문 답 칩                       |
+| `subjects[].id`        | string   | 아니요    |                                       |
+| `subjects[].name`      | string   | 아니요    |                                       |
+| `subjects[].examDate`  | string   | 예        |                                       |
+| `subjects[].goal`      | string   | 예        | 목표 학점 (null → 화면에 [목표 학점]) |
+| `subjects[].goalTotal` | string   | 예        | 시험 총 목표 (커트라인 · 합격 기준)   |
+| `subjects[].goalEtc`   | string   | 예        | 기타 정보 (반영 비율 · 강조 범위)     |
+| `subjects[].target`    | number   | 예        | 내부 목표 점수 (4-6)                  |
+| `subjects[].status`    | string   | 아니요    | `pending` · `asking` · `confirmed`    |
+| `schedules[]`          | Event[]  | 아니요    | 아래 Event                            |
+| `done`                 | bool     | 아니요    | 모든 과목 목표 확정 → 다음 단계 가능  |
+
+Event (일정 한 개, S1 · S2 공통)
+
+| 필드    | 타입     | null 가능 | 설명                               |
+| ------- | -------- | --------- | ---------------------------------- |
+| `id`    | string   | 아니요    |                                    |
+| `kind`  | string   | 아니요    | `class` · `job` · `meet` · `other` |
+| `title` | string   | 아니요    |                                    |
+| `days`  | number[] | 예        | 있으면 매주 반복 (1=월…7=일)       |
+| `date`  | string   | 예        | 있으면 하루짜리                    |
+| `start` | string   | 아니요    | `HH:mm`                            |
+| `end`   | string   | 아니요    | `HH:mm`                            |
+| `added` | bool     | 예        | 방금 말로 추가한 일정              |
+
+#### `GET /api/onboarding/calendar` · `POST /api/onboarding/events` · `PATCH/DELETE /api/onboarding/events/:id` · `POST /api/onboarding/events/voice`
+
+| 요청 (`POST` · `PATCH`) | 타입     | 필수 | 설명                           |
+| ----------------------- | -------- | ---- | ------------------------------ |
+| `kind`                  | string   | 예   | Event와 같음                   |
+| `title`                 | string   | 예   |                                |
+| `days`                  | number[] | 선택 | 반복이면                       |
+| `date`                  | string   | 선택 | 하루짜리면                     |
+| `start` · `end`         | string   | 예   | `HH:mm`                        |
+| `text` (`/voice`만)     | string   | 예   | 예 `"토요일 저녁엔 친구 약속"` |
+
+| 응답 (다섯 경로 같음)  | 타입    | null 가능 | 설명                 |
+| ---------------------- | ------- | --------- | -------------------- |
+| `weekStart`            | string  | 아니요    | 그 주 월요일         |
+| `today`                | string  | 아니요    | 데모 날짜            |
+| `events[]`             | Event[] | 아니요    |                      |
+| `exams[].subjectId`    | string  | 아니요    |                      |
+| `exams[].name`         | string  | 아니요    |                      |
+| `exams[].examDate`     | string  | 아니요    |                      |
+| `summary.fixedMinutes` | number  | 아니요    | 이번 주 고정 일정 분 |
+| `summary.freeMinutes`  | number  | 아니요    | 이번 주 빈 시간 분   |
+| `addedId`              | string  | 예        | 방금 추가한 일정 id  |
+
+### 자료 · 단원 · 계획 S3 ~ S5-2
+
+#### `GET /api/materials` — 과목별 자료
+
+| 응답                               | 타입   | null 가능 | 설명                          |
+| ---------------------------------- | ------ | --------- | ----------------------------- |
+| `subjects[].id` · `name` · `color` | string | 아니요    |                               |
+| `subjects[].files[].id`            | string | 아니요    |                               |
+| `subjects[].files[].name`          | string | 아니요    |                               |
+| `subjects[].files[].pages`         | number | 예        |                               |
+| `subjects[].files[].status`        | string | 아니요    | `running` · `done` · `failed` |
+| `subjects[].files[].jobId`         | string | 예        | 분석 중이면                   |
+| `subjects[].files[].quizless`      | bool   | 예        | 이 파일 범위는 퀴즈 없음      |
+| `subjects[].files[].ocr`           | bool   | 예        | 글자 인식으로 분석한 스캔본   |
+
+#### `POST /api/materials` — 업로드 (FormData)
+
+| 요청        | 타입   | 필수 | 설명 |
+| ----------- | ------ | ---- | ---- |
+| `subjectId` | string | 예   |      |
+| `file`      | File   | 예   | PDF  |
+
+| 응답         | 타입   | null 가능 |
+| ------------ | ------ | --------- |
+| `materialId` | string | 아니요    |
+| `jobId`      | string | 아니요    |
+
+#### `GET /api/materials/jobs/:jobId` — 분석 진행
+
+| 응답         | 타입     | null 가능 | 설명                          |
+| ------------ | -------- | --------- | ----------------------------- |
+| `jobId`      | string   | 아니요    |                               |
+| `materialId` | string   | 아니요    |                               |
+| `subjectId`  | string   | 아니요    |                               |
+| `status`     | string   | 아니요    | `running` · `done` · `failed` |
+| `ocr`        | bool     | 예        | 스캔본: 글자 인식으로 분석    |
+| `steps`      | string[] | 아니요    | 단계 이름                     |
+| `current`    | number   | 아니요    | 지금 단계 번호                |
+| `failedStep` | number   | 예        | 실패한 단계                   |
+| `progress`   | number   | 예        | 진행 %                        |
+| `reused`     | bool     | 예        | 저장된 결과 재사용 (PDF-06)   |
+| `reason`     | string   | 예        | 실패 이유                     |
+
+#### `POST /api/materials/toc` — 목차 붙여넣기 (S3-2)
+
+| 요청        | 타입   | 필수 |
+| ----------- | ------ | ---- |
+| `subjectId` | string | 예   |
+| `text`      | string | 예   |
+
+응답 `units[]`: `no` number · `title` string · `from` number · `to` number
+
+#### `PATCH /api/materials/:id/units` — 시험 범위 체크 (S4, PDF-08)
+
+| 요청     | 타입   | 필수 |
+| -------- | ------ | ---- |
+| `unitNo` | number | 예   |
+| `inExam` | bool   | 예   |
+
+응답: `subjectId` string · `unitNo` number · `inExam` bool
+
+#### `GET /api/materials/:id/file` — 원본 PDF (QZ-13 · 집중 모드 자료 열기)
+
+응답: PDF 파일 그대로 (`Content-Type: application/pdf`, `success` 틀 없음). 없으면 `404 NO_FILE`.
+
+#### `GET /api/units?subjectId=` · `PUT /api/units` — 단원 (S4)
+
+| 요청 (`PUT`)           | 타입     | 필수 | 설명                   |
+| ---------------------- | -------- | ---- | ---------------------- |
+| `subjectId`            | string   | 예   |                        |
+| `units[].id`           | string   | 예   |                        |
+| `units[].no` · `title` | –        | 예   |                        |
+| `units[].concepts`     | string[] | 예   |                        |
+| `units[].from` · `to`  | number   | 예   | 쪽 범위                |
+| `units[].difficulty`   | string   | 선택 | `low` · `mid` · `high` |
+| `units[].quizless`     | bool     | 선택 |                        |
+
+| 응답                  | 타입     | null 가능 | 설명                              |
+| --------------------- | -------- | --------- | --------------------------------- |
+| `subjectId`           | string   | 아니요    |                                   |
+| `file`                | object   | 예        | 자료 정보 (화면 표시용)           |
+| `units[].id`          | string   | 아니요    |                                   |
+| `units[].no`          | number   | 아니요    |                                   |
+| `units[].title`       | string   | 아니요    |                                   |
+| `units[].concepts`    | string[] | 예 ([])   |                                   |
+| `units[].from` · `to` | number   | 아니요    |                                   |
+| `units[].difficulty`  | string   | 예        | `low` · `mid` · `high` (AI 추정)  |
+| `units[].quizless`    | bool     | 예        | 목차 직접 입력 범위               |
+| `units[].inExam`      | bool     | 예 (true) | 시험 범위                         |
+| `units[].evidence`    | array    | 예 ([])   | 나눈 근거 문장 (서버가 만드는 값) |
+
+#### `GET /api/plan/draft` (`?saved=1`) · `POST /api/plan/approve` — S5 분량
+
+| 응답                                        | 타입   | null 가능 | 설명                                     |
+| ------------------------------------------- | ------ | --------- | ---------------------------------------- |
+| `saved`                                     | bool   | 예        | 저장된 결과                              |
+| `today`                                     | string | 아니요    |                                          |
+| `summary`                                   | object | 아니요    | 위 S5 절 (`totalPages` · `taskCount` 등) |
+| `allocation[].subjectId` · `name` · `color` | string | 아니요    |                                          |
+| `allocation[].goalLabel`                    | string | 예        | 목표 표시 (예 `A+`)                      |
+| `allocation[].pages` · `tasks`              | number | 아니요    |                                          |
+| `allocation[].units[]`                      | array  | 아니요    | `no` · `title` · `pages` · `tasks`       |
+| `firstWeek`                                 | array  | 아니요    | 위 S5 절                                 |
+| `reasons`                                   | array  | 예        | 배분 이유                                |
+
+`POST /api/plan/approve` 응답은 화면이 읽지 않아요 (성공만 봄).
+
+#### `POST/GET/DELETE /api/plan/resplit` · `POST /api/plan/resplit/apply` — S5-1 · S5-2
+
+| 요청 (`POST`) | 타입   | 필수 | 설명                |
+| ------------- | ------ | ---- | ------------------- |
+| `request`     | string | 예   | 사용자 요청 문장    |
+| `answer`      | string | 선택 | 후속 질문에 고른 답 |
+| `saved`       | bool   | 선택 | 저장된 결과로       |
+
+| 응답 (`POST`)      | 타입     | null 가능 | 설명                             |
+| ------------------ | -------- | --------- | -------------------------------- |
+| `question.text`    | string   | 예        | 후속 질문 (없으면 비교 화면으로) |
+| `question.choices` | string[] | 예 ([])   |                                  |
+
+| 응답 (`GET` 비교)                             | 타입   | null 가능 | 설명       |
+| --------------------------------------------- | ------ | --------- | ---------- |
+| `request` · `keep`                            | string | 아니요    | 위 S5-2 절 |
+| `saved`                                       | bool   | 예        |            |
+| `days[].date`                                 | string | 아니요    |            |
+| `days[].before` · `after`                     | array  | 아니요    |            |
+| `days[].changed`                              | bool   | 예        |            |
+| `stats[].label` · `unit` · `before` · `after` | –      | 아니요    |            |
+| `reasons`                                     | array  | 예 ([])   |            |
+
+`apply` · `DELETE` 응답은 화면이 읽지 않아요.
+
+### 홈 · 기록 S6 · S7 · P1 · P2 · P4
+
+#### `GET /api/today` — 홈
+
+| 응답                                            | 타입     | null 가능 | 설명                                           |
+| ----------------------------------------------- | -------- | --------- | ---------------------------------------------- |
+| `date`                                          | string   | 아니요    |                                                |
+| `subjects[].id` · `name` · `color` · `examDate` | string   | 아니요    |                                                |
+| `tasks[]`                                       | Task[]   | 아니요    | 아래 Task                                      |
+| `progress.doneCount` · `totalCount`             | number   | 아니요    | 오늘 할 일 n/m                                 |
+| `progress.donePages` · `totalPages`             | number   | 아니요    |                                                |
+| `progress.rate`                                 | number   | 아니요    | 오늘 진행률 % (서버 계산)                      |
+| `quiz.openRate`                                 | number   | 아니요    | 70                                             |
+| `quiz.open`                                     | bool     | 아니요    | 오늘 70% 이상                                  |
+| `quiz.remainPages`                              | number   | 아니요    | 70%까지 남은 페이지                            |
+| `quiz.openSubjects[]`                           | array    | 아니요    | `{ subjectId, count }` 과목별로 먼저 열린 퀴즈 |
+| `quiz.totalCount`                               | number   | 아니요    | 오늘 퀴즈 문항 수                              |
+| `exams[].subjectId` · `dday`                    | –        | 아니요    |                                                |
+| `exams[].readiness`                             | number   | 예        | 준비도 %                                       |
+| `recentDays[].date`                             | string   | 아니요    | 최근 7일 (오늘 포함)                           |
+| `recentDays[].blocks[].state`                   | string   | 아니요    | 블록 상태 (enum 사전)                          |
+| `recentDays[].blocks[].taskId`                  | string   | 예        | 오늘 블록이면                                  |
+| `notice`                                        | object   | 예        | 이월 · 분배안 적용 안내 (아래)                 |
+| `tutorSuggestions`                              | string[] | 예 ([])   | 튜터 추천 질문 칩                              |
+| `paceAlert`                                     | object   | 예        | 속도 보정 알림 (P4 절)                         |
+| `replan`                                        | object   | 예        | 분배안 (기준을 넘었을 때만, P2)                |
+
+Task
+
+| 필드               | 타입   | null 가능 | 설명                                   |
+| ------------------ | ------ | --------- | -------------------------------------- |
+| `id` · `subjectId` | string | 아니요    |                                        |
+| `unitNo`           | number | 아니요    |                                        |
+| `title`            | string | 아니요    |                                        |
+| `from` · `to`      | number | 아니요    | 쪽 범위 (`pages`는 프론트가 to−from+1) |
+| `minutes`          | number | 아니요    | 예상 분                                |
+| `reason`           | string | 예        | 배치 이유 (AI 문구)                    |
+| `status`           | string | 아니요    | `todo` · `partial` · `done` · `none`   |
+| `donePages`        | number | 아니요    |                                        |
+| `doneTo`           | number | 예        | 부분 완료면 어디까지                   |
+| `carried`          | bool   | 예        | 어제에서 이월 (S6-2)                   |
+| `measuredMinutes`  | number | 예        | 집중 모드로 잰 분 (기록에 붙은 것)     |
+| `pendingSessionId` | string | 예        | 재고 아직 기록 안 한 측정              |
+| `pendingMinutes`   | number | 예        |                                        |
+
+`notice`
+
+| 필드                            | 타입   | null 가능 | 설명                                          |
+| ------------------------------- | ------ | --------- | --------------------------------------------- |
+| `type`                          | string | 아니요    | `carry` (이월) · `replanned` (분배안 적용 뒤) |
+| `key`                           | string | 예        | 적용한 분배안 `A` · `B` · `C`                 |
+| `items[].subjectId`             | string | 아니요    |                                               |
+| `items[].from` · `to` · `pages` | number | 아니요    | 이월 범위                                     |
+| `items[].dailyAvg`              | number | 아니요    | 그 과목 하루 평균 계획 페이지                 |
+| `items[].ratio`                 | number | 아니요    | 이월 / 하루 평균 %                            |
+
+`replan` (`GET /api/plan/replan/options` 응답도 같은 모양)
+
+| 필드                                         | 타입   | null 가능    | 설명                                  |
+| -------------------------------------------- | ------ | ------------ | ------------------------------------- |
+| `kind`                                       | string | 예 (overdue) | `overdue` (밀림) · `pace` (속도 보정) |
+| `saved`                                      | bool   | 예           | 저장된 결과                           |
+| `title`                                      | string | 예           |                                       |
+| `date`                                       | string | 아니요       |                                       |
+| `totalPages`                                 | number | 아니요       | 밀린 페이지 합                        |
+| `overdue[].subjectId` · `pages` · `dailyAvg` | –      | 아니요       |                                       |
+| `keepNote`                                   | string | 아니요       | 그대로 두는 것 안내                   |
+| `options[].key`                              | string | 아니요       | `A` · `B` · `C`                       |
+| `options[].lines` · `effect` · `preview`     | –      | 아니요       | 위 P2 절                              |
+
+#### `POST /api/records` — 기록 (S7)
+
+| 요청        | 타입   | 필수      | 허용 값 · 설명              |
+| ----------- | ------ | --------- | --------------------------- |
+| `taskId`    | string | 예        |                             |
+| `result`    | string | 예        | `done` · `partial` · `none` |
+| `toPage`    | number | partial만 | 끝낸 페이지                 |
+| `sessionId` | string | 선택      | 집중 모드에서 온 기록이면   |
+
+응답 `event` (없으면 null — 아무 연출 없음)
+
+| 필드                           | 타입   | null 가능 | 설명                                                                  |
+| ------------------------------ | ------ | --------- | --------------------------------------------------------------------- |
+| `type`                         | string | 아니요    | `box` (P1 박스) · `toast` (P1-1 알림)                                 |
+| `reason`                       | string | 아니요    | box: `dayClose` · `unitDone` · `recover` / toast: `record` · `rate70` |
+| `message` · `detail`           | string | 예        | toast 문구                                                            |
+| `rate`                         | number | 예        | 오늘 진행률                                                           |
+| `planKey`                      | string | 예        | 회복 박스: 적용한 분배안                                              |
+| `recordedCount` · `totalCount` | number | 예        | 하루 마무리: 기록한 태스크 수                                         |
+| `donePages` · `totalPages`     | number | 예        |                                                                       |
+| `opened[]`                     | array  | 예 ([])   | 이번 기록으로 열린 퀴즈 `{ subjectId, count }`                        |
+
+#### `PATCH /api/tasks/:id/record` — 페이지 고치기
+
+| 요청     | 타입   | 필수 |
+| -------- | ------ | ---- |
+| `toPage` | number | 예   |
+
+응답: `taskId` string · `status` string (Task status) · `doneTo` number · `rate` number
+
+#### `POST /api/records/interpret` — 말로 기록 (AI)
+
+| 요청     | 타입   | 필수 |
+| -------- | ------ | ---- |
+| `taskId` | string | 예   |
+| `text`   | string | 예   |
+
+응답: `from` number · `to` number · `label` string (예 `"BST 탐색·삽입·삭제"`)
+
+#### `GET /api/plan/replan/options` (`?saved=1`) · `POST /api/plan/replan` — P2 분배안
+
+- `options` 응답: 위 `replan`과 같은 모양 (AI 설명, 저장된 결과면 `saved: true`).
+- `POST` 요청 `key` string 필수 (`A` · `B` · `C`). 응답 `event` (기록 응답과 같은 모양, `reason: "recover"`).
+
+#### `POST /api/plan/pace` — P4 속도 보정
+
+| 요청        | 타입   | 필수 | 설명                         |
+| ----------- | ------ | ---- | ---------------------------- |
+| `subjectId` | string | 예   |                              |
+| `apply`     | bool   | 예   | [반영] true · [그대로] false |
+
+응답은 화면이 읽지 않아요 (성공 뒤 홈을 다시 받음). 알림 내용은 `GET /api/today`의 `paceAlert`:
+
+| `paceAlert` 필드                                           | 타입   | null 가능 | 설명                                                 |
+| ---------------------------------------------------------- | ------ | --------- | ---------------------------------------------------- |
+| `subjectId` · `subjectName`                                | string | 아니요    |                                                      |
+| `ratio`                                                    | number | 아니요    | 예상보다 몇 배                                       |
+| `perPage` · `expectedPerPage`                              | number | 아니요    | 1페이지당 실제 · 예상 분                             |
+| `days` · `sessions`                                        | number | 아니요    | 최근 N일 · 집중 모드 기록 수                         |
+| `rows[].taskId` · `date` · `title` · `from` · `to` · `now` | –      | 아니요    |                                                      |
+| `rows[].after`                                             | number | 예        | null이면 그대로 (페이지 기준이 아닌 태스크)          |
+| `overDays[]`                                               | array  | 아니요    | `{ date, total, free, over }` 하루 공부 시간 넘는 날 |
+| `mockFilled`                                               | array  | 예 ([])   | mock 표시용 (실제 서버는 없어도 됨)                  |
+
+### 집중 모드 S12 · S12-1
+
+#### `POST /api/study/sessions` · `GET /api/study/sessions/active` · `GET /api/study/sessions/:id` · `POST …/:id/pause|resume|end`
+
+| 요청 (`POST /sessions`) | 타입   | 필수 |
+| ----------------------- | ------ | ---- |
+| `taskId`                | string | 예   |
+
+응답 (여섯 경로 같음, `active`는 진행 중이 없으면 `null`)
+
+| 필드                                          | 타입   | null 가능 | 설명                                     |
+| --------------------------------------------- | ------ | --------- | ---------------------------------------- |
+| `id` · `taskId` · `subjectId` · `subjectName` | string | 아니요    |                                          |
+| `task.title`                                  | string | 아니요    |                                          |
+| `task.from` · `to` · `pages`                  | number | 아니요    |                                          |
+| `task.minutes`                                | number | 아니요    | 예상 분                                  |
+| `status`                                      | string | 아니요    | `active` · `paused` · `ended`            |
+| `quote`                                       | string | 아니요    | 들어올 때 고른 문구 (HM-10)              |
+| `material.id` · `page`                        | –      | 아니요    | [자료 열기]                              |
+| `minutes`                                     | number | 아니요    | 서버가 잰 공부 분 (멈춘 시간 뺌)         |
+| `pausedMinutes`                               | number | 아니요    |                                          |
+| `checkIn`                                     | bool   | 아니요    | 예상 2배 지남 → '아직 공부 중이에요?'    |
+| `autoStopped`                                 | bool   | 아니요    | 알림 뒤 10분 무응답 → 알림 시점에서 멈춤 |
+| `excludeFromPace`                             | bool   | 아니요    | 속도 보정에서 뺀 기록                    |
+| `recorded`                                    | bool   | 아니요    | 기록에 붙었는지                          |
+| `todayMinutes` · `subjectMinutes`             | number | 아니요    | 오늘 총 · 과목 누적                      |
+
+### 퀴즈 S8 · S8-2 · P3
+
+#### `GET /api/quiz/today` — S8-1 카드
+
+| 응답                                      | 타입     | null 가능 | 설명                                       |
+| ----------------------------------------- | -------- | --------- | ------------------------------------------ |
+| `date`                                    | string   | 아니요    |                                            |
+| `rate`                                    | number   | 아니요    | 오늘 진행률                                |
+| `open` · `openRate`                       | –        | 아니요    |                                            |
+| `subjects[].subjectId` · `name` · `color` | string   | 아니요    |                                            |
+| `subjects[].count`                        | number   | 아니요    | 문항 수                                    |
+| `subjects[].rate`                         | number   | 아니요    | 과목별 오늘 진행률                         |
+| `subjects[].open`                         | bool     | 아니요    | 전체 70% 또는 과목 70%                     |
+| `subjects[].hasQuestions`                 | bool     | 아니요    | 문항 준비됨                                |
+| `subjects[].lines`                        | string[] | 예 ([])   | 구성 줄 (예 `"3단원 새 문제 5 (p.72–88)"`) |
+| `subjects[].round`                        | string   | 예        | 회독 (`1회독` …)                           |
+| `subjects[].difficulty`                   | string   | 예        |                                            |
+| `subjects[].essayCount`                   | number   | 예        |                                            |
+| `subjects[].result`                       | object   | 예        | 이미 풀었으면 `{ correct, total }`         |
+
+#### `GET /api/quiz/:subjectId` (`?saved=1`) — 문항 세트
+
+`:subjectId`는 과목 id 또는 문제 뽑기 · 더 풀기로 만든 세트 id예요.
+
+| 응답                     | 타입     | null 가능 | 설명                                   |
+| ------------------------ | -------- | --------- | -------------------------------------- |
+| `saved`                  | bool     | 예        | 저장된 결과                            |
+| `subjectId` · `name`     | string   | 아니요    |                                        |
+| `custom`                 | bool     | 예        | 문제 뽑기 · 더 풀기 세트               |
+| `resultFor`              | string   | 예        | 풀고 나서 볼 결과 (없으면 `subjectId`) |
+| `round` · `difficulty`   | string   | 아니요    | 1회독은 하 고정 (QZ-09)                |
+| `composition`            | string   | 아니요    | 구성 한 줄                             |
+| `questions[].id`         | string   | 아니요    |                                        |
+| `questions[].type`       | string   | 아니요    | `choice` · `short` · `essay`           |
+| `questions[].tag`        | string   | 예        | 예 `"어제 오답"`                       |
+| `questions[].unitNo`     | number   | 아니요    |                                        |
+| `questions[].page`       | string   | 아니요    | 근거 페이지                            |
+| `questions[].prompt`     | string   | 아니요    |                                        |
+| `questions[].options`    | string[] | choice만  | 보기 (OX도 choice로 보기 2개)          |
+| `questions[].mockFilled` | array    | 예 ([])   | mock 표시용                            |
+
+#### `POST /api/quiz/:subjectId/submit` — 제출 · 채점
+
+| 요청                   | 타입   | 필수        | 설명                                |
+| ---------------------- | ------ | ----------- | ----------------------------------- |
+| `answers[].questionId` | string | 예          |                                     |
+| `answers[].choice`     | number | choice만    | 고른 보기 번호 (0부터), 아니면 null |
+| `answers[].text`       | string | 단답 · 서술 | 아니면 null                         |
+| `answers[].confidence` | string | 예          | `sure` · `unsure`                   |
+| `savedGrading`         | bool   | 선택        | 저장된 채점으로                     |
+
+응답 = 아래 결과 (`GET /api/quiz/:subjectId/result`와 같은 모양)
+
+#### `GET /api/quiz/:subjectId/result` — 결과 (S8-2 · P3)
+
+| 응답                                                                    | 타입   | null 가능 | 설명                                                                                  |
+| ----------------------------------------------------------------------- | ------ | --------- | ------------------------------------------------------------------------------------- |
+| `subjectId` · `name`                                                    | string | 아니요    |                                                                                       |
+| `essayGrading`                                                          | string | 예 (ai)   | `ai` · `saved`                                                                        |
+| `summary.total` · `correct` · `sureCorrect` · `unsureCorrect` · `wrong` | number | 아니요    |                                                                                       |
+| `items[].questionId`                                                    | string | 아니요    |                                                                                       |
+| `items[].no` · `unitNo`                                                 | number | 아니요    |                                                                                       |
+| `items[].type` · `tag` · `prompt` · `page`                              | string | tag 예    |                                                                                       |
+| `items[].confidence`                                                    | string | 아니요    | `sure` · `unsure`                                                                     |
+| `items[].correct`                                                       | bool   | 아니요    | 서술형도 서버 판정 (85점 이상)                                                        |
+| `items[].score`                                                         | number | 예        | 서술형 0~100                                                                          |
+| `items[].feedback`                                                      | object | 예        | 서술형 `{ good, miss }`                                                               |
+| `items[].explanation`                                                   | string | 예        | 해설 (v2는 모든 문항)                                                                 |
+| `items[].evidence`                                                      | object | 예        | 근거 원본 `{ materialId, page, quote }` (QZ-13)                                       |
+| `items[].mockFilled`                                                    | array  | 예 ([])   | mock 표시용                                                                           |
+| `unitChanges[].unitNo` · `title`                                        | –      | 아니요    |                                                                                       |
+| `unitChanges[].before`                                                  | number | 예        | 퀴즈 전 점수 (없으면 '퀴즈 전')                                                       |
+| `unitChanges[].after` · `grade`                                         | –      | 아니요    | 등급 `stable` · `shaky` · `risk`                                                      |
+| `unitChanges[].note`                                                    | string | 예        |                                                                                       |
+| `bookChanges[]`                                                         | array  | 예 ([])   | P3: `unitNo` · `title` · `before{ score, grade, blocks }` · `after{…}` · `recovering` |
+| `wrongAdded[]`                                                          | array  | 아니요    | 오답 노트에 들어간 문항 `{ no, reason }`                                              |
+| `unitNo`                                                                | number | 예        | 더 풀기 결과면                                                                        |
+| `moreUnitChange`                                                        | object | 예        | 더 풀기 이해도 변화                                                                   |
+| `more[]`                                                                | array  | 예 ([])   | 더 풀기 결과 (같은 모양) — 원래 결과 아래에 붙여요                                    |
+
+#### `POST /api/quiz/:subjectId/more` — 더 풀기 (QZ-11)
+
+| 요청     | 타입   | 필수 |
+| -------- | ------ | ---- |
+| `unitNo` | number | 예   |
+
+응답: `quizId` string (→ `/quiz?subject=quizId`로 풂) · `count` number
+
+### 책 쌓기 S9
+
+#### `GET /api/books`
+
+| 응답                                              | 타입   | null 가능 | 설명                                         |
+| ------------------------------------------------- | ------ | --------- | -------------------------------------------- |
+| `subjects[].subjectId` · `name` · `color`         | string | 아니요    |                                              |
+| `subjects[].total`                                | number | 아니요    | 계획한 책(태스크) 수                         |
+| `subjects[].collected`                            | number | 아니요    | 쌓인 책 수 (예정 제외)                       |
+| `subjects[].units[].no` · `title` · `from` · `to` | –      | 아니요    |                                              |
+| `subjects[].units[].grade`                        | string | 예        | `stable` · `shaky` · `risk` · null (퀴즈 전) |
+| `subjects[].units[].score`                        | number | 예        | 0~100                                        |
+| `subjects[].units[].round`                        | number | 예 (1)    | 회독                                         |
+| `subjects[].units[].note`                         | string | 예        | 단원 메모                                    |
+| `subjects[].units[].blocks[].state`               | string | 아니요    | 블록 상태                                    |
+| `subjects[].units[].blocks[].supplement`          | bool   | 예        | 보충 학습                                    |
+| `subjects[].units[].blocks[].task`                | object | 예        | `{ title, from, to, doneTo }`                |
+| `readiness[].subjectId`                           | string | 아니요    |                                              |
+| `readiness[].readiness` · `target`                | number | 아니요    | 준비도 % · 목표선 %                          |
+| `readiness[].targetLabel`                         | string | 아니요    | 예 `"A+"`                                    |
+| `readiness[].progressRate`                        | number | 예        | 진도율 %                                     |
+| `readiness[].mastery`                             | number | 예        | 숙달도 % (null이면 식을 숨김)                |
+| `readiness[].studiedPages` · `totalPages`         | number | 예        | 진도율 분자 · 분모                           |
+
+### 복습 · 오답 S10
+
+#### `GET /api/review/notes?group=date|unit|count`
+
+| 응답                                                             | 타입   | null 가능 | 설명                      |
+| ---------------------------------------------------------------- | ------ | --------- | ------------------------- |
+| `group` · `total`                                                | –      | 아니요    |                           |
+| `groups[].key` · `label`                                         | string | 아니요    |                           |
+| `groups[].items[]`                                               | Note[] | 아니요    | 아래 Note                 |
+| `weakConcepts[].subjectId` · `subjectName` · `concept` · `count` | –      | 아니요    | 취약 개념 (오답 2회 이상) |
+
+Note: `id` · `subjectId` · `subjectName` · `unitNo` · `unitTitle` · `concept` · `question` · `page` · `type` · `wrongCount` · `lastDate` · `result` (`sureWrong` · `unsureWrong` · `unsureRight` · `resolved`) · `score` (서술형, null 가능) · `streak` (확실 정답 연속, 2면 해결) · `canRetry` bool · `history` array · `mockFilled` (null 가능)
+
+#### `GET /api/review/notes/:id/question` · `POST /api/review/notes/:id/retry`
+
+| 요청 (`retry`) | 타입   | 필수        | 설명                   |
+| -------------- | ------ | ----------- | ---------------------- |
+| `choice`       | number | choice만    | 보기 번호, 아니면 null |
+| `text`         | string | 단답 · 서술 | 아니면 null            |
+| `confidence`   | string | 예          | `sure` · `unsure`      |
+
+- `question` 응답: `noteId` · `type` · `prompt` · `options` · `mockFilled` (null 가능)
+- `retry` 응답: `note` (Note) · `correct` bool · `confidence` · `score` (null 가능) · `explanation` · `wrongCountBefore` · `unitChange` `{ unitNo, before{ score, grade }, after{…} }`
+
+#### `POST /api/review/custom-quiz` — 문제 뽑기 (RV-02)
+
+| 요청         | 타입     | 필수 | 설명                   |
+| ------------ | -------- | ---- | ---------------------- |
+| `subjectId`  | string   | 예   |                        |
+| `units`      | number[] | 예   | 단원 번호              |
+| `difficulty` | string   | 예   | `low` · `mid` · `high` |
+| `count`      | number   | 예   | 문항 수                |
+| `weight`     | string   | 예   | 출제 비중 (위 S10 절)  |
+
+응답: `quizId` · `count` · `difficulty` · `note` (null 가능)
+
+#### `POST /api/review/relearn` — 범위 전체 재학습 (RV-03)
+
+요청: `subjectId` string · `unitNo` number (둘 다 필수). 응답: `subjectId` · `unitNo` · `round` · `relearnedOn`
+
+### 튜터 S6-3
+
+#### `POST /api/tutor` · `GET /api/tutor/backup?kind=basic|easy`
+
+| 요청 (`POST`) | 타입   | 필수 | 설명                                                     |
+| ------------- | ------ | ---- | -------------------------------------------------------- |
+| `question`    | string | 예   |                                                          |
+| `history[]`   | array  | 예   | 이전 문답 `{ question, answer, pages }` (지금은 빈 배열) |
+
+| 응답                                 | 타입   | null 가능 | 설명                             |
+| ------------------------------------ | ------ | --------- | -------------------------------- |
+| `id`                                 | string | 아니요    |                                  |
+| `subjectId` · `subjectName`          | string | 아니요    |                                  |
+| `question` · `answer`                | string | 아니요    |                                  |
+| `parentId`                           | string | 예        | 쉬운 설명이면 원래 답 id (TU-02) |
+| `pages[].materialId` · `from` · `to` | –      | 아니요    | 근거 칩                          |
+| `saved`                              | bool   | 예        | 저장된 답                        |
+| `mockFilled`                         | array  | 예 ([])   | mock 표시용                      |
+
+### 캘린더 S11 · P5 · S6-4 · 월간 S15
+
+#### `GET /api/calendar?from=&to=` — 주간 캘린더
+
+| 응답                                                               | 타입         | null 가능 | 설명                                |
+| ------------------------------------------------------------------ | ------------ | --------- | ----------------------------------- |
+| `from` · `to` · `today`                                            | string       | 아니요    |                                     |
+| `exams`                                                            | array        | 아니요    | 위 S11 절                           |
+| `fixed[].id`                                                       | string       | 아니요    | `'일정id@날짜'`                     |
+| `fixed[].scheduleId` · `kind` · `title` · `date` · `start` · `end` | string       | 아니요    |                                     |
+| `fixed[].repeat`                                                   | bool         | 아니요    | 반복 일정 (삭제 범위를 물어봐요)    |
+| `fixed[].added`                                                    | bool         | 예        |                                     |
+| `study[]`                                                          | StudyBlock[] | 아니요    | 아래                                |
+| `summary`                                                          | object       | 아니요    | 이번 주 과목별 `{ minutes, count }` |
+
+StudyBlock: `id` · `subjectId` · `subjectName` · `color` · `title` · `from` · `to` (총복습처럼 없으면 null) · `date` · `start` · `end` · `minutes` · `reason` · `supplement` bool · `status` · `moved` bool
+
+#### `DELETE /api/schedules/:id?scope=once|future` → 빈 시간 안 · `POST /api/plan/empty-time`
+
+| 요청                    | 타입   | 필수 | 허용 값                     |
+| ----------------------- | ------ | ---- | --------------------------- |
+| `scope` (쿼리)          | string | 예   | `once` · `future`           |
+| `option` (`empty-time`) | string | 예   | `rest` · `pull` · `advance` |
+
+빈 시간 안 응답 (`DELETE /api/schedules/:id` · `DELETE /api/subjects/:id`)
+
+| 필드                       | 타입   | null 가능 | 설명                          |
+| -------------------------- | ------ | --------- | ----------------------------- |
+| `emptyTime`                | object | 아니요    | `{ date, start, end, label }` |
+| `options[].key`            | string | 아니요    | `rest` · `pull` · `advance`   |
+| `options[].title` · `desc` | string | 아니요    |                               |
+| `options[].reason`         | string | 예        |                               |
+| `options[].enabled`        | bool   | 아니요    |                               |
+| `options[].default`        | bool   | 예        |                               |
+
+`empty-time` 응답은 화면이 읽지 않아요.
+
+#### `POST /api/schedules/voice` · `POST /api/schedules/voice/apply` — 말로 일정 추가 (S6-4)
+
+요청 `text` string 필수. 미리보기 응답: `event` `{ title, date, start, end, repeat, label }` · `moves[].taskId` · `moves[].block` (StudyBlock) · `moves[].pieces[]` `{ date, start, end, minutes, from, to }` · `note`. `apply` 응답은 화면이 읽지 않아요.
+
+#### `GET /api/monthly?month=` · `GET /api/monthly/report?month=`
+
+| 월간 책장 응답                                    | 타입   | null 가능 | 설명                                     |
+| ------------------------------------------------- | ------ | --------- | ---------------------------------------- |
+| `month` · `today` · `note`                        | string | note 예   |                                          |
+| `subjects`                                        | array  | 아니요    |                                          |
+| `days[].date`                                     | string | 아니요    |                                          |
+| `days[].inMonth` · `today` · `future` · `planned` | bool   | 아니요    | future = 점선 칸 · planned=false = 빈 칸 |
+| `days[].plan` · `done` · `rate`                   | number | 아니요    |                                          |
+| `days[].bySubject[]`                              | array  | 아니요    | `{ subjectId, pages }`                   |
+| `days[].labels`                                   | array  | 아니요    | 총복습 · 시험                            |
+| `days[].estimated`                                | bool   | 아니요    | 추정값                                   |
+
+| 리포트 응답                 | 타입   | null 가능 | 설명                                                          |
+| --------------------------- | ------ | --------- | ------------------------------------------------------------- |
+| `month` · `from` · `until`  | string | 아니요    |                                                               |
+| `studyDays` · `plannedDays` | number | 아니요    |                                                               |
+| `achievement`               | object | 아니요    | `{ done, plan, rate }`                                        |
+| `time`                      | object | 아니요    | `{ measuredMinutes, plannedMinutes }`                         |
+| `quiz`                      | object | 아니요    | `{ total, wrong, unsureRight }`                               |
+| `subjects[]`                | array  | 아니요    | `{ subjectId, pages, share }`                                 |
+| `grades[]`                  | array  | 아니요    | `{ subjectId, unitNo, title, before, after{ grade, score } }` |
+| `mockFilled`                | array  | 예 ([])   | mock 표시용                                                   |
+
+### 계획 바꾸기 S13 · S14 · PL-10
+
+#### `GET /api/subjects` — 과목 카드
+
+| 응답                                                   | 타입   | null 가능 | 설명                            |
+| ------------------------------------------------------ | ------ | --------- | ------------------------------- |
+| `today`                                                | string | 아니요    |                                 |
+| `subjects[].id` · `name` · `color` · `examDate`        | string | 아니요    |                                 |
+| `subjects[].dday`                                      | number | 아니요    |                                 |
+| `subjects[].goal` · `goalTotal`                        | string | 예        |                                 |
+| `subjects[].target`                                    | number | 예        | 목표 점수                       |
+| `subjects[].range`                                     | object | 아니요    | `{ from, to, pages }` 시험 범위 |
+| `subjects[].progress`                                  | object | 아니요    | `{ studied, total, rate }` 진도 |
+| `subjects[].readiness`                                 | number | 예        |                                 |
+| `subjects[].removed` · `archived`                      | bool   | 예        | 빠짐 · 시험 끝나 자동 보관      |
+| `subjects[].materials[].id` · `name` · `pages` · `toc` | –      | 아니요    |                                 |
+| `subjects[].materials[].mock`                          | bool   | 예        | mock 표시용                     |
+
+#### `PATCH /api/subjects/:id/preview` → `PATCH /api/subjects/:id` · `DELETE /api/subjects/:id/preview` → `DELETE /api/subjects/:id`
+
+| 요청 (`PATCH …/preview`) | 타입   | 필수     | 설명      |
+| ------------------------ | ------ | -------- | --------- |
+| `examDate`               | string | 시험일만 |           |
+| `goal`                   | string | 목표만   |           |
+| `target`                 | number | 목표만   | 목표 점수 |
+
+- 미리보기 응답(두 preview 공통 · `POST /api/plan/today/preview`도 같음): `subjectName` (null 가능) · `changes[]` `{ label, before, after }` · `days[]` `{ date, text }` (null 가능) · `note`
+- `PATCH /api/subjects/:id` 응답: 과목 카드 한 개 (위 `subjects[]`와 같은 모양)
+- `DELETE /api/subjects/:id` 응답: 빈 시간이 생기면 빈 시간 안(`emptyTime` · `options`), 아니면 `emptyTime` 없음
+
+#### `POST /api/plan/additions/preview` → `POST /api/plan/additions` — 계획 추가 (S13)
+
+| 요청                    | 타입     | 필수 | 설명    |
+| ----------------------- | -------- | ---- | ------- |
+| `subjectId`             | string   | 예   |         |
+| `materialId`            | string   | 예   |         |
+| `from` · `to`           | number   | 예   | 쪽 범위 |
+| `minutesPerDay`         | number   | 예   |         |
+| `days`                  | number[] | 예   | 요일    |
+| `startDate` · `endDate` | string   | 예   |         |
+
+미리보기 응답: `summary` · `placements[]` `{ date, start, end, from, to, minutes, reason }` · `conflicts` · `leftPages` · `note`. 적용 응답은 화면이 읽지 않아요.
+
+#### `POST /api/plan/today/preview` → `POST /api/plan/today` — 오늘 계획 (PL-10) · `POST /api/plan/rebuild`
+
+| 요청     | 타입   | 필수       | 허용 값                        |
+| -------- | ------ | ---------- | ------------------------------ |
+| `action` | string | 예         | `more30` · `rest` · `postpone` |
+| `taskId` | string | postpone만 |                                |
+
+미리보기 응답은 위 미리보기 모양, 적용 응답은 화면이 읽지 않아요. `rebuild`는 막아 둠 (기획 확인).
+
+---
+
+## enum 사전 (코드에 나오는 상태 값)
+
+| 무엇                       | 값                                                                          | 어디                                |
+| -------------------------- | --------------------------------------------------------------------------- | ----------------------------------- |
+| 블록(책) 상태              | `planned` · `doing` · `done` · `stable` · `shaky` · `risk`                  | today `recentDays` · books `blocks` |
+| 단원 등급                  | `stable` · `shaky` · `risk` · null (퀴즈 전)                                | books · quiz `unitChanges`          |
+| 태스크 상태                | `todo` · `partial` · `done` · `none`                                        | today `tasks[].status`              |
+| 기록 result (요청)         | `done` · `partial` · `none`                                                 | `POST /api/records`                 |
+| 퀴즈 문항 유형             | `choice` (OX 포함) · `short` · `essay`                                      | quiz `questions[].type`             |
+| 확신도                     | `sure` · `unsure`                                                           | 퀴즈 제출 · 다시 풀기               |
+| 오답 노트 result           | `sureWrong` · `unsureWrong` · `unsureRight` · `resolved`                    | review notes                        |
+| 채점 방식                  | `ai` · `saved`                                                              | quiz result `essayGrading`          |
+| 난이도                     | `low` · `mid` · `high`                                                      | units · custom-quiz                 |
+| 자정 판정 judgment         | `carry` · `replan` · `none`                                                 | demo next-day                       |
+| 기록 event type            | `box` · `toast`                                                             | records · replan 응답               |
+| 기록 event reason          | box: `dayClose` · `unitDone` · `recover` / toast: `record` · `rate70`       | records · replan 응답               |
+| 안내 notice type           | `carry` · `replanned`                                                       | today `notice`                      |
+| 분배안 key                 | `A` · `B` · `C`                                                             | replan                              |
+| 분배안 kind                | `overdue` · `pace`                                                          | replan                              |
+| 집중 세션 status           | `active` · `paused` · `ended`                                               | study sessions                      |
+| 자료 분석 status           | `running` · `done` · `failed`                                               | materials · jobs                    |
+| S1 과목 status             | `pending` · `asking` · `confirmed`                                          | onboarding                          |
+| 일정 kind                  | `class` · `job` · `meet` · `other`                                          | onboarding · calendar               |
+| 일정 삭제 scope            | `once` · `future`                                                           | `DELETE /api/schedules/:id`         |
+| 빈 시간 안 option          | `rest` · `pull` · `advance`                                                 | empty-time                          |
+| 오늘 계획 action           | `more30` · `rest` · `postpone`                                              | plan/today                          |
+| 오답 노트 묶음 group       | `date` · `unit` · `count`                                                   | review notes                        |
+| 튜터 저장된 결과 kind      | `basic` · `easy`                                                            | tutor/backup                        |
+| 데모 시드                  | `empty` · `day9` · `overdue`                                                | demo/seed                           |
+| AI 상태 재현 target · mode | `plan` · `quiz` · `grading` · `tutor` · `replan` / `null` · `slow` · `fail` | demo/ai                             |
+
+- TODO(확인필요): [백엔드 확정 필요] 서버 enum 값이 다르면 adapter에서 위 키로 바꿔요 (`src/config/labels.js`).
+
+## 서버가 계산하는 값 (프론트는 보여주기만)
+
+| 값                       | 응답 · 필드                                                                                                       |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| 오늘 진행률              | `GET /api/today` `progress.rate` · `donePages/totalPages` · 기록 응답 `event.rate` · 고치기 응답 `rate`           |
+| 퀴즈 열림 · 70%까지      | `GET /api/today` `quiz.open` · `quiz.remainPages` · `quiz.openSubjects` · `GET /api/quiz/today` `subjects[].open` |
+| 이해도 (단원 점수)       | `GET /api/books` `units[].score` · 퀴즈 결과 `unitChanges[].before/after` · 다시 풀기 `unitChange`                |
+| 등급                     | `GET /api/books` `units[].grade` · 퀴즈 결과 `unitChanges[].grade` · `bookChanges`                                |
+| 준비도 · 진도율 · 숙달도 | `GET /api/books` `readiness[]` · `GET /api/today` `exams[].readiness` · `GET /api/subjects` `readiness`           |
+| 서술형 정답              | 퀴즈 결과 `items[].correct` · `score`                                                                             |
+| 밀림 판정                | `POST /api/demo/next-day` `judgment` · `GET /api/today` `notice` (이월) · `replan` (분배안)                       |
+| 분배안                   | `GET /api/plan/replan/options` `options[]`                                                                        |
+| 블록 상태                | `GET /api/today` `recentDays[].blocks[].state` · `GET /api/books` `blocks[].state` · `bookChanges`                |
+| 속도 보정                | `GET /api/today` `paceAlert`                                                                                      |
+| 집중 모드 시간           | study sessions `minutes` · `pausedMinutes` · `checkIn` · `autoStopped`                                            |
+| 월간 집계                | `GET /api/monthly` · `/report`                                                                                    |
+
+## 데모 (11/12)
+
+- 시드 이름: `empty` (빈 계정 · 계획 만들기) · `day9` (11/9 오후 5시, 기본) · `overdue` (11/9, 1·4번을 못 한 밀림).
+- 지금 목업 값은 데이터 세트(자료구조 · 운영체제 · 컴퓨터네트워크) 기준이에요 (mock).
+- **바뀔 예정**: 데모 값은 AI 데모 패키지(인공지능 · 데이터베이스 · 운영체제) 기준으로 바뀌어요. 백엔드 시드 값표를 받으면 목업도 맞춰요 (11/12 결정).
+- TODO(확인필요): [백엔드 확정 필요] 데모 상태 응답 필드
+
+## 같이 정할 것 (코드 · 문서의 TODO(확인필요): [백엔드 확정 필요] 모음)
+
+| #   | 내용                                                                                                                                                                                                           | 코드 위치                                                                 |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| 1   | 익명 ID 헤더 이름 · 필드 이름 `anonymousId` · 공통 응답 형식 `{ success, data, error }`                                                                                                                        | `src/api/client.js` · `adapters/session.js` · `mocks/handlers/respond.js` |
+| 2   | 경로 전체가 프론트 임시값 — 바꾸면 `endpoints.js` · adapters만 고침                                                                                                                                            | `src/api/endpoints.js`                                                    |
+| 3   | 오래 걸리는 작업의 **진행 단계를 서버가 알려 줄지** (지금은 프론트가 1.2초마다 넘김, mock)                                                                                                                     | `components/common/AiProgress.jsx`                                        |
+| 4   | **저장된 결과 규칙**: 어떤 응답이 미리 저장한 결과인지, `saved: true` 표시, `?saved=1` 요청 방식                                                                                                               | AI 상태 표                                                                |
+| 5   | **30초를 넘길 수 있는 작업**: S3 PDF 분석(지금은 폴링) 외에 계획 생성 · 다시 나누기 · 퀴즈 출제 · 서술형 채점 · 튜터 · 분배안이 30초를 넘으면 프론트가 끊어요. 넘길 수 있으면 작업 + 상태 확인 방식으로 바꿀지 | `src/api/client.js` (timeout 30초)                                        |
+| 6   | 데모 상태 응답 필드                                                                                                                                                                                            | `adapters/demo.js`                                                        |
+| 7   | 서버 enum 값 (다르면 adapter에서 변환)                                                                                                                                                                         | `src/config/labels.js`                                                    |
+| 8   | AI 해석 결과(일정 · 시험 · 목표) 형식                                                                                                                                                                          | `adapters/onboarding.js`                                                  |
+| 9   | PDF 분해 JSON · 분석 작업 진행 형식 · 근거 위치(목차 쪽 · 시작 쪽 · 좌표)                                                                                                                                      | `adapters/plan.js` · `mocks/handlers/plan.js`                             |
+| 10  | 근거 좌표가 오면 미리보기에 테두리 박스 · 새로고침 뒤 미리보기를 위한 원본 PDF/페이지 이미지                                                                                                                   | `pages/setup/S4Units.jsx` · `stores/materialStore.js`                     |
+| 11  | 측정 세션 형식                                                                                                                                                                                                 | `adapters/study.js`                                                       |
+| 12  | 퀴즈 문항 JSON · 채점 결과 형식                                                                                                                                                                                | `adapters/quiz.js`                                                        |
+| 13  | 단원별 블록(태스크) 목록과 등급 · 점수 형식                                                                                                                                                                    | `adapters/books.js`                                                       |
+| 14  | 오답 노트 · 다시 풀기 · 문제 뽑기 형식                                                                                                                                                                         | `adapters/review.js`                                                      |
+| 15  | 튜터 요청 `{ question, history }` (정의서 '제안'), `pages` 안 모양                                                                                                                                             | `adapters/tutor.js`                                                       |
+| 16  | 캘린더 · 빈 시간 안 · 재배치 미리보기 형식, '공부 가능한 빈 시간' 기준 시간대 (mock 08:00–23:00)                                                                                                               | `adapters/schedule.js` · `mocks/logic.js`                                 |
+| 17  | 과목 카드 · 바뀜 미리보기 · 계획 추가 배치 형식                                                                                                                                                                | `adapters/manage.js`                                                      |
+| 18  | 다시 나누기: 요청 해석 · 후속 질문 기준 · 새 안 만들기 (AI 몫)                                                                                                                                                 | `mocks/handlers/plan.js`                                                  |
+| 19  | 홈 · 기록 필드 이름 (화면 이름은 두고 raw 필드만 맞춤)                                                                                                                                                         | `adapters/today.js`                                                       |
