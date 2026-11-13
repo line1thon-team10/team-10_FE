@@ -214,7 +214,8 @@ function Player({ subjectId }) {
         }
       />
     ) : (
-      <ErrorState onRetry={refetch} />
+      // 서버 문구를 같이 보여요 (예: QUIZ_LOCKED '오늘 계획의 70%를 넘기면 열려요')
+      <ErrorState description={error?.message} onRetry={refetch} />
     );
 
   const toResult = () => navigate(`${ROUTES.quizResult}?subject=${set.resultFor}`);
