@@ -48,7 +48,9 @@ http.interceptors.response.use(
     return body;
   },
   async (err) => {
-    const body = err.response?.data;
+    let body = err.response?.data;
+    // 파일 요청(responseType: 'blob')은 실패 본문도 Blob으로 와요 → JSON이면 풀어서 code·message를 읽어요
+    if (body instanceof Blob && body.type.includes('json')) body = JSON.parse(await body.text());
     const config = err.config;
     if (
       err.response?.status === 401 &&
