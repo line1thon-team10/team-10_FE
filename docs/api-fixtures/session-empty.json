@@ -1,0 +1,121 @@
+{
+  "kind": "captured-local-http",
+  "backendSha": "9d1ddd7a40e37f74823950038581b18e1134fc58",
+  "database": "disposable SQLite",
+  "idsAreExamples": true,
+  "productionVerified": false,
+  "notes": [
+    "firstExam and the active focus session can be null; an empty onboarding is not done.",
+    "404 NO_PLAN is the documented empty today response, not a transport outage."
+  ],
+  "cases": [
+    {
+      "case": "empty-demo-state",
+      "request": {
+        "method": "GET",
+        "path": "/api/demo/state"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Cache-Control": "no-store"
+        },
+        "body": {
+          "success": true,
+          "data": {
+            "today": "2026-11-03",
+            "firstExam": null,
+            "seed": "empty",
+            "seeds": {
+              "empty": "빈 계정 · 계획 만들기 (11/3)",
+              "day9": "11/9 기본 · 집중 42분",
+              "overdue": "밀림 시나리오 (11/9, 인공지능·운영체제 미완료)"
+            },
+            "hasPlan": false,
+            "judgment": null
+          }
+        }
+      }
+    },
+    {
+      "case": "empty-onboarding",
+      "request": {
+        "method": "GET",
+        "path": "/api/onboarding"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Cache-Control": "no-store"
+        },
+        "body": {
+          "success": true,
+          "data": {
+            "messages": [],
+            "chips": [],
+            "subjects": [],
+            "schedules": [],
+            "done": false
+          }
+        }
+      }
+    },
+    {
+      "case": "empty-books",
+      "request": {
+        "method": "GET",
+        "path": "/api/books"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Cache-Control": "no-store"
+        },
+        "body": {
+          "success": true,
+          "data": {
+            "subjects": [],
+            "readiness": []
+          }
+        }
+      }
+    },
+    {
+      "case": "empty-focus",
+      "request": {
+        "method": "GET",
+        "path": "/api/study/sessions/active"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Cache-Control": "no-store"
+        },
+        "body": {
+          "success": true,
+          "data": null
+        }
+      }
+    },
+    {
+      "case": "empty-today",
+      "request": {
+        "method": "GET",
+        "path": "/api/today"
+      },
+      "response": {
+        "status": 404,
+        "headers": {
+          "Cache-Control": "no-store"
+        },
+        "body": {
+          "success": false,
+          "error": {
+            "code": "NO_PLAN",
+            "message": "아직 계획이 없어요. 계획을 먼저 만들어 주세요"
+          }
+        }
+      }
+    }
+  ]
+}

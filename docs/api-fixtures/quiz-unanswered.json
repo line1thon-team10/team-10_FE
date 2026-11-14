@@ -1,0 +1,104 @@
+{
+  "kind": "captured-local-http",
+  "backendSha": "9d1ddd7a40e37f74823950038581b18e1134fc58",
+  "database": "disposable SQLite",
+  "idsAreExamples": true,
+  "productionVerified": false,
+  "notes": [
+    "questions[].id is a quiz item ID, not the source question ID.",
+    "Q-03 savedAnswers and answer-save API are still a follow-up at this capture SHA.",
+    "No grading/provider call or submission was performed."
+  ],
+  "cases": [
+    {
+      "case": "quiz-before-answer",
+      "request": {
+        "method": "GET",
+        "path": "/api/quiz/cbee96ad-914c-4312-9185-0360cbcbaeb3"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Cache-Control": "no-store"
+        },
+        "body": {
+          "success": true,
+          "data": {
+            "quizId": "5b5d0cbf-92be-4e92-8e5a-069378b1b18d",
+            "saved": false,
+            "subjectId": "cbee96ad-914c-4312-9185-0360cbcbaeb3",
+            "custom": false,
+            "resultFor": "cbee96ad-914c-4312-9185-0360cbcbaeb3",
+            "status": "ready",
+            "name": "인공지능",
+            "round": "1회독",
+            "difficulty": "하",
+            "composition": "2단원 새 문제 5 + 어제 틀린 문제 1",
+            "questions": [
+              {
+                "id": "4516ba73-914c-4b6d-8a12-b821fa2aa08e",
+                "type": "short",
+                "tag": "어제 오답",
+                "unitNo": 1,
+                "materialId": "2f1e33ef-719d-4f71-a998-5fac78d64460",
+                "unitId": "66502536-2a38-41fc-a339-6c56a1be658b",
+                "prompt": "행동에 대한 보상을 이용해 정책을 학습하는 방법은?",
+                "options": null
+              },
+              {
+                "id": "ff823393-d7de-4ca2-a31f-53cf505005e2",
+                "type": "choice",
+                "tag": null,
+                "unitNo": 2,
+                "materialId": "2f1e33ef-719d-4f71-a998-5fac78d64460",
+                "unitId": "eb9c92d1-f638-406d-a0ec-c68da347b971",
+                "prompt": "선형 회귀는 연속형 목표값을 예측할 수 있다.",
+                "options": ["O", "X"]
+              },
+              {
+                "id": "119128a8-93c7-48b7-b257-7d7f982edbf4",
+                "type": "choice",
+                "tag": null,
+                "unitNo": 2,
+                "materialId": "2f1e33ef-719d-4f71-a998-5fac78d64460",
+                "unitId": "eb9c92d1-f638-406d-a0ec-c68da347b971",
+                "prompt": "로지스틱 회귀는 분류에 사용할 수 없다.",
+                "options": ["O", "X"]
+              },
+              {
+                "id": "66a54829-8a8d-4d46-9275-2862b9ce2243",
+                "type": "short",
+                "tag": null,
+                "unitNo": 2,
+                "materialId": "2f1e33ef-719d-4f71-a998-5fac78d64460",
+                "unitId": "eb9c92d1-f638-406d-a0ec-c68da347b971",
+                "prompt": "선형 회귀에서 예측하는 목표값은 연속형과 범주형 중 무엇인가요?",
+                "options": null
+              },
+              {
+                "id": "426ff9c8-568f-4f52-8b1e-6a20d9e3d0b4",
+                "type": "choice",
+                "tag": null,
+                "unitNo": 2,
+                "materialId": "2f1e33ef-719d-4f71-a998-5fac78d64460",
+                "unitId": "eb9c92d1-f638-406d-a0ec-c68da347b971",
+                "prompt": "로지스틱 회귀는 분류 확률을 추정한다.",
+                "options": ["O", "X"]
+              },
+              {
+                "id": "d2ec89fb-8f44-48bb-a3a4-7c4f8dda7843",
+                "type": "essay",
+                "tag": null,
+                "unitNo": 2,
+                "materialId": "2f1e33ef-719d-4f71-a998-5fac78d64460",
+                "unitId": "eb9c92d1-f638-406d-a0ec-c68da347b971",
+                "prompt": "로지스틱 회귀에서 선형 결합 결과를 어떻게 분류 확률로 바꾸는지 설명하세요.",
+                "options": null
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}
