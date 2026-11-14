@@ -92,10 +92,18 @@ function Focus({ session, onEnded }) {
   }, [shown]);
 
   const showTime = async () => {
-    const { data } = await refetch();
+    const { data, error } = await refetch();
+    if (error) toast.error(error.message);
     if (data) setShown(data.minutes);
   };
-  const finish = () => end.mutate(session.id, { onSuccess: onEnded, ...fail });
+  const finish = async () => {
+    try {
+      // active 캐시가 비면서 Focus가 unmount되어도 종료 화면으로 이동해요.
+      onEnded(await end.mutateAsync(session.id));
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
 
   return (
     <>
@@ -256,18 +264,23 @@ export default function S12Study() {
   const taskId = params.get('task');
   const doneId = params.get('done');
   const start = useStartSession();
-  const { data: active, isPending } = useActiveSession(!doneId);
+  const { data: active, isPending, isError, error, refetch } = useActiveSession(!doneId);
 
   // 들어올 때 한 번만 정해요: 같은 태스크가 진행 중이면 이어서, 아니면 시작.
   // (종료 직후 진행 중 측정이 비어도 다시 시작하지 않게)
-  const decided = useRef(false);
+  const decided = useRef(null);
   const { mutate } = start;
   useEffect(() => {
-    if (decided.current || doneId || !taskId || isPending) return;
-    decided.current = true;
+    if (decided.current === taskId || doneId || !taskId || isPending || isError) return;
+    decided.current = taskId;
     if (active?.taskId === taskId) return;
     mutate(taskId, { onError: (e) => toast.error(e.message) });
-  }, [doneId, taskId, isPending, active, mutate]);
+  }, [doneId, taskId, isPending, isError, active, mutate]);
+
+  useEffect(() => {
+    if (!doneId && active?.taskId === taskId && active.status === 'ended')
+      setParams({ task: taskId, done: active.id }, { replace: true });
+  }, [active, doneId, taskId, setParams]);
 
   if (doneId) return <DoneLoader id={doneId} />;
   if (!taskId)
@@ -277,12 +290,20 @@ export default function S12Study() {
         description="홈에서 태스크의 [시작]을 눌러 들어와요."
       />
     );
+  if (isError)
+    return (
+      <ErrorState
+        title="집중 상태를 불러오지 못했어요"
+        description={error.message}
+        onRetry={refetch}
+      />
+    );
   if (start.isError)
     return (
       <ErrorState
         title="집중 모드를 시작하지 못했어요"
         description={start.error.message}
-        onRetry={() => start.reset()}
+        onRetry={() => mutate(taskId, { onError: (failure) => toast.error(failure.message) })}
       />
     );
   const session = active?.taskId === taskId ? active : null;

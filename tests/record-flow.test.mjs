@@ -115,3 +115,109 @@ test('mock response shapes retain the day9 seed and single-page record compatibi
   assert.equal(recorded.measuredMinutes, 42);
   assert.equal(recorded.pendingSessionId, null);
 });
+
+test('record success waits for fresh home totals and invalidates recorded focus views', async (t) => {
+  const { createServer } = await import('vite');
+  const { createElement } = await import('react');
+  const { renderToString } = await import('react-dom/server');
+  const { QueryClient, QueryClientProvider, QueryObserver } = await import('@tanstack/react-query');
+  const server = await createServer({
+    configFile: false,
+    appType: 'custom',
+    server: { middlewareMode: true, hmr: false },
+    resolve: { alias: { '@': new URL('../src', import.meta.url).pathname } },
+    logLevel: 'silent',
+  });
+  t.after(() => server.close());
+  const { http } = await server.ssrLoadModule('/src/api/client.js');
+  const { useRecord } = await server.ssrLoadModule('/src/hooks/useToday.js');
+  const { useEndSession } = await server.ssrLoadModule('/src/hooks/useStudy.js');
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false, gcTime: Infinity } },
+  });
+  t.after(() => client.clear());
+  const capture = (useHook) => {
+    let hook;
+    function Probe() {
+      hook = useHook();
+      return null;
+    }
+    renderToString(createElement(QueryClientProvider, { client }, createElement(Probe)));
+    return hook;
+  };
+  let sent;
+  http.defaults.adapter = async (config) => {
+    sent = JSON.parse(config.data);
+    return { config, status: 200, headers: {}, data: { success: true, data: { event: null } } };
+  };
+  client.setQueryData(['today'], { donePages: 18, totalPages: 27, rate: 67 });
+  for (const key of [['books'], ['quiz', 'today'], ['study', 'session', 'ended-id']])
+    client.setQueryData(key, { before: true });
+  const started = Promise.withResolvers();
+  const fresh = Promise.withResolvers();
+  const observer = new QueryObserver(client, {
+    queryKey: ['today'],
+    staleTime: Infinity,
+    queryFn: () => {
+      started.resolve();
+      return fresh.promise;
+    },
+  });
+  const stop = observer.subscribe(() => {});
+  t.after(stop);
+  let completed = false;
+  const saving = capture(useRecord)
+    .mutateAsync({
+      taskId: 'task',
+      result: 'partial',
+      toPage: 13,
+      sessionId: null,
+    })
+    .then(() => {
+      completed = true;
+    });
+  await started.promise;
+  assert.deepEqual(sent, { taskId: 'task', result: 'partial', toPage: 13 });
+  assert.equal(completed, false);
+  fresh.resolve({ donePages: 20, totalPages: 27, rate: 74 });
+  await saving;
+  assert.deepEqual(client.getQueryData(['today']), { donePages: 20, totalPages: 27, rate: 74 });
+  assert.equal(client.getQueryState(['study', 'session', 'ended-id']).isInvalidated, true);
+  assert.equal(client.getQueryState(['quiz', 'today']).isInvalidated, true);
+
+  // A late active GET must not put an already-ended focus session back in cache.
+  const stale = Promise.withResolvers();
+  const checking = Promise.withResolvers();
+  const active = { id: 'ended-id', taskId: 'task', status: 'active' };
+  client.setQueryData(['study', 'active'], active);
+  const activeObserver = new QueryObserver(client, {
+    queryKey: ['study', 'active'],
+    staleTime: Infinity,
+    queryFn: () => {
+      checking.resolve();
+      return stale.promise;
+    },
+  });
+  t.after(activeObserver.subscribe(() => {}));
+  const late = client.invalidateQueries({ queryKey: ['study', 'active'] });
+  await checking.promise;
+  const ended = {
+    ...active,
+    status: 'ended',
+    minutes: 42,
+    task: { pages: 9, ranges: [], minutes: 45 },
+  };
+  http.defaults.adapter = async (config) => ({
+    config,
+    status: 200,
+    headers: {},
+    data: { success: true, data: ended },
+  });
+  const result = await capture(useEndSession).mutateAsync(ended.id);
+  stale.resolve(active);
+  await late;
+  assert.equal(result.id, ended.id);
+  assert.equal(result.minutes, 42);
+  assert.equal(client.getQueryData(['study', 'active']), null);
+  assert.equal(client.getQueryData(['study', 'session', ended.id]).status, 'ended');
+});
