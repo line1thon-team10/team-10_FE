@@ -8,7 +8,8 @@
 
 | 대상                        | 고정 기준                                                                                                                                                                                                                     |
 | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| FE 원격 main/dev            | `c8e250d9484a03eac005e12c24d1b703fc105626` — 작업 전 둘 다 같은 SHA임을 확인                                                                                                                                                  |
+| FE 최초 대조 기준           | `c8e250d9484a03eac005e12c24d1b703fc105626` — 아래 충돌표의 출발점                                                                                                                                                           |
+| FE 최신 main/dev 반영       | `49c95c9` — 11/14 서버 연결·시드 교체·배포 설정을 보존하여 병합. 작업 전 원격 둘의 같은 SHA를 다시 확인                                                                                                                     |
 | BE 로컬 통합·응답 확인 기준 | `9d1ddd7a40e37f74823950038581b18e1134fc58` — O-02·D-01 통합 포함                                                                                                                                                              |
 | AI submodule                | `6d74ffb6c455a306e912252013d76f93e30a6210`                                                                                                                                                                                    |
 | 계약 원문                   | [BE docs/api](https://github.com/line1thon-team10/team-10_BE/tree/integration/contract-v1/docs/api), [충돌 C01~C22](https://github.com/line1thon-team10/team-10_BE/blob/integration/contract-v1/docs/api/frontend-handoff.md) |
@@ -32,7 +33,9 @@
 
 통합되어도 운영 배포 전이면 해당 API를 운영 FE에서 켜지 않는다. 배포 대상4c20454에는 O-02·D-01·SYS-04가 들어 있지 않다. 공개 URL이 열리는 것만으로 전체76개 계약이 구현됐다고 판단하지 않는다. 배포 완료 근거는 [고정 manifest](https://github.com/line1thon-team10/team-10_BE/blob/infra/deploy-checkpoint-01/docs/releases/2026-11-14-checkpoint-01.md)와 실제 실행 결과를 함께 본다.
 
-`VITE_USE_MOCK` 기본값은 현재 true다. 후속 FE-08에서 API 프록시·실제 배포를 확인한 후 명시적으로 끈다. 이번 문서 작업은 이 값을 바꾸지 않는다.
+`VITE_USE_MOCK`은 기본 mock(true), hybrid, server(false) 세 모드다. 최신 FE에는 Vite 개발 프록시와 Vercel의 `/api` 중계·SPA rewrite 설정이 들어왔다. hybrid는 명시된22개 경로만 서버로 보내고 나머지는 목업을 사용하며, 목업 계획 승인 시 서버를 day9로 재설정한다. 실제 첫 계획 승인 완료로 해석하지 않는다. 후속 FE-08은 이 설정을 재사용해 server(false) 동작·배포를 검증한다. 이 문서에서 Vercel 실제 배포나 전체 실서버 연동을 검증했다고 주장하지 않는다.
+
+11/14 최신 FE의 `firstExam:null` 처리는 반영됐고, 목업 시드·PDF도 AI/DB/OS 패키지로 교체됐다. FE-09는 이를 다시 작성하지 않고 서버와 값·동작을 대조한다. 첫 계획 설명/시연 입력·튜터 답변·추가 자료·P4 측정값 등 목업의 미확정 부분은 기존 FE 문서대로 남아 있다. C19의 confirmedFields와 다른 C-ID의 연결까지 완료됐다는 뜻은 아니다.
 
 ## C01~C22 수정 위치와 담당 task
 
@@ -69,10 +72,10 @@
 
 - `adapters/today.js::toTask`의 `raw.to - raw.from + 1`은 복합 범위의 null에서 잘못된1쪽을 만든다. 서버 pages/donePages/ranges를 그대로 사용한다.
 - `S7Record`의 기본 `sessionId:null`은 BE에서422다. 연결할 종료 세션이 없으면 필드 자체를 생략하고, 있으면 종료 응답의 UUID를 전달한다. 미사용 `toPage`/`completedRanges`도 null 대신 생략한다. 수동 기록과 집중 종료 후 기록을 각각 검증한다.
-- `S3_2Toc.jsx`의 기본 subject=`net`, `S8_2Result.jsx`의 기본 subject=`ds`, 더 풀기·재학습의 unitNo, `S9Books.jsx`의 unitNo+배열 index 선택값은 실제 UUID로 바꾼다. 과목이 없으면 선택/자료 목록으로 안내하고 고정 코드로 요청하지 않는다. 같은 번호의 단원이 다른 PDF에 있을 수 있다.
+- `S3_2Toc.jsx`의 기본 subject=`os`(이전 `net`), `S8_2Result.jsx`의 기본 subject=`ai`(이전 `ds`), 더 풀기·재학습의 unitNo, `S9Books.jsx`의 unitNo+배열 index 선택값은 실제 UUID로 바꾼다. 과목이 없으면 선택/자료 목록으로 안내하고 고정 코드로 요청하지 않는다. 같은 번호의 단원이 다른 PDF에 있을 수 있다.
 - `S6Home.jsx::QuizGuideBox`는 홈 진행률과 퀴즈 remainPages를 한 문장에 섞고 있다. 홈 진행률은 보충을 배치별로 합산하지만 퀴즈는 출제 가능한 범위의 자료별 합집합이다. 안내에는 서버 open/openSubjects/remainPages를 사용하고, 홈 rate로 퀴즈 열림을 추정하지 않는다. 표시70%여도 원 비율69.99%면 잠길 수 있다.
 - `toQuizSet`이 quizId/savedAnswers를 버리고 page를 받는 현재 구조를 수정한다. [다음] 저장 실패 시 해당 입력을 지우거나 다음 문항으로 이동하지 않는다. 반환 revision을 사용하고409 ANSWER_CONFLICT는 최신 저장 답안을 다시 확인한다.
-- `toOnboarding`은 confirmedFields를 보존해야 한다. `goalEtc:null`이면서 confirmedFields.goalEtc=true인 ‘없음 확인’을 미응답으로 바꾸지 않는다. `toDemoState`는 firstExam=null에서 속성을 읽지 않는다.
+- `toOnboarding`은 confirmedFields를 보존해야 한다. `goalEtc:null`이면서 confirmedFields.goalEtc=true인 ‘없음 확인’을 미응답으로 바꾸지 않는다. `toDemoState`의 firstExam=null 처리는 최신 FE에서 반영됐으며 빈 계정 회귀를 유지한다.
 - 변경안이 stale이면 새 비교 화면으로 돌아간다. 과거 적용 이력에 원 응답이 없는 경우에도409 PREVIEW_STALE이며 같은 변경을 자동 재실행하지 않는다.
 
 ## 확정된 시연·운영 정책
@@ -87,6 +90,6 @@ day9는18/27쪽(rate67), AI2 집중42분 진행 중이다. [종료] 뒤 종료 s
 
 [로컬 HTTP fixture](api-fixtures/README.md)에 빈 계정·day9 집중/기록·복합 범위·풀이 전 퀴즈·온보딩 일정의 응답을 저장했다. 각 JSON에는 실제 캡처한 BE SHA와 준비 방법, 후속 계약의 한계를 기록한다. 예제 UUID를 실제 요청 ID로 사용하지 않는다.
 
-API 층을 크게 수정하기 전 기존 c8e250d 보관 브랜치를 만들고, 영역별 task 브랜치에서 원자 커밋한다. 사용자에게 이미 받은 개발·PR 권한을 기존 문서의 별도 확인 문구로 다시 요청하지 않는다. 실제 FE 담당자의 검토 여부는 별도로 기록한다.
+API 층을 크게 수정하기 전 그때의 최신 FE 기준을 다시 확인하여 보관 브랜치를 만들고, 영역별 task 브랜치에서 원자 커밋한다. 최초 c8e250d로 담당자의 후속 변경을 덮어쓰지 않는다. 사용자에게 이미 받은 개발·PR 권한을 기존 문서의 별도 확인 문구로 다시 요청하지 않는다. 실제 FE 담당자의 검토 여부는 별도로 기록한다.
 
 각 연결 PR에는 해당 C-ID, 기존 FE/BE 중 무엇이 틀렸는지, 적용한 계약, 정상·빈 상태·잘못된 ID·중복 요청·네트워크 재시도 결과를 적는다. 새 API가 없는 상태에서 임의 성공 목업을 운영 결과로 보이지 않는다. FE 코드 변경은 `npm run check`와 실제 브라우저 흐름을 확인하며 G-1의 흑백 상태 구분을 유지한다. 이 문서 변경에는 화면 수정이 없다.
