@@ -15,6 +15,7 @@
 | docs/dev-plan.md            | 날짜별 작업 순서                                         |
 | docs/v2-plan.md             | 정의서 v2 반영 계획 · 결정(Q1~Q7) · 화면별 바뀐 점       |
 | docs/claude-code-prompts.md | v2 작업 지시문 0~14 · 날짜별 순서                        |
+| docs/api-draft.md           | API 기준 문서 (서버 0.1.0 = 프론트 초안, 11/13 결정)     |
 
 ## 기본 원칙
 
