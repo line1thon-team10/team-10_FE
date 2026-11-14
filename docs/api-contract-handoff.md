@@ -67,7 +67,8 @@
 
 ## 구현 시 반드시 제거할 현재 가정
 
-- `adapters/today.js::toTask`의 `raw.to - raw.from + 1`은 복합 범위의 null에서 잘못된1쪽을 만든다. 서버 pages/donePages/ranges를 그대로 사용한다. `sessionId:null`을 보낼 때도 실제 종료 세션이 있다면 그 ID를 선택해 전달한다.
+- `adapters/today.js::toTask`의 `raw.to - raw.from + 1`은 복합 범위의 null에서 잘못된1쪽을 만든다. 서버 pages/donePages/ranges를 그대로 사용한다.
+- `S7Record`의 기본 `sessionId:null`은 BE에서422다. 연결할 종료 세션이 없으면 필드 자체를 생략하고, 있으면 종료 응답의 UUID를 전달한다. 미사용 `toPage`/`completedRanges`도 null 대신 생략한다. 수동 기록과 집중 종료 후 기록을 각각 검증한다.
 - `S8_2Result.jsx`의 기본 subject=`ds`, 더 풀기·재학습의 unitNo, `S9Books.jsx`의 unitNo+배열 index 선택값은 실제 UUID로 바꾼다. 같은 번호의 단원이 다른 PDF에 있을 수 있다.
 - `S6Home.jsx::QuizGuideBox`는 홈 진행률과 퀴즈 remainPages를 한 문장에 섞고 있다. 홈 진행률은 보충을 배치별로 합산하지만 퀴즈는 출제 가능한 범위의 자료별 합집합이다. 안내에는 서버 open/openSubjects/remainPages를 사용하고, 홈 rate로 퀴즈 열림을 추정하지 않는다. 표시70%여도 원 비율69.99%면 잠길 수 있다.
 - `toQuizSet`이 quizId/savedAnswers를 버리고 page를 받는 현재 구조를 수정한다. [다음] 저장 실패 시 해당 입력을 지우거나 다음 문항으로 이동하지 않는다. 반환 revision을 사용하고409 ANSWER_CONFLICT는 최신 저장 답안을 다시 확인한다.
