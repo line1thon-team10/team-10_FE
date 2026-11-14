@@ -167,12 +167,39 @@ Q1. (질문)
   - `handlers/*.js`: 주소별 응답. `respond.run()`이 `MockError`를 실패 응답으로 바꿔요
 - 새 API를 붙이는 순서: `endpoints.js` → `mocks/handlers` (+`logic.js`) → `api/adapters` → `api/*.js` → `hooks` (+`queryKeys.js`) → 화면
 
-실제 서버로 바꿀 때
+실제 서버로 바꿀 때 (11/13 · 11/14 기준)
 
-1. 받은 명세와 지금 형식(`adapters`, `endpoints.js`, `seed.js`)을 비교한 표를 먼저 만들어 사용자에게 보여줘요
+1. 받은 명세와 지금 형식(`adapters`, `endpoints.js`, `seed.js`)을 비교한 표를 먼저 만들어 사용자에게 보여줘요 (G-2: 기준 확인 → `docs/policy-and-backend.md`에 결정 기록 → 보관 브랜치 → 코드)
 2. `endpoints.js`, `api/adapters/`, `mocks/`만 고쳐요. 화면 코드는 고치지 않는 게 목표예요
-3. `.env`에서 `VITE_USE_MOCK=false`, `VITE_API_BASE_URL=서버 주소` (환경변수 변경은 사용자 확인 후)
-4. 시연 순서를 처음부터 끝까지 확인해요
+3. `.env`에 `API_PROXY_TARGET=서버 주소` [임시]와 `VITE_USE_MOCK=hybrid`(서버에 있는 경로만 서버) 또는 `false`(전부 서버). `VITE_API_BASE_URL`은 비워 둬요 — 개발 서버(`npm run dev`)가 `/api`를 프록시해요. 환경변수 변경은 사용자 확인 후, Vercel 설정은 건드리지 않아요
+4. 시연 순서를 처음부터 끝까지 두 모드(`true` · `hybrid`)로 확인해요. 제출 · 영상은 `true`(목업)예요
+
+혼합 모드 규칙 (`VITE_USE_MOCK=hybrid`)
+
+- 서버로 보내는 경로 22개는 `src/mocks/hybrid.js`의 `SERVER_ROUTES` 한 곳에만 있어요. 서버에 경로가 생기면 여기에 한 줄 추가해요
+- 경로나 본문의 ID(`taskId` · `:key` · `:subjectId` · `:id`)가 UUID가 아니면 목업이 처리해요 (목업 ID로 서버를 부르지 않게)
+- demo seed · reset · next-day는 서버로 보내고, 성공하면 목업도 같은 시드 · 같은 날로 맞춰요. S5 승인(목업)은 서버에도 `demo/seed day9`를 먼저 보내요
+- 401 `NO_SESSION` · `UNKNOWN_SESSION`이면 익명 ID를 새로 받아 1번만 다시 보내요. 목업 때 저장된 `mock-…` ID는 서버에 보내지 않고 지워요
+
+교차 이동 점검표 요약 (11/14, 지시문 5)
+
+| 판정      | 이동                                                                                                                               |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| 정상      | S5 승인 → 홈(서버 day9) · S10 문제 뽑기 → S8 · S10 다시 풀기 · S14 → S4 · 다음 날로 → 캘린더 날짜                                  |
+| 안내만 뜸 | 집중 모드 '자료 열기' · S8-2 근거 원본 ('원본 PDF가 아직 없어요') · S8-2 더 풀기 ('더 풀 문항이 없어요')                           |
+| 오류      | S7 '말로 입력' · S6-2 '다른 날로 옮기기' · S14 오늘 계획 바꾸기 · 홈 '계획 추가' — 서버 경로가 없어 목업 상태만 바뀜 (백엔드 요청) |
+| 시드 차이 | 튜터 · S10 오답 노트 (서버 퀴즈 오답이 목업 노트에 안 들어감)                                                                      |
+| 연결 없음 | S9 → S10 · S11 캘린더 블록 → S7                                                                                                    |
+
+측정 (11/14, 지시문 7) — 기준 커밋 `c8e250d`
+
+- `git diff --stat c8e250d HEAD -- src/pages src/components`: 3개 파일, +25 −7 (HEAD = `677faac`, 지시문 1~5 커밋)
+- `git diff --stat c8e250d HEAD -- src/api src/hooks src/config src/mocks vite.config.js`: 6개 파일, +159 −16
+- 지시문 6 · 7(아직 커밋 전)까지 더하면: 화면 8개 파일 +34 −16 · API 층 12개 파일 +1088 −670 (대부분 `seed.js` 교체)
+- 화면 코드가 바뀐 이유
+  - ① 서버 연결 때문: `MainLayout.jsx` (C19 첫 시험 null → D-day 줄 숨김) · `S8Quiz.jsx` (일반 오류에 서버 문구 — `QUIZ_LOCKED` 안내) · `S9Books.jsx` (서버가 과목 0개를 줄 때 빈 상태 안내)
+  - ② 시드 교체 때문: `DevPage.jsx` (과목 태그 · 예시 알림) · `S7Record.jsx` (입력 예시) · `S8Quiz.jsx` (주석) · `S8_2Result.jsx` · `S3_2Toc.jsx` (기본 과목 id) · `S1Schedule.jsx` (입력 예시)
+- 시연 점검: 시드 3개 × 화면 16개 × 1280×800 · 1920×1080 × 두 모드(`true` · `hybrid`) = 192칸, 가로 스크롤 0 · 콘솔 JS 오류 0 · 빈 화면 0. /dev 책 블록 6개 흑백(`grayscale(1)`) 구분됨 (G-1)
 
 ---
 
@@ -228,7 +255,9 @@ Q1. (질문)
 - 그 밖에 정할 것
   - 기획 문서 위치 (5장)
   - CODEOWNERS (사용자 GitHub ID 필요)
-  - 배포 (Vercel 여부·설정 — 배포 설정은 먼저 물어요)
+  - 배포 (11/14 결정 — 둘로 나눠요. Vercel 대시보드 설정은 사람이 해요)
+    - 포트폴리오 목업: `deploy` 브랜치 · Vercel 프로젝트 `pirwichimdemo` · 전부 목업. 건드리지 않아요
+    - 팀 배포: `main` · 새 Vercel 프로젝트(Production Branch: main) · 환경변수 `VITE_USE_MOCK=hybrid` · `vercel.json`이 `/api/*`를 서버(`https://2026-line1.leehyowon14.dev`)로 중계하고 나머지 주소는 `index.html`로 (SPA 새로고침). 서버에 있는 22개 경로만 서버, 나머지는 목업이에요 ('연동 완료' 아님). 비상시: 환경변수를 `VITE_USE_MOCK=true`로 바꾸고 Redeploy하면 전부 목업
   - 시연 때 헤더의 `/dev` 링크 숨기기
   - 빌드 경고: JS 묶음이 커요 (약 1.2MB). 코드 나누기는 구조 변경이라 먼저 물어요
 

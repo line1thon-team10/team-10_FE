@@ -18,17 +18,13 @@ export const todayHandlers = [
     return run(() => fixRecord(params.id, Number(toPage)), 300);
   }),
 
-  // mock: AI가 "스택까지 끝냈어" 같은 말을 페이지로 바꾸는 자리 (HM-04). 시연 값만 돌려줘요.
+  // mock: AI가 "로지스틱 회귀까지 했어" 같은 말을 페이지로 바꾸는 자리 (HM-04). 해석은 AI 몫이라 태스크 범위를 그대로 돌려줘요.
   http.post(EP.recordInterpret, async ({ request }) => {
     const { taskId } = await request.json();
     return run(() => {
       const task = db.get().today.tasks.find((t) => t.id === taskId);
       if (!task) throw new MockError('TASK_NOT_FOUND', '태스크를 찾지 못했어요', 404);
-      const demo =
-        task.id === 't1'
-          ? { to: 88, label: 'BST 탐색·삽입·삭제' }
-          : { to: task.to, label: task.title };
-      return { from: task.from, to: demo.to, label: demo.label };
+      return { from: task.from, to: task.to, label: task.title };
     }, 700);
   }),
 

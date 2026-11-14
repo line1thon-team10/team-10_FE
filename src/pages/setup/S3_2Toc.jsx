@@ -14,7 +14,7 @@ import { useSaveUnits, useToc, useUnits } from '@/hooks/usePlan.js';
 export default function S3_2Toc() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const subjectId = params.get('subject') ?? 'net';
+  const subjectId = params.get('subject') ?? 'os';
   const fileName = params.get('file') ?? '올린 PDF';
   const { data: current } = useUnits(subjectId);
   const toc = useToc();

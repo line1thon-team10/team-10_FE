@@ -207,7 +207,7 @@ export default function S7Record({ taskId, sessionId = null, sessionMinutes = nu
             <input
               id="record-voice"
               className="min-w-0 flex-1 rounded-full border border-line-2 bg-bg px-3.5 py-2"
-              placeholder="예: BST 삭제까지 했고 AVL은 못 했어"
+              placeholder="예: 로지스틱 회귀까지 했고 k-최근접 이웃은 못 했어"
               value={voice}
               onChange={(e) => setVoice(e.target.value)}
               autoComplete="off"

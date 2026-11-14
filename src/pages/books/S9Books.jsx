@@ -2,11 +2,13 @@
 // 11/10 결정(Q3 A): 과목 탭 + 나무 선반 하나 위에 단원별 세로 책 더미 (디자인 SubjectTabs · UnitShelf · ReadinessCard).
 // 상태는 정의서 4-5 (색·패턴·움직임 + 책 위 글자). 과목 색은 탭·단원 이름표에만 쓰고 책에는 쓰지 않아요.
 import { useState } from 'react';
+import { Link } from 'react-router';
 import BookBlock from '@/components/book/BookBlock.jsx';
 import WoodShelf from '@/components/book/Shelf.jsx';
 import { MockBadge } from '@/components/common/Badge.jsx';
 import Card from '@/components/common/Card.jsx';
-import { ErrorState, LoadingState } from '@/components/common/StateView.jsx';
+import { EmptyState, ErrorState, LoadingState } from '@/components/common/StateView.jsx';
+import { ROUTES } from '@/app/screens.js';
 import { BLOCK_STATE, GRADE, READINESS_PART } from '@/config/labels.js';
 import { useBooks } from '@/hooks/useBooks.js';
 
@@ -237,6 +239,19 @@ export default function S9Books() {
   const [picked, setPicked] = useState(null);
   if (isPending) return <LoadingState title="책장을 불러오는 중이에요" />;
   if (isError) return <ErrorState onRetry={refetch} />;
+  // 계획이 없으면 서버가 과목 0개를 줘요 (empty 시드)
+  if (!data.subjects.length)
+    return (
+      <EmptyState
+        title="아직 계획이 없어요"
+        description="계획을 만들고 공부를 기록하면 단원별로 책이 쌓여요."
+        action={
+          <Link className="btn btn-primary" to={ROUTES.s1}>
+            계획 만들기
+          </Link>
+        }
+      />
+    );
 
   const subject = data.subjects.find((s) => s.subjectId === tab) ?? data.subjects[0];
   const pu = picked && subject.units.find((u) => u.no === picked.unitNo);

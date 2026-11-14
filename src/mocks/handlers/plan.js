@@ -55,15 +55,15 @@ function unitsView(subjectId) {
   };
 }
 
-// S5 첫 주(11/3 화 ~ 11/9 월) 과목별 공부 시간(분). 데이터 세트 3장 날짜별 범위 × 약 2.5분/쪽, 하루 합계는 데이터 세트 값에 맞춘 mock
+// S5 첫 주(11/3 화 ~ 11/9 월) 과목별 공부 시간(분) — 백엔드 demo_data.PLAN (11/14 시드 교체)
 const FIRST_WEEK = [
-  ['2026-11-03', { ds: 45, os: 50, net: 0 }],
-  ['2026-11-04', { ds: 40, os: 0, net: 0 }],
-  ['2026-11-05', { ds: 60, os: 0, net: 20 }],
-  ['2026-11-06', { ds: 0, os: 40, net: 0 }],
-  ['2026-11-07', { ds: 30, os: 30, net: 0 }],
-  ['2026-11-08', { ds: 40, os: 25, net: 35 }],
-  ['2026-11-09', { ds: 60, os: 45, net: 30 }],
+  ['2026-11-03', { ai: 25, db: 0, os: 0 }],
+  ['2026-11-04', { ai: 0, db: 25, os: 0 }],
+  ['2026-11-05', { ai: 0, db: 0, os: 25 }],
+  ['2026-11-06', { ai: 0, db: 0, os: 0 }],
+  ['2026-11-07', { ai: 0, db: 0, os: 0 }],
+  ['2026-11-08', { ai: 0, db: 0, os: 0 }],
+  ['2026-11-09', { ai: 25, db: 25, os: 25 }],
 ];
 
 // S5 분량 (PDF-05): 시험 범위에 든 단원만 더해요.
@@ -91,12 +91,6 @@ function allocationOf(sub) {
 function draftView() {
   const s = db.get();
   const first = [...s.subjects].sort((a, b) => a.examDate.localeCompare(b.examDate))[0];
-  const target = s.onboardingScript.goalTargets;
-  const goalLabel = {
-    ds: `A+ (커트라인 ${target.ds}점)`,
-    os: `B+ 이상 (${target.os}점)`,
-    net: `통과 (${target.net}점)`,
-  };
   const alloc = Object.fromEntries(s.subjects.map((x) => [x.id, allocationOf(x)]));
   const all = Object.values(alloc);
   return {
@@ -111,7 +105,7 @@ function draftView() {
       subjectId: x.id,
       name: x.name,
       color: x.color,
-      goalLabel: goalLabel[x.id],
+      goalLabel: x.goalLabel,
       ...alloc[x.id],
     })),
     // 다시 나누기를 승인했으면 그 안을 더해요 (S5-2)
@@ -120,11 +114,8 @@ function draftView() {
       minutes: resplitMinutes(date, minutes),
     })),
     // 와이어프레임 S5 '이렇게 나눈 이유'
-    reasons: [
-      '자료구조는 시험이 가장 빠르고 목표가 높아 비중을 높였어요',
-      '알바가 있는 수·금은 40분으로 줄이고, 일요일에 몰았어요',
-      '3·4단원은 난이도가 높아 태스크를 더 잘게 나눴어요',
-    ],
+    // TODO(확인필요): [기획 확인] 새 시드(11/14)의 S5 이유 문구가 없어서 비워 뒀어요 (옛 문구는 자료구조 기준)
+    reasons: [],
   };
 }
 
@@ -136,6 +127,7 @@ export const planHandlers = [
   http.put(EP.units, async ({ request }) => {
     const { subjectId, units } = await request.json();
     setup().units[subjectId] = units;
+    (setup().unitsEdited ??= {})[subjectId] = true; // S3 패키지 분석 결과가 고친 단원을 덮지 않게
     return ok(unitsView(subjectId));
   }),
   // S5 계획 생성 (AI): ?saved=1이면 미리 만든 2주 계획 (NF-10)

@@ -122,6 +122,8 @@ export function buildToday() {
 export function advanceDay() {
   const s = db.get();
   if (!s.hasPlan) throw new MockError('NO_PLAN', '계획을 먼저 만들어 주세요');
+  // 서버와 같아요: 집중 모드가 진행 중이면 다음 날로 못 넘어가요 (day9 시드의 42분 세션)
+  if (activeOf(s)) throw new MockError('SESSION_RUNNING', '집중 모드를 먼저 끝내 주세요', 409);
   const next = dayjs(s.demo.today).add(1, 'day').format('YYYY-MM-DD');
   const plan = s.nextDayTasks[next];
   if (!plan)
@@ -283,9 +285,12 @@ export function fixRecord(taskId, toPage) {
 export function applyReplan(key) {
   const s = db.get();
   if (!s.replan) throw new MockError('NO_REPLAN', '적용할 분배안이 없어요');
-  const task = s.replanTasks[key];
-  if (!task) throw new MockError('BAD_KEY', '분배안을 다시 골라 주세요');
-  s.today.tasks = [{ ...task, status: 'todo', donePages: 0, doneTo: null }, ...s.today.tasks];
+  const tasks = s.replanTasks[key]; // 밀린 과목마다 1개씩 (서버 적용 결과)
+  if (!tasks) throw new MockError('BAD_KEY', '분배안을 다시 골라 주세요');
+  s.today.tasks = [
+    ...tasks.map((t) => ({ ...t, status: 'todo', donePages: 0, doneTo: null })),
+    ...s.today.tasks,
+  ];
   s.replan = null;
   s.notice = { type: 'replanned', key };
   return { type: 'box', reason: 'recover', planKey: key };
@@ -973,8 +978,19 @@ export function makeMoreQuiz(subjectId, unitNo) {
 }
 
 // ── 근거 원본 PDF (QZ-13) ─────────────────────────────────
-// mock: 자료구조 강의자료만 목업 PDF가 있어요
-export const MOCK_PDF = { 'ds-main': '/mock/ds-lecture-mock.pdf' };
+// 데모 패키지 PDF (11/14 시드 교체). 과목 강의자료는 자료 id로, S3에 올린 패키지 파일은 이름으로 찾아요
+export const MOCK_PDF = {
+  'ai-main': '/mock/artificial_intelligence.pdf',
+  'db-main': '/mock/database.pdf',
+  'os-main': '/mock/operating_system.pdf',
+};
+export const PACKAGE_PDF = {
+  'artificial_intelligence.pdf': '/mock/artificial_intelligence.pdf',
+  'database.pdf': '/mock/database.pdf',
+  'operating_system.pdf': '/mock/operating_system.pdf',
+  'realtime_analysis.pdf': '/mock/realtime_analysis.pdf',
+  'scanned_document.pdf': '/mock/scanned_document.pdf',
+};
 
 // ── AI 튜터 (TU-01 단일턴 · TU-02 쉬운 설명, 정의서 v2_2 4-14) ─────────
 // 요청은 { question, history } (제안). 기본 질문은 history = [], 쉬운 설명은 직전 한 쌍 1개.
@@ -984,7 +1000,7 @@ const NO_ANSWER =
   '올린 강의자료에서 이 질문에 맞는 부분을 찾지 못했어요. 단원 이름이나 개념을 넣어서 다시 물어봐 주세요.';
 
 function savePair(s, fields) {
-  const sub = s.subjects.find((x) => x.id === (fields.subjectId ?? 'ds'));
+  const sub = s.subjects.find((x) => x.id === fields.subjectId) ?? s.subjects[0];
   const pair = {
     id: `tq${s.tutorPairs.length + 1}`,
     subjectId: sub.id,
@@ -1027,10 +1043,11 @@ export function askTutor({ question, history = [] }) {
 }
 
 // 저장된 결과 (NF-10): 응답이 늦거나 실패하면 화면이 따로 받아요. kind: basic(기본 답) | easy(쉬운 설명)
-// 시연 백업은 "AVL 트리 회전은 언제 해?"의 기본 답과 쉬운 설명 하나씩 (4-14)
+// 시연 백업은 저장된 답(saved) 하나의 기본 답과 쉬운 설명 (4-14). 새 시드는 아직 없어요 (seed.js tutorAnswers)
 export function tutorBackup(kind = 'basic') {
   const s = db.get();
   const b = s.tutorAnswers.find((a) => a.saved);
+  if (!b) throw new MockError('NO_BACKUP', '저장된 답이 아직 없어요', 404);
   return {
     id: `backup-${kind}`,
     subjectId: b.subjectId,
@@ -1386,7 +1403,7 @@ export function applyVoiceEvent() {
 
 // ── 속도 보정 (PL-07 · P4) ────────────────────────────────
 // 과목별 최근 3일 집중 모드 1p당 시간이 예상과 20% 넘게 다르면 홈 접속 때 알림. 과목당 하루 한 번.
-// mock: 11/9 기본 시드에서 '다음 날로' 한 11/10에만 자료구조 1.4배 (값은 MOCK)
+// mock: 11/9 기본 시드에서 '다음 날로' 한 11/10에만 첫 시험 과목 1.4배 (값은 MOCK, seed.js paceMock)
 // TODO(확인필요): [기획 확인] 분배안(P2)과 같은 날 겹칠 때 어느 쪽이 먼저인지 (지금은 P2 먼저)
 const PACE_DIFF = 0.2;
 const DAY_WINDOW = [8 * 60, 23 * 60]; // 하루 공부 가능 시간 = 08–23시에서 고정 일정을 뺀 시간 (11/10 결정 A, S2 요약과 같은 기준)
@@ -1982,50 +1999,15 @@ export function monthlyReportView(month) {
 // ── 다시 나누기 (S5-1 · S5-2, PL-06) ─────────────────────
 // mock: 정해 둔 안 3개 중 하나를 골라요. 실제로는 AI가 요청을 읽고 태스크 분할 · 날짜 배치를 새로 짜요.
 // TODO(확인필요): [백엔드 확정 필요] 요청 해석 · 후속 질문 기준 · 새 안 만들기는 AI 몫이에요.
-// 기존 안: 데이터 세트 3장 날짜별 공부 시간(분) 11/3 화 ~ 11/16 월
-const PLAN_2W = [95, 40, 80, 40, 60, 100, 135, 60, 110, 45, 40, 50, 120, 50];
+// 기존 안: 날짜별 공부 시간(분) 11/3 화 ~ 11/16 월 — 백엔드 demo_data.PLAN (11/14 시드 교체)
+const PLAN_2W = [25, 25, 25, 0, 0, 0, 75, 25, 25, 25, 0, 0, 25, 25];
 const PLAN_START = '2026-11-03';
 // 안마다 바뀌는 날의 과목별 증감(분). S5 첫 주 미리보기에도 같은 값을 더해요
-// TODO(확인필요): [기획 확인] weekday는 데이터 세트(토요일 0분 · 화·목 +30분 안쪽 · 바뀜 날 5일)를 맞추느라 2주 합계가 20분 줄어요.
+// TODO(확인필요): [기획 확인] 새 시드(11/14)의 다시 나누기 비교안이 없어서 비워 뒀어요. 옛 안은 자료구조 2주 계획 기준이었어요
 const RESPLITS = {
-  weekday: {
-    moves: {
-      '2026-11-03': { os: 30 },
-      '2026-11-05': { ds: 30 },
-      '2026-11-07': { ds: -30, os: -30 },
-      '2026-11-10': { os: 30 },
-      '2026-11-14': { os: -50 },
-    },
-    reasons: [
-      '토요일(11/7·11/14)은 저녁 약속이 있어 공부를 뺐어요',
-      '빠진 분량은 수업이 끝난 화·목 오후에 30분 안쪽으로 나눠 넣었어요',
-      '자료구조는 시험(11/12) 전에 끝나도록 첫 주 목요일로 옮겼어요',
-    ],
-  },
-  sunday: {
-    moves: {
-      '2026-11-07': { ds: -30, os: -30 },
-      '2026-11-08': { ds: 30, os: 30 },
-      '2026-11-14': { os: -50 },
-      '2026-11-15': { os: 50 },
-    },
-    reasons: [
-      '토요일(11/7·11/14)은 저녁 약속이 있어 공부를 뺐어요',
-      '빠진 분량은 고정 일정이 없는 다음 날 일요일로 옮겼어요',
-    ],
-  },
-  other: {
-    moves: {
-      '2026-11-08': { ds: 30 },
-      '2026-11-09': { ds: -30 },
-      '2026-11-10': { os: 30 },
-      '2026-11-15': { os: -30 },
-    },
-    reasons: [
-      '2시간이 넘는 날(11/9·11/15)을 30분씩 줄여 앞뒤 날로 옮겼어요',
-      '알바가 있는 날에는 더 넣지 않았어요',
-    ],
-  },
+  weekday: { moves: {}, reasons: [] },
+  sunday: { moves: {}, reasons: [] },
+  other: { moves: {}, reasons: [] },
 };
 const RESPLIT_ASK = {
   text: '토요일 분량은 평일에 나눌까요, 일요일로 옮길까요?',

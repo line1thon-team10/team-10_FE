@@ -4,10 +4,10 @@ import { SEED } from './data/seed.js';
 // mock: 가짜 DB예요. 탭을 닫을 때까지 sessionStorage에 남아서 새로고침해도 이어져요 (11/10 Q6 A).
 // 처음으로 돌리는 건 데모 메뉴의 시드 고르기·초기화뿐이에요. 저장하는 건 익명 데모 데이터뿐이고
 // PDF 파일 원본은 여기 없어요 (materialStore 메모리에만).
-const STORE_KEY = 'mock-db';
+const STORE_KEY = 'mock-db-v2'; // v2: 11/14 시드 교체 — 예전 탭에 남은 옛 시드 상태를 읽지 않아요
 
 const freshOnboarding = () => ({
-  stage: 0, // 0 첫 입력 전 · 1 자료구조 추가 질문 · 2 나머지 목표 질문 · 3 완료
+  stage: 0, // 0 첫 입력 전 · 1 첫 과목 추가 질문 · 2 나머지 목표 질문 · 3 완료
   messages: [{ role: 'ai', text: SEED.onboardingScript.first }],
   chips: [],
   subjects: [],
@@ -36,11 +36,12 @@ const freshOnboarding = () => ({
 });
 
 // 시드 3개 (NF-09, 11/7 결정)
-// empty: 빈 계정 — 11/3 계획 만들기 / day9: 11/9 오후 5시 (기본) / overdue: 11/9, 1·4번을 못 한 밀림 시나리오
+// 이름은 서버 demo/state.seeds와 같아요 (11/14 시드 교체)
+// empty: 빈 계정 — 11/3 계획 만들기 / day9: 11/9 (기본) · 인공지능 집중 42분 진행 중 / overdue: 11/9, 인공지능·운영체제를 못 한 밀림 시나리오
 export const SEEDS = {
   empty: '빈 계정 · 계획 만들기 (11/3)',
-  day9: '11/9 오후 5시 (기본)',
-  overdue: '밀림 시나리오 (11/9, 1·4번 못 함)',
+  day9: '11/9 기본 · 집중 42분',
+  overdue: '밀림 시나리오 (11/9, 인공지능·운영체제 미완료)',
 };
 
 function build(name) {
@@ -69,8 +70,30 @@ function build(name) {
   if (name === 'empty') s.demo.today = s.onboardingDate;
   if (name === 'overdue') {
     for (const t of s.today.tasks)
-      if (t.id === 't1' || t.id === 't4')
+      if (t.id === 't1' || t.id === 't3')
         Object.assign(t, { status: 'todo', donePages: 0, doneTo: null });
+    // 서버 overdue: 운영체제 2단원을 못 해서 진도율·준비도가 내려가요
+    Object.assign(
+      s.readiness.find((r) => r.subjectId === 'os'),
+      { readiness: 27, progressRate: 33.3, studiedPages: 9 },
+    );
+  }
+  // 서버 day9: 인공지능 할 일에 42분째 진행 중인 집중 세션 (11/12 결정 시연 장면)
+  if (name === 'day9') {
+    const { taskId, minutes, quote } = s.day9Session;
+    const task = s.today.tasks.find((t) => t.id === taskId);
+    s.studySessions.s1 = {
+      id: 's1',
+      taskId,
+      subjectId: task.subjectId,
+      date: s.today.date,
+      expectedMinutes: task.minutes,
+      quote,
+      startedAt: Date.now() - minutes * 60 * 1000,
+      pausedAt: null,
+      pausedMs: 0,
+      status: 'active',
+    };
   }
   return s;
 }

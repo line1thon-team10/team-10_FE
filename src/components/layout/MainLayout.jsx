@@ -58,7 +58,7 @@ function AppHeader() {
       },
       onError: (e) => toast.error(e.message),
     });
-  const dday = data ? ddayBetween(data.today, data.firstExam.examDate) : null;
+  const dday = data?.firstExam ? ddayBetween(data.today, data.firstExam.examDate) : null;
   return (
     <header className="sticky top-0 z-30 border-b border-line bg-bg/90 backdrop-blur-md">
       <div className="mx-auto flex h-16 w-full max-w-[1280px] items-center gap-5 px-6">
@@ -80,10 +80,12 @@ function AppHeader() {
         <span className="flex-1" />
         {data && (
           <span className="flex flex-col items-end leading-tight">
-            {/* D-day는 항상 첫 시험 기준 */}
-            <span className="num text-[12.5px] font-semibold whitespace-nowrap">
-              첫 시험 {data.firstExam.name} <span className="text-brand-deep">D-{dday}</span>
-            </span>
+            {/* D-day는 항상 첫 시험 기준. 시험이 없으면(empty 시드, C19) 이 줄만 숨겨요 */}
+            {data.firstExam && (
+              <span className="num text-[12.5px] font-semibold whitespace-nowrap">
+                첫 시험 {data.firstExam.name} <span className="text-brand-deep">D-{dday}</span>
+              </span>
+            )}
             <span className="text-[11px] whitespace-nowrap text-fg-2">{fmtFull(data.today)}</span>
           </span>
         )}

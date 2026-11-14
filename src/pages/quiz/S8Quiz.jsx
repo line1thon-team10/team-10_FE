@@ -81,7 +81,7 @@ function SubjectPicker() {
                   ))}
                 </ul>
               ) : (
-                // TODO(확인필요): [기획 확인] 컴퓨터네트워크 구성은 데이터 세트 v2를 받으면 넣어요
+                // 구성 줄(lines)이 없는 과목은 '구성 확인 중'으로 보여요
                 <p className="text-[12px] text-fg-3">구성 확인 중</p>
               )}
               <div className="flex flex-wrap gap-1.5">
@@ -214,7 +214,8 @@ function Player({ subjectId }) {
         }
       />
     ) : (
-      <ErrorState onRetry={refetch} />
+      // 서버 문구를 같이 보여요 (예: QUIZ_LOCKED '오늘 계획의 70%를 넘기면 열려요')
+      <ErrorState description={error?.message} onRetry={refetch} />
     );
 
   const toResult = () => navigate(`${ROUTES.quizResult}?subject=${set.resultFor}`);

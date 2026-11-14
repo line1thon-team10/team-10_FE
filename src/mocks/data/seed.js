@@ -1,7 +1,10 @@
 // mock: 가짜 데이터예요. 실제 서버 응답이 아니에요.
-// 값 출처: 「1호선톤 데모 시나리오 데이터 세트」 (계획 11/3, 시연일 11/9 월 오후 5시 상태)
-// TODO(확인필요): [백엔드 확정 필요] 필드 이름·구조는 프론트 임시값이에요. 명세가 나오면 어댑터와 이 파일을 맞춰요.
-// 데이터 세트에 없는 값(퀴즈 보기 등)은 일부러 비워 뒀어요. 지어내지 않아요.
+// 값 출처 (11/14 결정: 시드 = AI 데모 패키지, 위에 있는 것이 우선)
+//   ① 서버 응답 (https://2026-line1.leehyowon14.dev, empty · day9 · overdue 시드) — 오늘 할 일 · 책 · 준비도 · 퀴즈 문항·해설 · 다음 날 · 분배안
+//   ② 백엔드 app/seed (integration/contract-v1 브랜치: demo_data.py · package.py · package_questions.py · essay_examples.py) — 목표 · 색 · 고정 일정 · 2주 계획 · 정답 · 11/3~11/5 풀이 기록
+//   ③ 데모 패키지 JSON (artificial_intelligence · database · operating_system · realtime_analysis · scanned_document) — 단원 · 개념 · 페이지
+// 어디에도 없는 값은 지어내지 않아요. 비워 두거나 옛 값을 그대로 두고 표시했어요 (docs/policy-and-backend.md 11/14 결정).
+// TODO(확인필요): [백엔드 확정 필요] 필드 이름·구조는 프론트 초안이에요. 명세가 바뀌면 어댑터와 이 파일을 맞춰요.
 
 export const SEED = {
   demo: {
@@ -10,157 +13,230 @@ export const SEED = {
     time: '17:00',
   },
 
+  // 과목 · 단원 (② demo_data.SUBJECTS + ③ 패키지 sections). goalTotal은 ② loader의 passing_criteria, goalEtc는 ②에 없어요(null)
   subjects: [
     {
-      id: 'ds',
-      name: '자료구조',
-      color: '#4F46E5', // Indigo (가안)
+      id: 'ai',
+      name: '인공지능',
+      color: '#4F46E5',
       examDate: '2026-11-12',
       goal: 'A+',
-      // S1 카드 4칸: 시험 총 목표 · 기타 정보 (데이터 세트 1장 목표 문장을 두 칸으로 나눔)
-      goalTotal: '상대평가 상위 15% · 커트라인 90점',
-      goalEtc: '중간 40% · 기말 40% · 교수님 강조 3단원 트리',
-      file: { id: 'ds-main', name: '자료구조_강의자료.pdf', pages: 140 },
-      taskCount: 18,
+      goalTotal: '시연 목표 90점',
+      goalEtc: null,
+      goalLabel: 'A+ (90점)',
+      file: {
+        id: 'ai-main',
+        name: 'artificial_intelligence.pdf',
+        pages: 30,
+      },
+      taskCount: 4,
       units: [
         {
           no: 1,
-          title: '배열과 리스트',
-          from: 1,
-          to: 35,
+          title: '머신러닝 기초',
+          from: 3,
+          to: 11,
           difficulty: 'low',
-          concepts: ['배열', '연결 리스트', '시간 복잡도'],
+          concepts: [
+            '인공지능과 머신러닝',
+            '특성과 레이블',
+            '지도학습',
+            '비지도학습',
+            '강화학습',
+            '학습·검증·테스트 분리',
+            '데이터 전처리',
+            '과적합과 과소적합',
+            '편향과 분산',
+          ],
         },
         {
           no: 2,
-          title: '스택과 큐',
-          from: 36,
-          to: 60,
-          difficulty: 'mid',
-          concepts: ['스택', '큐', '덱', '후위 표기식'],
+          title: '지도학습 알고리즘',
+          from: 12,
+          to: 20,
+          difficulty: 'low',
+          concepts: [
+            '선형 회귀',
+            '로지스틱 회귀',
+            'k-최근접 이웃',
+            '결정 트리',
+            '랜덤 포레스트',
+            '그래디언트 부스팅',
+            '서포트 벡터 머신',
+            '경사 하강법',
+            '정규화 기법',
+          ],
         },
         {
           no: 3,
-          title: '트리와 이진 탐색',
-          from: 61,
-          to: 95,
-          difficulty: 'high',
-          concepts: ['이진 트리', '순회', '이진 탐색 트리', 'AVL 트리'],
+          title: '모델 평가와 활용',
+          from: 21,
+          to: 29,
+          difficulty: 'low',
+          concepts: [
+            '혼동 행렬',
+            '정확도',
+            '정밀도',
+            '재현율',
+            'F1 점수',
+            '교차 검증',
+            '데이터 누수',
+            '모델 배포',
+            '모델 모니터링',
+          ],
+        },
+      ],
+    },
+    {
+      id: 'db',
+      name: '데이터베이스',
+      color: '#2563EB',
+      examDate: '2026-11-16',
+      goal: 'B+',
+      goalTotal: '시연 목표 80점',
+      goalEtc: null,
+      goalLabel: 'B+ (80점)',
+      file: {
+        id: 'db-main',
+        name: 'database.pdf',
+        pages: 30,
+      },
+      taskCount: 4,
+      units: [
+        {
+          no: 1,
+          title: '관계형 데이터베이스 기초',
+          from: 3,
+          to: 11,
+          difficulty: 'low',
+          concepts: [
+            '데이터베이스와 DBMS',
+            '테이블과 행·열',
+            '기본 키',
+            '외래 키',
+            '관계와 카디널리티',
+            '스키마와 인스턴스',
+            '무결성 제약',
+            'ER 모델',
+            '인덱스의 개념',
+          ],
         },
         {
-          no: 4,
-          title: '그래프',
-          from: 96,
-          to: 120,
-          difficulty: 'high',
-          concepts: ['그래프 표현', 'DFS·BFS', '최단 경로'],
+          no: 2,
+          title: 'SQL 조회와 조작',
+          from: 12,
+          to: 20,
+          difficulty: 'low',
+          concepts: [
+            'SELECT 기본 문법',
+            'WHERE 조건',
+            'ORDER BY 정렬',
+            '집계 함수',
+            'GROUP BY',
+            'HAVING 조건',
+            'INNER JOIN',
+            'LEFT JOIN',
+            'INSERT·UPDATE·DELETE',
+          ],
         },
         {
-          no: 5,
-          title: '정렬',
-          from: 121,
-          to: 140,
-          difficulty: 'mid',
-          concepts: ['퀵 정렬', '병합 정렬', '힙 정렬'],
+          no: 3,
+          title: '정규화와 트랜잭션',
+          from: 21,
+          to: 29,
+          difficulty: 'low',
+          concepts: [
+            '함수 종속',
+            '제1정규형',
+            '제2정규형',
+            '제3정규형',
+            '이상 현상',
+            '트랜잭션 개념',
+            'ACID 속성',
+            'COMMIT과 ROLLBACK',
+            '동시성 제어',
+          ],
         },
       ],
     },
     {
       id: 'os',
       name: '운영체제',
-      color: '#2563EB', // Blue (가안)
-      examDate: '2026-11-16',
-      goal: 'B+ 이상',
-      goalTotal: '80점 이상',
-      goalEtc: '기말 50%',
-      file: { id: 'os-main', name: '운영체제_강의자료.pdf', pages: 120 },
-      taskCount: 15,
-      units: [
-        {
-          no: 1,
-          title: '운영체제 개요',
-          from: 1,
-          to: 20,
-          difficulty: 'low',
-          concepts: ['커널', '시스템 콜'],
-        },
-        {
-          no: 2,
-          title: '프로세스와 스레드',
-          from: 21,
-          to: 55,
-          difficulty: 'mid',
-          concepts: ['프로세스', '스레드', '동기화'],
-        },
-        {
-          no: 3,
-          title: 'CPU 스케줄링',
-          from: 56,
-          to: 85,
-          difficulty: 'mid',
-          concepts: ['FCFS', 'SJF', '라운드 로빈'],
-        },
-        {
-          no: 4,
-          title: '메모리 관리',
-          from: 86,
-          to: 120,
-          difficulty: 'high',
-          concepts: ['페이징', '세그멘테이션', '가상 메모리'],
-        },
-      ],
-    },
-    {
-      id: 'net',
-      name: '컴퓨터네트워크',
-      color: '#7C3AED', // Purple (가안)
+      color: '#7C3AED',
       examDate: '2026-11-18',
       goal: '통과',
-      goalTotal: '60점 이상',
-      goalEtc: '기말 60%',
-      file: { id: 'net-main', name: '컴퓨터네트워크_강의자료.pdf', pages: 100 },
-      taskCount: 12,
+      goalTotal: '시연 목표 60점',
+      goalEtc: null,
+      goalLabel: '통과 (60점)',
+      file: {
+        id: 'os-main',
+        name: 'operating_system.pdf',
+        pages: 30,
+      },
+      taskCount: 4,
       units: [
         {
           no: 1,
-          title: '네트워크 개요와 OSI 7계층',
-          from: 1,
-          to: 22,
+          title: '프로세스와 스레드',
+          from: 3,
+          to: 11,
           difficulty: 'low',
-          concepts: ['계층 구조', '캡슐화'],
+          concepts: [
+            '운영체제의 역할',
+            '프로그램과 프로세스',
+            '프로세스 상태',
+            '프로세스 제어 블록',
+            '문맥 교환',
+            '스레드의 개념',
+            '동시성과 병렬성',
+            '임계 구역',
+            '뮤텍스와 세마포어',
+          ],
         },
         {
           no: 2,
-          title: '데이터 링크 계층',
-          from: 23,
-          to: 45,
-          difficulty: 'mid',
-          concepts: ['프레임', 'MAC 주소', '오류 검출'],
+          title: 'CPU 스케줄링',
+          from: 12,
+          to: 20,
+          difficulty: 'low',
+          concepts: [
+            'CPU 스케줄링 목적',
+            '선입선처리 FCFS',
+            '최단 작업 우선 SJF',
+            '최단 잔여 시간 우선 SRTF',
+            '라운드 로빈 RR',
+            '우선순위 스케줄링',
+            '다단계 큐',
+            '다단계 피드백 큐',
+            '스케줄링 성능 지표',
+          ],
         },
         {
           no: 3,
-          title: '네트워크 계층',
-          from: 46,
-          to: 75,
-          difficulty: 'high',
-          concepts: ['IP 주소', '서브넷', '라우팅'],
-        },
-        {
-          no: 4,
-          title: '전송 계층',
-          from: 76,
-          to: 100,
-          difficulty: 'mid',
-          concepts: ['TCP', 'UDP', '혼잡 제어'],
+          title: '교착상태와 기아상태',
+          from: 21,
+          to: 29,
+          difficulty: 'low',
+          concepts: [
+            '교착상태의 정의',
+            '상호 배제 조건',
+            '점유와 대기 조건',
+            '비선점 조건',
+            '순환 대기 조건',
+            '자원 할당 그래프',
+            '교착상태 예방',
+            '교착상태 회피',
+            '교착상태 탐지와 복구',
+          ],
         },
       ],
     },
   ],
 
-  // 스캔본 (PDF-01·07, 와이어 S3): 글자 인식으로 분석 완료 · 이 파일 범위는 퀴즈 없음. 빈 계정 S3에 미리 올라가 있어요
-  scanFile: { subjectId: 'net', name: '컴퓨터네트워크_보충자료_스캔본.pdf', pages: 12 },
+  // 스캔본 (PDF-01·07, 와이어 S3): ③ scanned_document (realtime_analysis.pdf 앞 6쪽을 이미지로 바꾼 운영체제 자료). 빈 계정 S3에 미리 올라가 있어요
+  scanFile: { subjectId: 'os', name: 'scanned_document.pdf', pages: 6 },
 
-  // 고정 일정 (day: 1=월 … 7=일)
+  // 고정 일정 (② demo_data.EVENTS, day: 1=월 … 7=일)
   fixedSchedules: [
     { kind: 'class', days: [1, 3], start: '10:00', end: '12:00' },
     { kind: 'class', days: [2, 4], start: '13:00', end: '15:00' },
@@ -169,14 +245,15 @@ export const SEED = {
   ],
 
   // S1 입력 문장과 빠른 선택 칩
+  // TODO(확인필요): [기획 확인] 새 시드(인공지능 · 데이터베이스 · 운영체제)의 S1 시연 입력 문장과 칩이 없어서 옛 문장을 그대로 뒀어요 (11/14 지시문 6)
   onboarding: {
     sentence:
       '월수금 저녁 6시부터 10시까지 카페 알바, 월수 오전이랑 화목 오후에 수업 있어. 토요일 저녁엔 친구 약속. 기말은 자료구조 11월 12일, 운영체제 16일, 컴퓨터네트워크 18일. 자료구조는 A+ 받고 싶어.',
     goalChips: ['중간고사 40%', '기말고사 40%', '교수님 강조: 3단원 트리', '커트라인 90점'],
   },
 
-  // 온보딩 목업 대본 (S1). 첫 질문·추가 질문 문구는 와이어프레임 S1, 답은 데이터 세트 1장.
-  // TODO(확인필요): [기획 확인] 운영체제·컴퓨터네트워크 목표를 시연에서 어떻게 입력하는지는 대본에 없어서 직접 입력으로 뒀어요.
+  // 온보딩 목업 대본 (S1). 첫 질문·추가 질문 문구는 와이어프레임 S1
+  // TODO(확인필요): [기획 확인] 새 시드 대본이 없어서 옛 문장을 그대로 뒀어요. goalTargets만 ② target_score
   onboardingScript: {
     first: '시험 일정이랑 평소 일정을 편하게 말해 줘.',
     askFirst:
@@ -184,7 +261,7 @@ export const SEED = {
     askRest:
       '자료구조는 커트라인 90점 이상을 목표로 잡을게요. 운영체제랑 컴퓨터네트워크 목표도 알려 줘. 합격 기준이나 반영 비율도 같이 말해 주면 좋아요.',
     done: '운영체제는 80점 이상(기말 50%), 컴퓨터네트워크는 60점 이상(기말 60%)으로 정리했어요. 이제 캘린더에서 일정을 확인해 주세요.',
-    goalTargets: { ds: 90, os: 80, net: 60 }, // 내부 목표 점수 (데이터 세트 준비도 목표선)
+    goalTargets: { ai: 90, db: 80, os: 60 },
   },
   onboardingDate: '2026-11-03', // 계획 만드는 날 (화)
   onboardingWeekStart: '2026-11-02',
@@ -203,609 +280,762 @@ export const SEED = {
     '한 번 더 본 개념은 덜 흔들려요.',
     '시험은 한 번, 준비는 매일 조금씩.',
   ],
+  // day9 시드의 42분 진행 중 집중 세션 (① 서버 day9 · 11/12 결정). 문구는 서버가 고른 값
+  day9Session: { taskId: 't1', minutes: 42, quote: '시험은 한 번, 준비는 매일 조금씩.' },
 
-  // AI 튜터 (TU-01 · S6-3) — mock 답변. AI 출력 형식은 김현민님 확인 전
-  // TODO(확인필요): [백엔드 확정 필요] 요청 { question, history } (정의서 '제안'), pages 안 모양
+  // AI 튜터 (TU-01 · S6-3). 추천 질문 칩은 ① 서버 today.tutorSuggestions
+  // TODO(확인필요): [기획 확인] AI 명세(11/13)의 테스트 질문·답·쉬운 설명을 받으면 tutorAnswers에 넣어요. 지금은 비워 둬서 '찾지 못했어요' 안내가 나와요
   tutorSuggestions: [
-    'AVL 트리 회전은 언제 해?',
-    'BST에서 자식이 2개인 노드는 어떻게 지워?',
-    '편향 트리는 왜 느려?',
+    '인공지능의 지도학습 알고리즘 핵심 개념을 설명해 줘.',
+    '데이터베이스의 SQL 조회와 조작 핵심 개념을 설명해 줘.',
+    '운영체제의 CPU 스케줄링 핵심 개념을 설명해 줘.',
   ],
-  tutorAnswers: [
-    {
-      keywords: ['AVL', '회전'],
-      question: 'AVL 트리 회전은 언제 해?', // 저장된 답을 보여줄 때 질문 말풍선
-      subjectId: 'ds',
-      answer:
-        'AVL 트리는 노드를 넣거나 지운 뒤 어떤 노드의 균형 인수(왼쪽 높이 − 오른쪽 높이)가 -1, 0, 1을 벗어나면 회전해요. 왼쪽-왼쪽으로 기울면 LL 회전, 오른쪽-오른쪽이면 RR 회전 한 번이고, LR·RL은 자식을 먼저 돌린 뒤 부모를 다시 돌리는 이중 회전이에요.',
-      pages: [
-        { materialId: 'ds-main', from: 90, to: 90 },
-        { materialId: 'ds-main', from: 91, to: 93 },
-      ],
-      saved: true, // 응답이 없을 때 보여주는 저장된 답 (시연 백업: 기본 답 + 쉬운 설명)
-      // TODO(확인필요): [기획 확인] 시연 백업 쉬운 설명 문구 (mock)
-      easy: '시소를 떠올려 보세요. 한쪽에 사람이 너무 많이 타서 기울면 가운데 받침을 옮겨 다시 평평하게 만들죠. AVL 트리도 넣거나 지운 뒤 한쪽이 두 칸 넘게 무거워지면, 무거운 쪽 노드를 위로 끌어올리는 회전으로 다시 평평하게 맞춰요. 한쪽으로 쭉 기울면 한 번, 꺾여서 기울면 두 번 돌려요.',
-    },
-    {
-      keywords: ['삭제', '지워', 'BST'],
-      subjectId: 'ds',
-      answer:
-        '자식이 2개인 노드는 오른쪽 서브트리의 가장 작은 값(후속자)으로 값을 바꾼 뒤, 후속자를 원래 자리에서 지워요. 후속자는 왼쪽 자식이 없어서 자식이 0개나 1개인 경우로 처리하면 돼요.',
-      pages: [{ materialId: 'ds-main', from: 82, to: 82 }],
-      easy: '반 대표를 바꾸는 상황이라고 생각해 보세요. 대표가 빠지면, 바로 다음 번호(오른쪽에서 가장 작은 값) 학생이 대표 자리로 올라오고, 그 학생이 원래 있던 자리는 비워 주면 돼요. 그 학생은 왼쪽 친구가 없어서 비우기가 쉬워요.',
-    },
-    {
-      keywords: ['편향'],
-      subjectId: 'ds',
-      answer:
-        '한쪽으로만 노드가 붙은 편향 트리는 연결 리스트와 모양이 같아서, 탐색할 때 노드를 하나씩 다 따라가야 해요. 그래서 최악의 경우 O(n)이에요. 균형이 잡히면 한 번 비교할 때마다 절반씩 줄어서 O(log n)이에요.',
-      pages: [
-        { materialId: 'ds-main', from: 79, to: 79 },
-        { materialId: 'ds-main', from: 76, to: 76 },
-      ],
-      easy: '줄을 한 줄로 길게 선 상황이에요. 찾는 사람이 맨 끝에 있으면 앞에서부터 한 명씩 다 물어봐야 하죠. 편향 트리가 딱 그래서 느려요. 반대로 사람들이 두 갈래로 고르게 나뉘어 서 있으면 매번 절반을 건너뛸 수 있어서 빨라요.',
-    },
-  ],
+  tutorAnswers: [],
 
-  // S5 요약
-  planSummary: { totalPages: 360, taskCount: 45, dailyAvgMinutes: 75 },
+  // S5 요약: ② 2주 계획(PLAN 12개 · 300분)을 11/3~11/17 15일로 나눈 하루 평균
+  planSummary: { totalPages: 81, taskCount: 12, dailyAvgMinutes: 20 },
 
-  // 11/9 (월) 오늘 할 일 — 오후 5시 상태: 2·3·4번 완료(33p/57p = 58%)
+  // 11/9 (월) 오늘 할 일 — ① 서버 day9: 2·3번 완료 (18p/27p = 67%), 1번(인공지능)은 집중 42분 진행 중
   today: {
     date: '2026-11-09',
     tasks: [
       {
         id: 't1',
-        subjectId: 'ds',
-        unitNo: 3,
-        title: '3단원 이진 탐색 트리·AVL 트리',
-        from: 72,
-        to: 95,
-        minutes: 60,
-        reason: '시험 D-3, 교수님 강조 단원',
+        subjectId: 'ai',
+        unitNo: 2,
+        title: '2단원 지도학습 알고리즘',
+        from: 12,
+        to: 20,
+        minutes: 25,
+        reason: '시험 D-3, 지도학습 알고리즘',
         status: 'todo',
         donePages: 0,
       },
       {
         id: 't2',
-        subjectId: 'os',
-        unitNo: 3,
-        title: '3단원 CPU 스케줄링',
-        from: 56,
-        to: 67,
-        minutes: 30,
-        reason: '수업 끝난 오후 빈 시간',
+        subjectId: 'db',
+        unitNo: 2,
+        title: '2단원 SQL 조회와 조작',
+        from: 12,
+        to: 20,
+        minutes: 25,
+        reason: 'SQL 조회와 조작',
         status: 'done',
-        donePages: 12,
+        donePages: 9,
       },
       {
         id: 't3',
         subjectId: 'os',
         unitNo: 2,
-        title: '2단원 동기화 보충',
-        from: 40,
-        to: 46,
-        minutes: 15,
-        reason: '어제 이해도 2점 · 오답 1개',
+        title: '2단원 CPU 스케줄링',
+        from: 12,
+        to: 20,
+        minutes: 25,
+        reason: 'CPU 스케줄링',
         status: 'done',
-        donePages: 7,
-        supplement: true,
-      },
-      {
-        id: 't4',
-        subjectId: 'net',
-        unitNo: 2,
-        title: '2단원 데이터 링크 계층',
-        from: 23,
-        to: 36,
-        minutes: 30,
-        reason: '첫 회독, 난이도 중',
-        status: 'done',
-        donePages: 14,
+        donePages: 9,
       },
     ],
   },
 
-  // 오늘의 퀴즈 문항 수 (어제 오답 전부 + 오늘 공부한 단원당 5문항) — 날짜별. 데이터 세트 4장은 11/9만 있어요.
-  // 운영체제 13 = 3단원 새 문제 5 · 어제 취약 7 · 3일 만에 다시 보는 문제 1 (정의서 v2 · 와이어 S8-1)
-  // TODO(확인필요): [기획 확인] 컴퓨터네트워크 문항 수는 데이터 세트 v2를 받으면 맞춰요 (지금 5는 v1 값)
-  quizCounts: { '2026-11-09': { ds: 7, os: 13, net: 5 } },
-  // S8-1 과목 카드 구성 줄 (와이어 S8-1 · 정의서 v2). 컴퓨터네트워크는 데이터 세트 v2 전이라 비워 둬요
+  // 오늘의 퀴즈 문항 수 · 과목 카드 구성 줄 (① 서버 quiz/today)
+  quizCounts: { '2026-11-09': { ai: 6, db: 8, os: 6 } },
   quizLines: {
     '2026-11-09': {
-      ds: ['3단원 새 문제 5 (p.72–88)', '어제 틀린 문제 2'],
-      os: ['3단원 새 문제 5', '어제 취약 7', '3일 만에 다시 보는 문제 1'],
+      ai: ['2단원 새 문제 5', '어제 틀린 문제 1'],
+      db: ['2단원 새 문제 5', '어제 틀린 문제 3'],
+      os: ['2단원 새 문제 5', '어제 틀린 문제 1'],
     },
   },
 
-  // 과목별 하루 평균 계획 페이지 (밀림 기준, 4-8). 자료구조·컴퓨터네트워크는 데이터 세트 4장,
-  // 운영체제는 데이터 세트에 없어서 2주 계획 표로 계산한 mock 값이에요.
-  dailyAvgPages: { ds: 18, os: 13, net: 17 },
+  // 과목별 하루 평균 계획 페이지 (밀림 기준, 4-8) — ① 서버 분배안 overdue.dailyAvg (과목 27p ÷ 태스크 4개)
+  dailyAvgPages: { ai: 7, db: 7, os: 7 },
 
-  // 최근 7일 쌓은 책 (홈). 블록 1개 = 그날 태스크 1개, 상태는 그 단원의 등급을 따름.
-  // 데이터 세트 2주 계획(3장)과 단원 상태(4장)를 맞춰 만든 mock 값이에요. 오늘(11/9) 블록은 할 일 목록에서 만들어요.
+  // 최근 7일 쌓은 책 (홈) — ① 서버 today.recentDays. 오늘(11/9) 블록은 할 일 목록에서 만들어요
   recentDays: [
-    { date: '2026-11-03', blocks: ['stable', 'stable'] }, // 자료구조 1단원 · 운영체제 1단원
-    { date: '2026-11-04', blocks: ['stable'] }, // 자료구조 1단원
-    { date: '2026-11-05', blocks: ['shaky', 'stable'] }, // 자료구조 2단원 · 컴퓨터네트워크 1단원
-    { date: '2026-11-06', blocks: ['risk'] }, // 운영체제 2단원
-    { date: '2026-11-07', blocks: ['stable', 'risk'] }, // 자료구조 3단원 앞부분 · 운영체제 2단원
-    { date: '2026-11-08', blocks: ['shaky', 'risk', 'stable'] }, // 자료구조 1·2단원 오답 복습 · 운영체제 2단원 · 컴퓨터네트워크 1단원
+    { date: '2026-11-03', blocks: ['stable'] }, // 인공지능 1단원
+    { date: '2026-11-04', blocks: ['risk'] }, // 데이터베이스 1단원
+    { date: '2026-11-05', blocks: ['stable'] }, // 운영체제 1단원
+    { date: '2026-11-06', blocks: [] },
+    { date: '2026-11-07', blocks: [] },
+    { date: '2026-11-08', blocks: [] },
   ],
 
-  // 책 쌓기 (BK-01): 단원 = 책 더미, 책 1권 = 태스크 1개. 'done'은 끝난 태스크, 'planned'는 남은 계획,
-  // { taskId }는 오늘(이후) 할 일과 연결된 책이에요. 끝난 책의 색은 그 단원 등급을 따라요 (4-5).
-  // mock: 단원별 권 수는 데이터 세트에 없어서 과목 태스크 수(18·15·12)와 참고 이미지 6의 권 수(9/18·7/15·3/12)에 맞췄어요.
-  // 단원 점수 (정의서 v2 · 와이어 P3): 자료구조 1단원 96 · 2단원 69 · 3단원 83, 운영체제 2단원 40 (11/9 보충)
-  // mock: 점수가 데이터 세트에 없는 단원(운영체제 1단원, 컴퓨터네트워크 1단원)은 등급 구간 안의 임의 값이에요.
+  // 책 쌓기 (BK-01) — ① 서버 books. 단원 = 책 더미, 책 1권 = 태스크 1개.
+  // 'done'은 끝난 태스크, 'planned'는 남은 계획, { taskId }는 오늘(이후) 할 일과 연결된 책이에요
   bookshelf: {
-    ds: [
-      { unitNo: 1, grade: 'stable', score: 96, blocks: ['done', 'done', 'done'] },
-      {
-        unitNo: 2,
-        grade: 'shaky',
-        score: 69,
-        round: 2, // 11/8 보충 완료 → 2회독 (정의서 4-2)
-        note: '어제 오답 2개가 오늘 퀴즈에 다시 나와요',
-        blocks: ['done', 'done', 'done', 'done'],
-      },
-      {
-        unitNo: 3,
-        grade: 'stable',
-        score: 83,
-        blocks: ['done', { taskId: 't1' }, 'planned', 'planned'],
-      },
-      {
-        unitNo: 4,
-        grade: null,
-        score: null,
-        blocks: [{ taskId: 't5' }, 'planned', 'planned', 'planned'],
-      },
-      { unitNo: 5, grade: null, score: null, blocks: ['planned', 'planned', 'planned'] },
+    ai: [
+      { unitNo: 1, grade: 'stable', score: 90, blocks: ['done'] },
+      { unitNo: 2, grade: null, score: null, blocks: [{ taskId: 't1' }] },
+      { unitNo: 3, grade: null, score: null, blocks: [{ taskId: 't4' }] },
+    ],
+    db: [
+      { unitNo: 1, grade: 'risk', score: 40, blocks: ['done'] },
+      { unitNo: 2, grade: null, score: null, blocks: [{ taskId: 't2' }] },
+      { unitNo: 3, grade: null, score: null, blocks: ['planned'] },
     ],
     os: [
-      { unitNo: 1, grade: 'stable', score: 86, blocks: ['done', 'done'] }, // mock: 점수
-      {
-        unitNo: 2,
-        grade: 'risk',
-        score: 40,
-        round: 2, // 11/9 보충 완료 → 2회독 (정의서 4-2)
-        note: '어제 이해도가 낮아 오늘 보충 학습이 붙었어요',
-        blocks: ['done', 'done', 'done', { taskId: 't3', supplement: true }],
-      },
-      {
-        unitNo: 3,
-        grade: null,
-        score: null,
-        blocks: [{ taskId: 't2' }, 'planned', 'planned', 'planned'],
-      },
-      {
-        unitNo: 4,
-        grade: null,
-        score: null,
-        blocks: ['planned', 'planned', 'planned', 'planned', 'planned'],
-      },
-    ],
-    net: [
-      { unitNo: 1, grade: 'stable', score: 88, blocks: ['done', 'done'] }, // mock: 점수
-      { unitNo: 2, grade: null, score: null, blocks: [{ taskId: 't4' }, 'planned', 'planned'] },
-      { unitNo: 3, grade: null, score: null, blocks: ['planned', 'planned', 'planned', 'planned'] },
-      { unitNo: 4, grade: null, score: null, blocks: ['planned', 'planned', 'planned'] },
+      { unitNo: 1, grade: 'stable', score: 80, blocks: ['done'] },
+      { unitNo: 2, grade: null, score: null, blocks: [{ taskId: 't3' }] },
+      { unitNo: 3, grade: null, score: null, blocks: ['planned'] },
     ],
   },
 
-  // 시험 준비도 (KP-01, KP-02) — 정의서 v2. 준비도 = 진도율 × 숙달도, 숙달도는 자료구조만 있어요.
-  // 진도율 = 공부한 페이지 ÷ 범위 (자료구조 88/140 · 운영체제 67/120 · 컴퓨터네트워크 36/100)
+  // 시험 준비도 (KP-01) — ① 서버 books.readiness (day9). overdue는 db.js에서 운영체제만 바꿔요
   readiness: [
     {
-      subjectId: 'ds',
-      readiness: 51,
+      subjectId: 'ai',
+      readiness: 30,
       target: 90,
       targetLabel: 'A+',
-      progressRate: 62.9,
-      mastery: 80.7,
-      studiedPages: 88,
-      totalPages: 140,
+      progressRate: 33.3,
+      mastery: 90,
+      studiedPages: 9,
+      totalPages: 27,
+    },
+    {
+      subjectId: 'db',
+      readiness: 27,
+      target: 80,
+      targetLabel: 'B+',
+      progressRate: 66.7,
+      mastery: 40,
+      studiedPages: 18,
+      totalPages: 27,
     },
     {
       subjectId: 'os',
-      readiness: 33,
-      target: 80,
-      targetLabel: 'B+',
-      progressRate: 55.8,
-      mastery: null,
-      studiedPages: 67,
-      totalPages: 120,
-    },
-    {
-      subjectId: 'net',
-      readiness: 34,
+      readiness: 53,
       target: 60,
       targetLabel: '통과',
-      progressRate: 36.0,
-      mastery: null,
-      studiedPages: 36,
-      totalPages: 100,
+      progressRate: 66.7,
+      mastery: 80,
+      studiedPages: 18,
+      totalPages: 27,
     },
   ],
 
-  // 오답 노트 (RV-01) — 데이터 세트 오답 6건 중 11/9 오늘 퀴즈 오답 2건(편향 트리·BST 삭제)은 빼고,
-  // 오늘 퀴즈를 제출하면 오답·애매 정답이 여기에 생겨요 (11/10 결정 A).
-  // result: sureWrong 확실 오답 · unsureWrong 애매 오답 · unsureRight 애매 정답 · resolved 해결 (서술형은 score)
-  // mock: 지난 오답의 확실/애매는 데이터 세트에 없어서 '확실 오답'으로 넣었어요 (mockFilled: confidence)
-  // questionId: 오늘의 퀴즈 문항과 같은 문제 (다시 풀기에 써요). concept: 단원 개념 목록 기준 (mock)
+  // 오답 노트 (RV-01) — ② 11/3~11/5 풀이 기록에서 틀렸거나 애매했던 문항 (= 오늘 퀴즈의 '어제 오답').
+  // result: sureWrong 확실 오답 · unsureWrong 애매 오답 · unsureRight 애매 정답 · resolved 해결
   wrongNotes: [
     {
       id: 'w1',
-      subjectId: 'ds',
-      unitNo: 2,
-      concept: '스택',
-      questionId: 'q2',
-      question: '빈 스택에서 pop',
-      page: 40,
-      type: 'choice',
-      wrongCount: 2,
-      lastDate: '2026-11-08',
-      result: 'sureWrong',
+      subjectId: 'ai',
+      unitNo: 1,
+      concept: '강화학습',
+      questionId: 'ai-q1',
+      question: '행동에 대한 보상을 이용해 정책을 학습하는 방법은?',
+      page: 7,
+      type: 'short',
+      wrongCount: 0,
+      lastDate: '2026-11-03',
+      result: 'unsureRight',
       history: [
-        { date: '2026-11-05', result: 'sureWrong' },
-        { date: '2026-11-08', result: 'sureWrong' },
+        {
+          date: '2026-11-03',
+          result: 'unsureRight',
+        },
       ],
-      mockFilled: ['confidence'],
     },
     {
       id: 'w2',
-      subjectId: 'ds',
-      unitNo: 2,
-      concept: '후위 표기식',
-      questionId: 'q1',
-      question: '후위 표기식 계산',
-      page: 52,
+      subjectId: 'db',
+      unitNo: 1,
+      concept: '기본 키',
+      questionId: 'db-q1',
+      question: '테이블에서 각 행을 식별하는 대표 키는?',
+      page: 5,
       type: 'short',
       wrongCount: 1,
-      lastDate: '2026-11-08',
+      lastDate: '2026-11-04',
       result: 'sureWrong',
-      history: [{ date: '2026-11-08', result: 'sureWrong' }],
-      mockFilled: ['confidence'],
+      history: [
+        {
+          date: '2026-11-04',
+          result: 'sureWrong',
+        },
+      ],
     },
     {
       id: 'w3',
-      subjectId: 'ds',
-      unitNo: 3,
-      concept: '순회',
-      questionId: 'q4',
-      question: '중위 순회 결과',
-      page: 68,
-      type: 'choice',
+      subjectId: 'db',
+      unitNo: 1,
+      concept: '외래 키',
+      questionId: 'db-q2',
+      question: '다른 테이블의 키를 참조해 관계를 표현하는 키는?',
+      page: 6,
+      type: 'short',
       wrongCount: 1,
-      lastDate: '2026-11-08',
-      result: 'resolved',
+      lastDate: '2026-11-04',
+      result: 'sureWrong',
       history: [
-        { date: '2026-11-07', result: 'sureWrong' },
-        { date: '2026-11-08', result: 'sureRight' },
+        {
+          date: '2026-11-04',
+          result: 'sureWrong',
+        },
       ],
-      mockFilled: ['confidence'],
     },
     {
-      id: 'w6',
-      subjectId: 'os',
-      unitNo: 2,
-      concept: '동기화',
-      questionId: null, // 운영체제 문항 데이터가 없어서 다시 풀기는 막아 둬요
-      question: '뮤텍스와 세마포어 차이',
-      page: 44,
-      type: 'essay',
-      score: 62,
+      id: 'w4',
+      subjectId: 'db',
+      unitNo: 1,
+      concept: '관계와 카디널리티',
+      questionId: 'db-q3',
+      question: '일대다 관계에서는 한 행에 여러 상대 행이 연결될 수 있다.',
+      page: 7,
+      type: 'choice',
       wrongCount: 1,
-      lastDate: '2026-11-08',
+      lastDate: '2026-11-04',
       result: 'sureWrong',
-      history: [{ date: '2026-11-08', result: 'sureWrong', score: 62 }],
-      mockFilled: ['confidence'],
+      history: [
+        {
+          date: '2026-11-04',
+          result: 'sureWrong',
+        },
+      ],
+    },
+    {
+      id: 'w5',
+      subjectId: 'os',
+      unitNo: 1,
+      concept: '문맥 교환',
+      questionId: 'os-q1',
+      question: '현재 실행 정보를 저장하고 다른 프로세스의 정보를 복원하는 작업은?',
+      page: 7,
+      type: 'short',
+      wrongCount: 1,
+      lastDate: '2026-11-05',
+      result: 'sureWrong',
+      history: [
+        {
+          date: '2026-11-05',
+          result: 'sureWrong',
+        },
+      ],
     },
   ],
 
-  // 오늘의 퀴즈 문항 (S8) — 11/9 자료구조 7문항 = 3단원 5 + 어제 오답 2 (와이어프레임 S8·S8-2)
-  // mock 표시(mockFilled): 와이어프레임에 없어서 제가 채운 값이에요. 김현민님 퀴즈 JSON이 오면 이 블록만 바꿔요.
+  // 오늘의 퀴즈 문항 (S8) — 문항·해설·근거 페이지는 ① 서버, 정답은 ② package_questions.py,
+  // 서술형 70점·피드백은 ② essay_examples.py(서버 저장된 채점과 같음). 근거 문장(quote)은 서버도 null이에요.
+  // unitChanges: 정답을 모두 고르고 서술형 시연 답안을 낸 ① 서버 결과 (11/14 결정 4 A)
   // answer·accepts·explanation은 서버만 아는 값이에요 (목업 채점용, 화면에 보내지 않아요).
   quizSets: {
     '2026-11-09': {
-      ds: {
+      ai: {
         round: '1회독',
         difficulty: '하',
-        composition: '3단원 5 + 어제 틀린 문제 2 (전부)',
+        composition: '2단원 새 문제 5 + 어제 틀린 문제 1',
         questions: [
           {
-            id: 'q1',
-            // mock: 근거 문장 (목업 PDF public/mock/ds-lecture-mock.pdf에 같은 문장이 있어요)
+            id: 'ai-q1',
             evidence: {
-              materialId: 'ds-main',
-              page: 52,
-              quote: '후위 표기식은 피연산자를 스택에 넣고 연산자를 만나면 두 개를 꺼내 계산한다.',
+              materialId: 'ai-main',
+              page: 7,
+              quote: null,
             },
-            concept: '후위 표기식', // mock: 개념
+            concept: '강화학습',
             type: 'short',
             tag: '어제 오답',
-            unitNo: 2,
-            page: 'p.52',
-            prompt: '후위 표기식 3 4 + 2 * 의 계산 결과는?',
-            accepts: ['14'],
-            explanation: '3 + 4를 먼저 계산해 7, 여기에 2를 곱해 14예요.',
-            mockFilled: ['answer', 'explanation'],
+            unitNo: 1,
+            page: 'p.7',
+            prompt: '행동에 대한 보상을 이용해 정책을 학습하는 방법은?',
+            accepts: ['강화학습'],
+            explanation:
+              '강화학습은 에이전트가 환경과 상호작용하면서 보상을 최대화하는 행동 정책을 학습한다.',
           },
           {
-            id: 'q2',
-            // mock: 근거 문장 (목업 PDF public/mock/ds-lecture-mock.pdf에 같은 문장이 있어요)
+            id: 'ai-q2',
             evidence: {
-              materialId: 'ds-main',
-              page: 40,
-              quote: '비어 있는 스택에서 pop을 하면 스택 언더플로가 발생한다.',
+              materialId: 'ai-main',
+              page: 12,
+              quote: null,
             },
-            concept: '스택', // mock: 개념
+            concept: '선형 회귀',
             type: 'choice',
-            tag: '어제 오답',
+            tag: null,
             unitNo: 2,
-            page: 'p.40',
-            prompt: '스택이 비어 있을 때 pop을 하면 어떻게 될까요?',
-            options: [
-              '0이 반환된다',
-              '스택 언더플로(오류)가 발생한다',
-              '마지막으로 꺼낸 값이 다시 나온다',
-              '스택 크기가 -1이 된다',
-            ],
-            answer: 1,
-            explanation: '꺼낼 값이 없어서 스택 언더플로가 나요.',
-            mockFilled: ['explanation'],
+            page: 'p.12',
+            prompt: '선형 회귀는 연속형 목표값을 예측할 수 있다.',
+            options: ['O', 'X'],
+            answer: 0,
+            explanation:
+              '선형 회귀는 입력 특성과 연속형 목표값의 관계를 선형식으로 모델링한다. 평균제곱오차를 손실로 사용할 수 있다.',
           },
           {
-            id: 'q3',
-            // mock: 근거 문장 (목업 PDF public/mock/ds-lecture-mock.pdf에 같은 문장이 있어요)
+            id: 'ai-q3',
             evidence: {
-              materialId: 'ds-main',
-              page: 82,
-              quote: '자식이 두 개인 노드는 후속자로 값을 바꾼 뒤 후속자를 원래 자리에서 삭제한다.',
+              materialId: 'ai-main',
+              page: 13,
+              quote: null,
             },
-            concept: '이진 탐색 트리', // mock: 개념
+            concept: '로지스틱 회귀',
+            type: 'choice',
+            tag: null,
+            unitNo: 2,
+            page: 'p.13',
+            prompt: '로지스틱 회귀는 분류에 사용할 수 없다.',
+            options: ['O', 'X'],
+            answer: 1,
+            explanation:
+              '로지스틱 회귀는 선형 결합 결과를 시그모이드 함수 등에 통과시켜 분류 확률을 추정한다.',
+          },
+          {
+            id: 'ai-q4',
+            evidence: {
+              materialId: 'ai-main',
+              page: 12,
+              quote: null,
+            },
+            concept: '선형 회귀',
+            type: 'short',
+            tag: null,
+            unitNo: 2,
+            page: 'p.12',
+            prompt: '선형 회귀에서 예측하는 목표값은 연속형과 범주형 중 무엇인가요?',
+            accepts: ['연속형'],
+            explanation:
+              '선형 회귀는 입력 특성과 연속형 목표값의 관계를 선형식으로 모델링한다. 평균제곱오차를 손실로 사용할 수 있다.',
+          },
+          {
+            id: 'ai-q5',
+            evidence: {
+              materialId: 'ai-main',
+              page: 13,
+              quote: null,
+            },
+            concept: '로지스틱 회귀',
+            type: 'choice',
+            tag: null,
+            unitNo: 2,
+            page: 'p.13',
+            prompt: '로지스틱 회귀는 분류 확률을 추정한다.',
+            options: ['O', 'X'],
+            answer: 0,
+            explanation:
+              '로지스틱 회귀는 선형 결합 결과를 시그모이드 함수 등에 통과시켜 분류 확률을 추정한다.',
+          },
+          {
+            id: 'ai-q6',
+            evidence: {
+              materialId: 'ai-main',
+              page: 13,
+              quote: null,
+            },
+            concept: '로지스틱 회귀',
             type: 'essay',
             tag: null,
-            unitNo: 3,
-            page: 'p.82',
-            prompt: 'BST에서 자식이 2개인 노드를 삭제하는 과정을 설명하시오',
+            unitNo: 2,
+            page: 'p.13',
+            prompt: '로지스틱 회귀에서 선형 결합 결과를 어떻게 분류 확률로 바꾸는지 설명하세요.',
             demoScore: 70,
-            good: '후속자(오른쪽 서브트리의 최솟값)로 바꾸는 건 맞아요.',
-            miss: '후속자를 원래 자리에서 지우는 단계가 빠졌어요. 후속자는 왼쪽 자식이 없어서 자식이 0개나 1개인 경우로 처리하면 돼요.',
-            mockFilled: ['score'],
-          },
-          {
-            id: 'q4',
-            // mock: 근거 문장 (목업 PDF public/mock/ds-lecture-mock.pdf에 같은 문장이 있어요)
-            evidence: {
-              materialId: 'ds-main',
-              page: 68,
-              quote: '이진 탐색 트리를 중위 순회하면 값이 오름차순으로 방문된다.',
-            },
-            concept: '순회', // mock: 개념
-            type: 'choice',
-            tag: null,
-            unitNo: 3,
-            page: 'p.68',
-            prompt: '이진 탐색 트리를 중위 순회하면 어떤 순서로 방문하나요?',
-            options: [
-              '값이 작은 것부터 오름차순',
-              '값이 큰 것부터 내림차순',
-              '노드를 넣은 순서대로',
-              '위에서 아래로 층마다',
-            ],
-            answer: 0,
-            explanation: '중위 순회는 왼쪽 → 루트 → 오른쪽 순서라 BST에서는 오름차순이 돼요.',
-            mockFilled: ['options', 'explanation'],
-          },
-          {
-            id: 'q5',
-            // mock: 근거 문장 (목업 PDF public/mock/ds-lecture-mock.pdf에 같은 문장이 있어요)
-            evidence: {
-              materialId: 'ds-main',
-              page: 79,
-              quote: '한쪽으로 치우친 편향 트리에서 탐색은 최악의 경우 O(n)이다.',
-            },
-            concept: '이진 탐색 트리', // mock: 개념
-            type: 'choice',
-            tag: null,
-            unitNo: 3,
-            page: 'p.79',
-            prompt: '편향 트리에서 탐색의 최악 시간 복잡도는?',
-            options: ['O(1)', 'O(log n)', 'O(n)', 'O(n log n)'],
-            answer: 2,
-            explanation: '정답은 O(n)이에요. 한쪽으로 치우치면 연결 리스트와 같아져요.',
-            mockFilled: ['options'],
-          },
-          {
-            id: 'q6',
-            // mock: 근거 문장 (목업 PDF public/mock/ds-lecture-mock.pdf에 같은 문장이 있어요)
-            evidence: {
-              materialId: 'ds-main',
-              page: 74,
-              quote: '이진 탐색 트리에서 가장 작은 값은 가장 왼쪽 노드에 있다.',
-            },
-            concept: '이진 탐색 트리', // mock: 개념
-            type: 'short',
-            tag: null,
-            unitNo: 3,
-            page: 'p.74',
-            prompt: 'BST에서 가장 작은 값은 어디에 있나요?',
-            accepts: ['가장왼쪽노드', '맨왼쪽노드', '가장왼쪽', '맨왼쪽', '왼쪽끝', '왼쪽끝노드'],
-            explanation: '왼쪽으로 끝까지 내려간 노드가 가장 작아요.',
-            mockFilled: ['answer', 'explanation', 'page'],
-          },
-          {
-            id: 'q7',
-            // mock: 근거 문장 (목업 PDF public/mock/ds-lecture-mock.pdf에 같은 문장이 있어요)
-            evidence: {
-              materialId: 'ds-main',
-              page: 76,
-              quote: '균형 잡힌 이진 탐색 트리의 탐색은 평균 O(log n)이다.',
-            },
-            concept: '이진 탐색 트리', // mock: 개념
-            type: 'choice',
-            tag: null,
-            unitNo: 3,
-            page: 'p.76',
-            prompt: 'BST 탐색의 평균 시간 복잡도는?',
-            options: ['O(1)', 'O(log n)', 'O(n)', 'O(n²)'],
-            answer: 1,
-            explanation: '균형이 잡혀 있으면 한 번 비교할 때마다 절반씩 줄어서 O(log n)이에요.',
-            mockFilled: ['options', 'explanation', 'page'],
+            good: '선형 결합 결과를 사용해 분류 확률을 추정한다는 설명이 맞아요.',
+            miss: '선형 결합 결과를 시그모이드 함수 등에 통과시키는 변환 과정을 보완해 주세요.',
+            explanation:
+              '로지스틱 회귀는 선형 결합 결과를 시그모이드 함수 등에 통과시켜 분류 확률을 추정한다.',
           },
         ],
-        // 퀴즈 후 단원 이해도 변화 (정의서 v2 · 와이어 P3). 계산은 서버(LV-01) 몫이라 mock은 고정값이에요.
         unitChanges: [
-          { unitNo: 3, before: 83, after: 73, grade: 'shaky' },
+          {
+            unitNo: 1,
+            before: 90,
+            after: 92,
+            grade: 'stable',
+          },
           {
             unitNo: 2,
-            before: 69,
-            after: 70,
-            grade: 'shaky',
-            recovering: true, // 와이어 P3 '흔들림 유지 · 회복 중'
-            note: '2단원은 회복 중이라 하루 최대 +5점까지만 올라요. 재학습 + 문제 뽑기를 하면 최대 +15점',
+            before: null,
+            after: 80,
+            grade: 'stable',
+          },
+        ],
+      },
+      db: {
+        round: '1회독',
+        difficulty: '하',
+        composition: '2단원 새 문제 5 + 어제 틀린 문제 3',
+        questions: [
+          {
+            id: 'db-q1',
+            evidence: {
+              materialId: 'db-main',
+              page: 5,
+              quote: null,
+            },
+            concept: '기본 키',
+            type: 'short',
+            tag: '어제 오답',
+            unitNo: 1,
+            page: 'p.5',
+            prompt: '테이블에서 각 행을 식별하는 대표 키는?',
+            accepts: ['기본 키'],
+            explanation:
+              '기본 키는 각 행을 유일하게 식별하는 속성 또는 속성 집합이며 NULL을 허용하지 않는다.',
+          },
+          {
+            id: 'db-q2',
+            evidence: {
+              materialId: 'db-main',
+              page: 6,
+              quote: null,
+            },
+            concept: '외래 키',
+            type: 'short',
+            tag: '어제 오답',
+            unitNo: 1,
+            page: 'p.6',
+            prompt: '다른 테이블의 키를 참조해 관계를 표현하는 키는?',
+            accepts: ['외래 키'],
+            explanation:
+              '외래 키는 다른 테이블의 키를 참조하여 테이블 사이의 관계를 표현한다. 참조 무결성 제약과 관련된다.',
+          },
+          {
+            id: 'db-q3',
+            evidence: {
+              materialId: 'db-main',
+              page: 7,
+              quote: null,
+            },
+            concept: '관계와 카디널리티',
+            type: 'choice',
+            tag: '어제 오답',
+            unitNo: 1,
+            page: 'p.7',
+            prompt: '일대다 관계에서는 한 행에 여러 상대 행이 연결될 수 있다.',
+            options: ['O', 'X'],
+            answer: 0,
+            explanation:
+              '테이블 사이에는 일대일, 일대다, 다대다 관계가 있다. 다대다 관계는 연결 테이블로 표현하는 경우가 많다.',
+          },
+          {
+            id: 'db-q4',
+            evidence: {
+              materialId: 'db-main',
+              page: 12,
+              quote: null,
+            },
+            concept: 'SELECT 기본 문법',
+            type: 'short',
+            tag: null,
+            unitNo: 2,
+            page: 'p.12',
+            prompt: '조회할 열을 지정하는 SQL 키워드는?',
+            accepts: ['SELECT'],
+            explanation: 'SELECT는 조회할 열을 지정하고 FROM은 조회할 테이블을 지정한다.',
+          },
+          {
+            id: 'db-q5',
+            evidence: {
+              materialId: 'db-main',
+              page: 13,
+              quote: null,
+            },
+            concept: 'WHERE 조건',
+            type: 'short',
+            tag: null,
+            unitNo: 2,
+            page: 'p.13',
+            prompt: '행을 조건에 따라 걸러 내는 SQL 절은?',
+            accepts: ['WHERE'],
+            explanation:
+              'WHERE는 조회할 행을 조건에 따라 필터링한다. 비교 연산자와 논리 연산자를 사용할 수 있다.',
+          },
+          {
+            id: 'db-q6',
+            evidence: {
+              materialId: 'db-main',
+              page: 14,
+              quote: null,
+            },
+            concept: 'ORDER BY 정렬',
+            type: 'short',
+            tag: null,
+            unitNo: 2,
+            page: 'p.14',
+            prompt: '조회 결과를 정렬하는 SQL 절은?',
+            accepts: ['ORDER BY'],
+            explanation: 'ORDER BY는 결과를 지정한 열 기준으로 오름차순 또는 내림차순 정렬한다.',
+          },
+          {
+            id: 'db-q7',
+            evidence: {
+              materialId: 'db-main',
+              page: 15,
+              quote: null,
+            },
+            concept: '집계 함수',
+            type: 'choice',
+            tag: null,
+            unitNo: 2,
+            page: 'p.15',
+            prompt: 'COUNT는 집계 함수다.',
+            options: ['O', 'X'],
+            answer: 0,
+            explanation:
+              'COUNT, SUM, AVG, MIN, MAX는 여러 행을 집계한다. NULL 처리 규칙은 함수에 따라 다를 수 있다.',
+          },
+          {
+            id: 'db-q8',
+            evidence: {
+              materialId: 'db-main',
+              page: 16,
+              quote: null,
+            },
+            concept: 'GROUP BY',
+            type: 'short',
+            tag: null,
+            unitNo: 2,
+            page: 'p.16',
+            prompt: '같은 값을 기준으로 묶어 집계할 때 쓰는 SQL 절은?',
+            accepts: ['GROUP BY'],
+            explanation: 'GROUP BY는 같은 값을 가진 행을 그룹으로 묶어 집계한다.',
+          },
+        ],
+        unitChanges: [
+          {
+            unitNo: 1,
+            before: 40,
+            after: 45,
+            grade: 'risk',
+            recovering: true,
+            note: '회복 모드',
+          },
+          {
+            unitNo: 2,
+            before: null,
+            after: 99,
+            grade: 'stable',
+          },
+        ],
+      },
+      os: {
+        round: '1회독',
+        difficulty: '하',
+        composition: '2단원 새 문제 5 + 어제 틀린 문제 1',
+        questions: [
+          {
+            id: 'os-q1',
+            evidence: {
+              materialId: 'os-main',
+              page: 7,
+              quote: null,
+            },
+            concept: '문맥 교환',
+            type: 'short',
+            tag: '어제 오답',
+            unitNo: 1,
+            page: 'p.7',
+            prompt: '현재 실행 정보를 저장하고 다른 프로세스의 정보를 복원하는 작업은?',
+            accepts: ['문맥 교환'],
+            explanation:
+              '07 1. 프로세스와 스레드 / 05 문맥 교환 핵심 개념 문맥 교환은 CPU에서 실행할 프로세스를 바꾸며 이전 실행 상태를 저장하고 다음 상태를 복원하는 과정이다. 이 과정에는 오버헤드가 있다.',
+          },
+          {
+            id: 'os-q2',
+            evidence: {
+              materialId: 'os-main',
+              page: 12,
+              quote: null,
+            },
+            concept: 'CPU 스케줄링 목적',
+            type: 'choice',
+            tag: null,
+            unitNo: 2,
+            page: 'p.12',
+            prompt: 'CPU 스케줄러는 준비 큐에서 다음 실행 대상을 고른다.',
+            options: ['O', 'X'],
+            answer: 0,
+            explanation:
+              '12 2. CPU 스케줄링 / 01 CPU 스케줄링 목적 핵심 개념 CPU 스케줄링은 준비 큐의 프로세스 중 다음 실행 대상을 선택한다. CPU 이용률, 처리량, 응답 시간, 대기 시간 등이 평가 기준이다.',
+          },
+          {
+            id: 'os-q3',
+            evidence: {
+              materialId: 'os-main',
+              page: 13,
+              quote: null,
+            },
+            concept: '선입선처리 FCFS',
+            type: 'short',
+            tag: null,
+            unitNo: 2,
+            page: 'p.13',
+            prompt: '도착 순서대로 실행하는 스케줄링의 약자는?',
+            accepts: ['FCFS'],
+            explanation:
+              '13 2. CPU 스케줄링 / 02 선입선처리 FCFS 핵심 개념 FCFS는 먼저 준비 큐에 들어온 프로세스를 먼저 실행하는 비선점 방식이다. 긴 작업 뒤에 짧은 작업이 기다리는 호위 효과 가 나타날 수 있다.',
+          },
+          {
+            id: 'os-q4',
+            evidence: {
+              materialId: 'os-main',
+              page: 14,
+              quote: null,
+            },
+            concept: '최단 작업 우선 SJF',
+            type: 'short',
+            tag: null,
+            unitNo: 2,
+            page: 'p.14',
+            prompt: '예상 실행 시간이 짧은 작업을 우선하는 비선점 방식의 약자는?',
+            accepts: ['SJF'],
+            explanation:
+              '14 2. CPU 스케줄링 / 03 최단 작업 우선 SJF 핵심 개념 SJF는 예상 CPU 실행 시간이 가장 짧은 작업을 먼저 선택한다. 평균 대기 시간을 줄일 수 있지만 실행 시간 예측이 어렵다.',
+          },
+          {
+            id: 'os-q5',
+            evidence: {
+              materialId: 'os-main',
+              page: 15,
+              quote: null,
+            },
+            concept: '최단 잔여 시간 우선 SRTF',
+            type: 'choice',
+            tag: null,
+            unitNo: 2,
+            page: 'p.15',
+            prompt: 'SRTF는 남은 실행 시간이 더 짧은 작업에 CPU를 선점시킬 수 있다.',
+            options: ['O', 'X'],
+            answer: 0,
+            explanation:
+              '15 2. CPU 스케줄링 / 04 최단 잔여 시간 우선 SRTF 핵심 개념 SRTF는 남은 실행 시간이 가장 짧은 프로세스를 선택하는 선점형 방식이다. 새로 도착한 짧은 작업이 기존 작업을 선점할 수 있다.',
+          },
+          {
+            id: 'os-q6',
+            evidence: {
+              materialId: 'os-main',
+              page: 16,
+              quote: null,
+            },
+            concept: '라운드 로빈 RR',
+            type: 'short',
+            tag: null,
+            unitNo: 2,
+            page: 'p.16',
+            prompt: '정해진 시간 할당량만큼 번갈아 실행하는 방식은?',
+            accepts: ['라운드 로빈'],
+            explanation:
+              '16 2. CPU 스케줄링 / 05 라운드 로빈 RR 핵심 개념 라운드 로빈은 일정한 시간 할당량만큼 실행하고 다음 프로세스로 교대한다. 시간 할당량이 너무 작으면 문맥 교환 비용이 커진다.',
+          },
+        ],
+        unitChanges: [
+          {
+            unitNo: 2,
+            before: null,
+            after: 99,
+            grade: 'stable',
+          },
+          {
+            unitNo: 1,
+            before: 80,
+            after: 83,
+            grade: 'stable',
           },
         ],
       },
     },
   },
 
-  // 11/10 (화) 계획 — 데이터 세트 3장: 자료구조 4단원 p.96–120, 1시간
+  // 11/10 (화) 계획 — ① 서버 다음 날 할 일
   nextDayTasks: {
     '2026-11-10': [
       {
-        id: 't5',
-        subjectId: 'ds',
-        unitNo: 4,
-        title: '4단원 그래프',
-        from: 96,
-        to: 120,
-        minutes: 60,
-        reason: null,
+        id: 't4',
+        subjectId: 'ai',
+        unitNo: 3,
+        title: '3단원 모델 평가와 활용',
+        from: 21,
+        to: 29,
+        minutes: 25,
+        reason: '시험 D-2, 모델 평가와 활용',
         status: 'todo',
         donePages: 0,
       },
     ],
   },
 
-  // 이번 주 남은 계획 (S11 캘린더) — 데이터 세트 3장 11/11~11/15. '다음 날로'는 11/10까지라 캘린더에만 써요 (11/10 결정 A)
-  // mock: 배치 이유 문구 · 총복습 범위(자료구조)는 데이터 세트에 없어서 채운 값이에요
+  // 이번 주 이후 계획 (S11 캘린더) — ② demo_data.PLAN 11/11~11/17. 총복습 제목은 옛 목업 규칙('총복습')
   weekPlan: {
     '2026-11-11': [
       {
         id: 'w11a',
-        subjectId: 'ds',
-        unitNo: 5,
-        title: '5단원 정렬',
-        from: 121,
-        to: 140,
-        minutes: 50,
-        reason: '자료구조 시험 전날 · 마지막 단원',
-      },
-      {
-        id: 'w11b',
-        subjectId: 'ds',
+        subjectId: 'ai',
         unitNo: null,
         title: '총복습',
         from: null,
         to: null,
-        minutes: 60,
-        reason: '시험 전날에는 총복습을 넣어요',
+        minutes: 25,
+        reason: '시험 전날 총복습',
       },
     ],
     '2026-11-12': [
       {
         id: 'w12a',
-        subjectId: 'os',
+        subjectId: 'db',
         unitNo: 3,
-        title: '3단원 CPU 스케줄링',
-        from: 68,
-        to: 85,
-        minutes: 45,
-        reason: '자료구조 시험 뒤 운영체제로 넘어가요',
-      },
-    ],
-    '2026-11-13': [
-      {
-        id: 'w13a',
-        subjectId: 'os',
-        unitNo: 4,
-        title: '4단원 메모리 관리',
-        from: 86,
-        to: 100,
-        minutes: 40,
-        reason: '알바 있는 날이라 짧게',
-      },
-    ],
-    '2026-11-14': [
-      {
-        id: 'w14a',
-        subjectId: 'os',
-        unitNo: 4,
-        title: '4단원 메모리 관리',
-        from: 101,
-        to: 120,
-        minutes: 50,
-        reason: '약속 전 오후 빈 시간',
+        title: '3단원 정규화와 트랜잭션',
+        from: 21,
+        to: 29,
+        minutes: 25,
+        reason: '정규화와 트랜잭션',
       },
     ],
     '2026-11-15': [
       {
         id: 'w15a',
-        subjectId: 'net',
+        subjectId: 'db',
         unitNo: null,
-        title: '총복습 2·3단원',
-        from: 37,
-        to: 60,
-        minutes: 120,
-        reason: '일요일이라 길게 · 컴퓨터네트워크 시험(11/18) 전 총복습',
+        title: '총복습',
+        from: null,
+        to: null,
+        minutes: 25,
+        reason: '시험 전날 총복습',
       },
     ],
-  },
-
-  // S13 계획 추가 ② 자료 고르기 — 과목 강의자료 말고 더 올린 자료 (mock: 예시 값)
-  extraMaterials: {
-    net: [
+    '2026-11-16': [
       {
-        id: 'net-lab',
-        name: '컴퓨터네트워크_실습자료.pdf',
-        pages: 60,
-        toc: [
-          { no: 1, title: '실습 1 · 패킷 캡처', from: 1, to: 14 },
-          { no: 2, title: '실습 2 · 서브넷 계산', from: 15, to: 30 },
-          { no: 3, title: '실습 3 · 라우팅 테이블', from: 31, to: 45 },
-          { no: 4, title: '실습 4 · TCP 흐름', from: 46, to: 60 },
-        ],
+        id: 'w16a',
+        subjectId: 'os',
+        unitNo: 3,
+        title: '3단원 교착상태와 기아상태',
+        from: 21,
+        to: 29,
+        minutes: 25,
+        reason: '교착상태와 기아상태',
+      },
+    ],
+    '2026-11-17': [
+      {
+        id: 'w17a',
+        subjectId: 'os',
+        unitNo: null,
+        title: '총복습',
+        from: null,
+        to: null,
+        minutes: 25,
+        reason: '시험 전날 총복습',
       },
     ],
   },
 
-  // 월간 책장 (S15 · MO-01·02) — 지난 날 기록. 데이터 세트 3장 11/3~11/8 계획 범위를 페이지로, 모두 다 했어요
-  // pages: 과목별 계획 페이지 (보충 포함) · minutes: 계획 시간. 11/8 자료구조 보충 17p는 데이터 세트에 없어서 추정값 (2-1 결정 로그)
-  monthLog: [
-    { date: '2026-11-03', pages: { ds: 18, os: 20 }, minutes: 95 },
-    { date: '2026-11-04', pages: { ds: 17 }, minutes: 40 },
-    { date: '2026-11-05', pages: { ds: 25, net: 8 }, minutes: 80 },
-    { date: '2026-11-06', pages: { os: 15 }, minutes: 40 },
-    { date: '2026-11-07', pages: { ds: 11, os: 11 }, minutes: 60 },
-    {
-      date: '2026-11-08',
-      pages: { ds: 17, os: 9, net: 14 },
-      minutes: 100,
-      review: true,
-      estimated: { ds: 17 },
-    },
-  ],
-  // 월간 리포트 (S15-1 · MO-03) — mock: 퀴즈 문항·오답 수는 v2-plan 2-2 S15-1 값
-  monthQuiz: { total: 80, wrong: 18, unsureRight: 11 },
+  // S13 계획 추가 ② 자료 고르기 — 과목 강의자료 말고 더 올린 자료.
+  // TODO(확인필요): [기획 확인] 새 시드에 추가 자료 값이 없어서 비워 뒀어요 (옛 값: 컴퓨터네트워크 실습자료)
+  extraMaterials: {},
 
-  // 속도 보정 (PL-07 · P4) — mock: 11/9 기본 시드에서 '다음 날로' 한 11/10에만 자료구조 1.4배 알림
+  // 월간 책장 (S15) — 지난 날 기록. ② demo_data.PLAN 11/3~11/5 (9p · 25분씩, 모두 다 했어요)
+  monthLog: [
+    { date: '2026-11-03', pages: { ai: 9 }, minutes: 25 },
+    { date: '2026-11-04', pages: { db: 9 }, minutes: 25 },
+    { date: '2026-11-05', pages: { os: 9 }, minutes: 25 },
+  ],
+  // 월간 리포트 (S15-1) — ② package.py 11/3~11/5 풀이 15문항 중 오답 4 · 애매 정답 1
+  monthQuiz: { total: 15, wrong: 4, unsureRight: 1 },
+
+  // 속도 보정 (PL-07 · P4) — 서버에 없는 목업 전용 시연. 11/9 기본 시드에서 '다음 날로' 한 11/10에만 알림
+  // TODO(확인필요): [기획 확인] 새 시드 값이 없어서 옛 숫자(1.4배 · 3.5분/쪽)를 첫 시험 과목(인공지능)에 붙였어요 (MOCK 표시)
   paceMock: {
     date: '2026-11-10',
     seed: 'day9',
-    subjectId: 'ds',
+    subjectId: 'ai',
     ratio: 1.4,
     perPage: 3.5,
     expectedPerPage: 2.5,
@@ -813,64 +1043,101 @@ export const SEED = {
     sessions: 3,
   },
 
-  // 분배안 (P2, RC-03) — 와이어프레임 P2 문구 · 데이터 세트 4장 · B안은 결정 로그 6장
-  replanKeepNote: '운영체제 2단원 보충 학습은 미루지 않고 그대로 둬요',
+  // 분배안 (P2, RC-03) — ① 서버 overdue → 다음 날로 → 분배안
+  replanKeepNote: '보충 학습은 어느 안에서도 미루지 않아요',
   plans: [
     {
       key: 'A',
-      lines: ['11/10·11/11 하루 40분씩 추가', '범위는 그대로'],
+      lines: ['11/10·11/11 하루 20분씩 추가', '범위는 그대로'],
       effect: '범위 100% 유지',
-      preview: '11/10 (화) 15:00–15:40 자료구조 · 3단원 p.72–95 추가 · 적용하면 회복 박스 팝업',
+      preview: '11/10 (화) 인공지능 · 2단원 p.12–20 추가 · 적용하면 회복 박스 팝업',
     },
     {
       key: 'B',
       lines: [
-        '자료구조 5단원 힙 정렬(p.135–140, 6p) 제외',
-        '운영체제 4단원 세그멘테이션 사례(p.103–106, 4p) 제외',
+        '운영체제 3단원 교착상태 탐지와 복구(p.29–29, 1p) 제외',
+        '인공지능 3단원 모델 모니터링(p.29–29, 1p) 제외',
       ],
-      effect: '시간 유지 · 10p 제외',
+      effect: '시간 유지 · 2p 제외',
       preview:
-        '자료구조 5단원 힙 정렬(6p)과 운영체제 4단원 세그멘테이션 사례(4p)를 계획에서 빼요 · 적용하면 회복 박스 팝업',
-    }, // mock: 미리보기 문구
+        '운영체제 3단원 교착상태 탐지와 복구(1p) · 인공지능 3단원 모델 모니터링(1p)를 계획에서 빼요 · 적용하면 회복 박스 팝업',
+    },
     {
       key: 'C',
       lines: ['밀린 태스크를 핵심 요약 위주로', '태스크 시간 30% 단축'],
       effect: '1회독 깊이 얕아짐',
       preview:
-        '11/10 (화) 자료구조 · 3단원 p.72–95를 42분으로 줄여 넣어요 · 적용하면 회복 박스 팝업',
-    }, // mock: 미리보기 문구
+        '11/10 (화) 인공지능 · 2단원 p.12–20를 15분으로 줄여 넣어요 · 적용하면 회복 박스 팝업',
+    },
   ],
-  // mock: 분배안을 고른 뒤 11/10에 붙는 태스크. 실제 재배치는 백엔드 A(RC-03·04)가 계산해요.
+  // 분배안을 고른 뒤 11/10 맨 위에 붙는 태스크 — ① 서버 적용 결과. 서버는 carried: true를 주지만
+  // 11/13 결정(지시문 4 A안)대로 초안 기준(carried 없음)으로 두고 백엔드에 요청했어요
   replanTasks: {
-    A: {
-      id: 'tA',
-      subjectId: 'ds',
-      unitNo: 3,
-      title: '3단원 이진 탐색 트리·AVL 트리 (어제 몫)',
-      from: 72,
-      to: 95,
-      minutes: 40,
-      reason: '분배안 A · 공부 시간 40분 추가',
-    },
-    B: {
-      id: 'tB',
-      subjectId: 'ds',
-      unitNo: 3,
-      title: '3단원 이진 탐색 트리·AVL 트리 (어제 몫)',
-      from: 72,
-      to: 95,
-      minutes: 60,
-      reason: '분배안 B · 힙 정렬·세그멘테이션 사례 범위를 뺀 자리에 넣었어요', // mock: 문구
-    },
-    C: {
-      id: 'tC',
-      subjectId: 'ds',
-      unitNo: 3,
-      title: '3단원 이진 탐색 트리·AVL 트리 (핵심 요약)',
-      from: 72,
-      to: 95,
-      minutes: 42,
-      reason: '분배안 C · 핵심 요약 위주로 30% 단축',
-    },
+    A: [
+      {
+        id: 'tA1',
+        subjectId: 'ai',
+        unitNo: 2,
+        title: '2단원 지도학습 알고리즘',
+        from: 12,
+        to: 20,
+        minutes: 20,
+        reason: '분배안 A · 공부 시간 20분 추가',
+      },
+      {
+        id: 'tA2',
+        subjectId: 'os',
+        unitNo: 2,
+        title: '2단원 CPU 스케줄링',
+        from: 12,
+        to: 20,
+        minutes: 20,
+        reason: '분배안 A · 공부 시간 20분 추가',
+      },
+    ],
+    B: [
+      {
+        id: 'tB1',
+        subjectId: 'ai',
+        unitNo: 2,
+        title: '2단원 지도학습 알고리즘',
+        from: 12,
+        to: 20,
+        minutes: 20,
+        reason: '분배안 B · 중요도 낮은 범위를 뺀 자리에 넣었어요',
+      },
+      {
+        id: 'tB2',
+        subjectId: 'os',
+        unitNo: 2,
+        title: '2단원 CPU 스케줄링',
+        from: 12,
+        to: 20,
+        minutes: 20,
+        reason: '분배안 B · 중요도 낮은 범위를 뺀 자리에 넣었어요',
+      },
+    ],
+    C: [
+      {
+        id: 'tC1',
+        subjectId: 'ai',
+        unitNo: 2,
+        title: '2단원 지도학습 알고리즘',
+        from: 12,
+        to: 20,
+        minutes: 16,
+        reason: '분배안 C · 핵심 요약 위주로 30% 단축',
+      },
+      {
+        id: 'tC2',
+        subjectId: 'os',
+        unitNo: 2,
+        title: '2단원 CPU 스케줄링',
+        from: 12,
+        to: 20,
+        minutes: 16,
+        reason: '분배안 C · 핵심 요약 위주로 30% 단축',
+      },
+    ],
   },
 };
