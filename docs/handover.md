@@ -255,7 +255,9 @@ Q1. (질문)
 - 그 밖에 정할 것
   - 기획 문서 위치 (5장)
   - CODEOWNERS (사용자 GitHub ID 필요)
-  - 배포 (Vercel 여부·설정 — 배포 설정은 먼저 물어요)
+  - 배포 (11/14 결정 — 둘로 나눠요. Vercel 대시보드 설정은 사람이 해요)
+    - 포트폴리오 목업: `deploy` 브랜치 · Vercel 프로젝트 `pirwichimdemo` · 전부 목업. 건드리지 않아요
+    - 팀 배포: `main` · 새 Vercel 프로젝트(Production Branch: main) · 환경변수 `VITE_USE_MOCK=hybrid` · `vercel.json`이 `/api/*`를 서버(`https://2026-line1.leehyowon14.dev`)로 중계하고 나머지 주소는 `index.html`로 (SPA 새로고침). 서버에 있는 22개 경로만 서버, 나머지는 목업이에요 ('연동 완료' 아님). 비상시: 환경변수를 `VITE_USE_MOCK=true`로 바꾸고 Redeploy하면 전부 목업
   - 시연 때 헤더의 `/dev` 링크 숨기기
   - 빌드 경고: JS 묶음이 커요 (약 1.2MB). 코드 나누기는 구조 변경이라 먼저 물어요
 

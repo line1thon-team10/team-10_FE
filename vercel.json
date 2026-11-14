@@ -1,0 +1,9 @@
+{
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "https://2026-line1.leehyowon14.dev/api/:path*" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
+  "headers": [
+    { "source": "/api/(.*)", "headers": [{ "key": "Cache-Control", "value": "no-store" }] }
+  ]
+}
