@@ -1,13 +1,6 @@
 import { http } from 'msw';
 import { EP } from '@/api/endpoints.js';
-import {
-  gradeQuiz,
-  makeMoreQuiz,
-  quizResultView,
-  quizSetView,
-  quizTodayView,
-  saveQuizAnswer,
-} from '../logic.js';
+import { gradeQuiz, makeMoreQuiz, quizResultView, quizSetView, quizTodayView } from '../logic.js';
 import { aiRun, run } from './respond.js';
 
 export const quizHandlers = [
@@ -15,14 +8,7 @@ export const quizHandlers = [
   // S8 퀴즈 준비 (AI 출제): ?saved=1이면 시드의 오늘 퀴즈 (NF-10)
   http.get(`${EP.quiz}/:subjectId`, ({ params, request }) => {
     const saved = new URL(request.url).searchParams.get('saved') === '1';
-    const quizId = new URL(request.url).searchParams.get('quizId');
-    return aiRun('quiz', () => ({ ...quizSetView(params.subjectId, quizId), saved }), 1200, {
-      saved,
-    });
-  }),
-  http.put(`${EP.quiz}/:quizId/answers/:questionId`, async ({ params, request }) => {
-    const body = await request.json();
-    return run(() => saveQuizAnswer(params.quizId, params.questionId, body));
+    return aiRun('quiz', () => ({ ...quizSetView(params.subjectId), saved }), 1200, { saved });
   }),
   http.post(`${EP.quiz}/:subjectId/submit`, async ({ params, request }) => {
     const { answers, savedGrading } = await request.json();

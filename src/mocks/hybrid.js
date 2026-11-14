@@ -17,7 +17,6 @@ const SERVER_ROUTES = [
   'GET /api/books',
   'GET /api/quiz/today', // :key보다 먼저 (today는 UUID가 아니라 목업으로 빠지면 안 돼요)
   'GET /api/quiz/:key',
-  'PUT /api/quiz/:quizId/answers/:questionId',
   'POST /api/quiz/:key/submit',
   'GET /api/quiz/:key/result',
   'POST /api/quiz/:subjectId/more',

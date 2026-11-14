@@ -2,7 +2,7 @@
 // S8-1 과목 고르기 → S8 한 화면 한 문제 (서술형은 S8-3, 채점은 마지막 제출 때) → P3 → S8-2
 // 풀 때는 근거 페이지와 정답 여부를 보여주지 않아요. 확실/애매를 골라야 다음으로 가요 (QZ-05·12)
 import { Lock } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { ROUTES } from '@/app/screens.js';
 import { MockBadge } from '@/components/common/Badge.jsx';
@@ -12,21 +12,12 @@ import Button from '@/components/common/Button.jsx';
 import Card from '@/components/common/Card.jsx';
 import ProgressBar from '@/components/common/ProgressBar.jsx';
 import { EmptyState, ErrorState, LoadingState } from '@/components/common/StateView.jsx';
+import { POLICY } from '@/config/app.js';
 import { CONFIDENCE, QUIZ_TYPE } from '@/config/labels.js';
 import { useAiWait } from '@/hooks/useAiWait.js';
 import { isAiFail } from '@/lib/aiError.js';
-import { useQuizSet, useQuizToday, useSaveQuizAnswer, useSubmitQuiz } from '@/hooks/useQuiz.js';
+import { useQuizSet, useQuizToday, useSubmitQuiz } from '@/hooks/useQuiz.js';
 import P3BookColor from './P3BookColor.jsx';
-import {
-  acceptAnswerSave,
-  answerRequest,
-  canSaveAnswer,
-  createAnswerDraft,
-  draftAnswers,
-  editAnswerDraft,
-  refreshAnswerDraft,
-  chooseSavedAnswer,
-} from './answerDraft.js';
 
 const statusOf = (s) =>
   s.result ? 'done' : !s.open ? 'locked' : !s.hasQuestions ? 'empty' : 'open';
@@ -180,21 +171,15 @@ function Grading({ startedAt, failed, onRetry, onSaved }) {
   );
 }
 
-function Player({ subjectId, quizId }) {
-  const [, setParams] = useSearchParams();
+function Player({ subjectId }) {
+  const navigate = useNavigate();
   const [savedSet, setSavedSet] = useState(false); // AI 출제가 안 되면 저장된 결과 (NF-10)
-  const { data: set, isPending, isError, error, refetch } = useQuizSet(subjectId, savedSet, quizId);
-  useEffect(() => {
-    if (!set?.quizId || quizId === set.quizId) return;
-    setParams(
-      (params) => {
-        const next = new URLSearchParams(params);
-        next.set('quizId', set.quizId);
-        return next;
-      },
-      { replace: true },
-    );
-  }, [quizId, set?.quizId, setParams]);
+  const { data: set, isPending, isError, error, refetch } = useQuizSet(subjectId, savedSet);
+  const submit = useSubmitQuiz();
+  const [idx, setIdx] = useState(0);
+  const [answers, setAnswers] = useState({}); // { questionId: { choice, text, confidence } }
+  const [startedAt, setStartedAt] = useState(null);
+  const [result, setResult] = useState(null); // 제출 응답 → P3
 
   // AI 상태 (NF-05·10): 퀴즈 준비 / 실패 / 저장된 결과
   if (isPending)
@@ -207,7 +192,7 @@ function Player({ subjectId, quizId }) {
         />
       </Card>
     );
-  if (!set && isError && isAiFail(error))
+  if (isError && isAiFail(error))
     return (
       <Card className="mx-auto w-full max-w-[560px]">
         <AiFail
@@ -217,7 +202,7 @@ function Player({ subjectId, quizId }) {
         />
       </Card>
     );
-  if (!set && isError)
+  if (isError)
     return error?.code === 'NO_QUIZ' ? (
       <EmptyState
         title="이 과목 문항은 아직 준비 중이에요"
@@ -233,28 +218,6 @@ function Player({ subjectId, quizId }) {
       <ErrorState description={error?.message} onRetry={refetch} />
     );
 
-  if (!set.quizId || !set.questions.length)
-    return (
-      <ErrorState
-        description="퀴즈 세트를 확인하지 못했어요. 다시 불러와 주세요."
-        onRetry={refetch}
-      />
-    );
-  return <QuizPlayer key={set.quizId} set={set} subjectId={subjectId} reload={refetch} />;
-}
-
-function QuizPlayer({ set, subjectId, reload }) {
-  const navigate = useNavigate();
-  const submit = useSubmitQuiz();
-  const save = useSaveQuizAnswer();
-  const [idx, setIdx] = useState(0);
-  const [draft, setDraft] = useState(() => createAnswerDraft(set));
-  const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState('');
-  const [conflict, setConflict] = useState(null);
-  const inFlight = useRef(false);
-  const [startedAt, setStartedAt] = useState(null);
-  const [result, setResult] = useState(null);
   const toResult = () => navigate(`${ROUTES.quizResult}?subject=${set.resultFor}`);
   // 문제 뽑기 세트처럼 책 색이 안 바뀌면 P3 없이 결과로
   if (result && result.bookChanges.length)
@@ -263,7 +226,7 @@ function QuizPlayer({ set, subjectId, reload }) {
   const send = (savedGrading = false) => {
     setStartedAt(Date.now());
     submit.mutate(
-      { subjectId, quizId: set.quizId, answers: draftAnswers(draft), savedGrading },
+      { subjectId, answers, savedGrading },
       { onSuccess: (r) => (r.bookChanges.length ? setResult(r) : toResult()) },
     );
   };
@@ -279,45 +242,11 @@ function QuizPlayer({ set, subjectId, reload }) {
 
   const total = set.questions.length;
   const q = set.questions[idx];
-  const a = draft.items[q.id].input;
-  const set1 = (patch) => setDraft((state) => editAnswerDraft(state, q.id, patch));
+  const a = answers[q.id] ?? {};
+  const set1 = (patch) => setAnswers((x) => ({ ...x, [q.id]: { ...x[q.id], ...patch } }));
+  const answered = q.type === 'choice' ? a.choice != null : Boolean(a.text?.trim());
   const last = idx === total - 1;
-  const ready = canSaveAnswer(draft, q.id);
-  const busy = saving || conflict?.status === 'loading';
-
-  const refreshConflict = async (questionId) => {
-    setConflict({ questionId, status: 'loading' });
-    try {
-      const { data } = await reload({ throwOnError: true });
-      if (data.quizId !== draft.quizId) throw new Error('같은 퀴즈의 답안을 불러오지 못했어요.');
-      setDraft((state) => refreshAnswerDraft(state, data, questionId));
-      setConflict({ questionId, status: 'ready' });
-      setSaveError('');
-    } catch (error) {
-      setConflict({ questionId, status: 'error' });
-      setSaveError(error.message);
-    }
-  };
-  const saveNext = async () => {
-    if (inFlight.current || !ready) return;
-    inFlight.current = true;
-    setSaving(true);
-    setSaveError('');
-    setConflict(null);
-    const request = answerRequest(draft, q.id);
-    try {
-      const response = await save.mutateAsync({ subjectId, ...request });
-      setDraft((state) => acceptAnswerSave(state, request, response));
-      if (last) send(false);
-      else setIdx((i) => i + 1);
-    } catch (error) {
-      if (error.code === 'ANSWER_CONFLICT') await refreshConflict(q.id);
-      else setSaveError(error.message);
-    } finally {
-      inFlight.current = false;
-      setSaving(false);
-    }
-  };
+  const ready = answered && a.confidence;
 
   return (
     <>
@@ -335,9 +264,9 @@ function QuizPlayer({ set, subjectId, reload }) {
             {set.saved && <SavedTag />}
           </div>
         </div>
-        <Button size="sm" disabled={busy} onClick={() => navigate(ROUTES.quiz)}>
+        <Link className="btn btn-sm" to={ROUTES.quiz}>
           과목 다시 고르기
-        </Button>
+        </Link>
       </div>
       <div className="flex items-center gap-3">
         <div className="flex-1">
@@ -357,11 +286,11 @@ function QuizPlayer({ set, subjectId, reload }) {
         <h2 className="font-sans text-[18px] font-semibold">{q.prompt}</h2>
 
         {q.type === 'choice' && (
-          <fieldset className="flex flex-col gap-2" disabled={busy}>
+          <fieldset className="flex flex-col gap-2">
             <legend className="sr-only">보기</legend>
             {q.options.map((o, i) => (
               <label
-                key={i}
+                key={o}
                 className={`flex cursor-pointer items-center gap-2.5 rounded-xl border px-3.5 py-3 text-[13.5px] transition-colors ${a.choice === i ? 'border-brand-line bg-brand-tint' : 'border-line-2 hover:border-fg-2'}`}
               >
                 <input
@@ -385,7 +314,6 @@ function QuizPlayer({ set, subjectId, reload }) {
             value={a.text ?? ''}
             onChange={(e) => set1({ text: e.target.value })}
             autoComplete="off"
-            disabled={busy}
           />
         )}
         {/* S8-3 서술형: 여러 줄 입력. 채점은 마지막 제출 때라 기다리지 않고 다음 문제로 */}
@@ -399,15 +327,15 @@ function QuizPlayer({ set, subjectId, reload }) {
               placeholder="핵심 단계를 순서대로 적어 보세요"
               value={a.text ?? ''}
               onChange={(e) => set1({ text: e.target.value })}
-              disabled={busy}
             />
             <p className="text-[11.5px] text-fg-2">
-              다음으로 넘어갈 때 답을 저장해요. 답을 비운 채로도 저장할 수 있어요.
+              채점은 마지막에 한 번에 해요. AI가 표현이 아니라 맥락과 핵심 개념으로 0~100점을
+              매기고, {POLICY.essayPassScore}점부터 정답이에요.
             </p>
           </>
         )}
 
-        <fieldset className="flex flex-col gap-1.5" disabled={busy}>
+        <fieldset className="flex flex-col gap-1.5">
           <legend className="mb-1.5 text-[13px] font-semibold">얼마나 확신해요? (필수)</legend>
           <div className="flex gap-2">
             {Object.entries(CONFIDENCE).map(([k, label]) => (
@@ -428,69 +356,19 @@ function QuizPlayer({ set, subjectId, reload }) {
           </div>
         </fieldset>
 
-        {saveError && (
-          <p role="alert" className="text-[13px] text-fg-2">
-            {saveError} 입력은 유지했어요.
-          </p>
-        )}
-        {conflict && (
-          <div
-            className="flex flex-col gap-2 rounded-xl border border-line-2 p-3"
-            aria-live="polite"
-          >
-            <p className="text-[13px]">
-              {conflict.status === 'loading'
-                ? '같은 퀴즈의 최신 답안을 확인하고 있어요.'
-                : conflict.status === 'error'
-                  ? '최신 답안을 다시 불러온 뒤 저장해 주세요.'
-                  : '다른 곳에서 저장한 답이 있어요. 작성 중인 입력은 유지했어요.'}
-            </p>
-            {conflict.status === 'ready' && (
-              <div className="flex flex-wrap gap-2">
-                <Button size="sm" variant="primary" disabled={!ready || busy} onClick={saveNext}>
-                  내 입력으로 다시 저장
-                </Button>
-                <Button
-                  size="sm"
-                  disabled={busy}
-                  onClick={() => {
-                    setDraft((state) => chooseSavedAnswer(state, q.id));
-                    setConflict(null);
-                  }}
-                >
-                  서버 답안 사용
-                </Button>
-              </div>
-            )}
-            {conflict.status === 'error' && (
-              <Button size="sm" onClick={() => refreshConflict(q.id)}>
-                최신 답안 다시 불러오기
-              </Button>
-            )}
-          </div>
-        )}
-        {saving && (
-          <p role="status" className="text-[12px] text-fg-2">
-            답안을 저장하고 있어요.
-          </p>
-        )}
         <div className="flex justify-between gap-2 border-t border-line pt-4">
-          <Button
-            disabled={idx === 0 || busy || Boolean(conflict)}
-            onClick={() => {
-              setSaveError('');
-              setIdx((i) => i - 1);
-            }}
-          >
+          <Button disabled={idx === 0} onClick={() => setIdx((i) => i - 1)}>
             이전
           </Button>
-          <Button
-            variant="primary"
-            disabled={!ready || busy || Boolean(conflict)}
-            onClick={saveNext}
-          >
-            {saving ? '저장 중…' : last ? '제출하고 채점하기' : '다음'}
-          </Button>
+          {last ? (
+            <Button variant="primary" disabled={!ready} onClick={() => send(false)}>
+              제출하고 채점하기
+            </Button>
+          ) : (
+            <Button variant="primary" disabled={!ready} onClick={() => setIdx((i) => i + 1)}>
+              다음
+            </Button>
+          )}
         </div>
       </Card>
     </>
@@ -500,9 +378,5 @@ function QuizPlayer({ set, subjectId, reload }) {
 export default function S8Quiz() {
   const [params] = useSearchParams();
   const subjectId = params.get('subject');
-  return subjectId ? (
-    <Player key={subjectId} subjectId={subjectId} quizId={params.get('quizId')} />
-  ) : (
-    <SubjectPicker />
-  );
+  return subjectId ? <Player key={subjectId} subjectId={subjectId} /> : <SubjectPicker />;
 }

@@ -1,7 +1,4 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import test from 'node:test';
 import { toToday } from '../src/api/adapters/today.js';
 import { toSession } from '../src/api/adapters/study.js';
@@ -124,23 +121,14 @@ test('record success waits for fresh home totals and invalidates recorded focus 
   const { createElement } = await import('react');
   const { renderToString } = await import('react-dom/server');
   const { QueryClient, QueryClientProvider, QueryObserver } = await import('@tanstack/react-query');
-  const cacheDir = await mkdtemp(join(tmpdir(), 'team10-record-flow-test-'));
-  let server;
-  t.after(async () => {
-    try {
-      await server?.close();
-    } finally {
-      await rm(cacheDir, { recursive: true, force: true });
-    }
-  });
-  server = await createServer({
-    cacheDir,
+  const server = await createServer({
     configFile: false,
     appType: 'custom',
     server: { middlewareMode: true, hmr: false },
     resolve: { alias: { '@': new URL('../src', import.meta.url).pathname } },
     logLevel: 'silent',
   });
+  t.after(() => server.close());
   const { http } = await server.ssrLoadModule('/src/api/client.js');
   const { useRecord } = await server.ssrLoadModule('/src/hooks/useToday.js');
   const { useEndSession } = await server.ssrLoadModule('/src/hooks/useStudy.js');

@@ -398,29 +398,13 @@ export function quizTodayView() {
 // 퀴즈 세트: 오늘의 퀴즈(과목 id) 또는 문제 뽑기로 만든 세트(c1, c2 …)
 const setOf = (s, id) => s.customSets[id] ?? s.quizSets[s.today.date]?.[id];
 const subjectOfSet = (s, id, set) => s.subjects.find((x) => x.id === (set.subjectId ?? id));
-const mockQuizId = (id, date) => `mock-quiz-${date ?? 'custom'}-${id}`;
-const mockQuizRef = (s, quizId) => {
-  for (const [id, set] of Object.entries(s.customSets)) {
-    if (mockQuizId(id) === quizId) return { id, set, date: s.today.date };
-  }
-  for (const [date, sets] of Object.entries(s.quizSets)) {
-    for (const [id, set] of Object.entries(sets)) {
-      if (mockQuizId(id, date) === quizId) return { id, set, date };
-    }
-  }
-  throw new MockError('NO_QUIZ', '이 퀴즈 세트를 찾지 못했어요', 404);
-};
 
-export function quizSetView(subjectId, quizId = null) {
+export function quizSetView(subjectId) {
   const s = db.get();
-  const ref = quizId ? mockQuizRef(s, quizId) : null;
-  const set = ref ? ref.set : setOf(s, subjectId);
+  const set = setOf(s, subjectId);
   if (!set) throw new MockError('NO_QUIZ', '이 과목 퀴즈 문항이 아직 없어요', 404);
-  if (ref && ref.id !== subjectId && set.subjectId !== subjectId)
-    throw new MockError('NO_QUIZ', '이 과목의 퀴즈가 아니에요', 404);
   const sub = subjectOfSet(s, subjectId, set);
   return {
-    quizId: quizId ?? mockQuizId(subjectId, set.subjectId ? null : s.today.date),
     subjectId,
     custom: Boolean(set.subjectId), // 문제 뽑기·더 풀기로 만든 세트
     resultFor: set.moreOf ?? subjectId, // 풀고 나서 볼 결과 (더 풀기는 원래 퀴즈 결과)
@@ -428,71 +412,17 @@ export function quizSetView(subjectId, quizId = null) {
     round: set.round,
     difficulty: set.difficulty,
     composition: set.composition,
-    savedAnswers: set.questions.flatMap((q) =>
-      set.answerStorage?.heads[q.id] ? [{ ...set.answerStorage.heads[q.id] }] : [],
-    ),
     questions: set.questions.map((q) => ({
       id: q.id,
       type: q.type,
       tag: q.tag,
       unitNo: q.unitNo,
+      page: q.page,
       prompt: q.prompt,
       options: q.options ?? null,
       mockFilled: q.mockFilled ?? [],
     })),
   };
-}
-
-// mock: 문항별 저장·복구만 흉내 내요. 시드 답/점수와 최종 채점 로직은 바꾸지 않아요.
-export function saveQuizAnswer(quizId, questionId, body) {
-  const s = db.get();
-  const { id, set, date } = mockQuizRef(s, quizId);
-  const q = set.questions.find((question) => question.id === questionId);
-  if (!q) throw new MockError('INVALID_INPUT', '이 세트의 문항이 아니에요', 422);
-  const input = {
-    choice: body.choice ?? null,
-    text: body.text ?? null,
-    confidence: body.confidence,
-  };
-  const validAnswer =
-    q.type === 'choice'
-      ? Number.isInteger(input.choice) &&
-        input.choice >= 0 &&
-        input.choice < q.options.length &&
-        input.text === null
-      : input.choice === null && typeof input.text === 'string';
-  if (
-    !validAnswer ||
-    !['sure', 'unsure'].includes(input.confidence) ||
-    !Number.isSafeInteger(body.revision) ||
-    body.revision < 0 ||
-    Object.keys(body).some((key) => !['choice', 'text', 'confidence', 'revision'].includes(key))
-  )
-    throw new MockError('INVALID_INPUT', '답안 입력을 확인해 주세요', 422);
-  const storage = set.answerStorage ?? { heads: {}, receipts: {} };
-  const key = JSON.stringify([questionId, body.revision]);
-  const receipt = storage.receipts[key];
-  const fingerprint = JSON.stringify(input);
-  const conflict = () =>
-    new MockError('ANSWER_CONFLICT', '다른 답이 저장됐어요. 최신 답안을 확인해 주세요', 409);
-  if (receipt) {
-    if (receipt.fingerprint !== fingerprint) throw conflict();
-    return { quizId, questionId, saved: true, revision: receipt.revision };
-  }
-  if (s.quizResults[`${date}:${id}`])
-    throw new MockError('QUIZ_FINALIZED', '이미 제출한 퀴즈예요', 409);
-  const head = storage.heads[questionId];
-  if ((head?.revision ?? 0) !== body.revision) throw conflict();
-  const unchanged =
-    head &&
-    head.choice === input.choice &&
-    head.text === input.text &&
-    head.confidence === input.confidence;
-  const revision = unchanged ? head.revision : (head?.revision ?? 0) + 1;
-  storage.heads[questionId] = { questionId, ...input, revision };
-  storage.receipts[key] = { fingerprint, revision };
-  set.answerStorage = storage;
-  return { quizId, questionId, saved: true, revision };
 }
 
 const norm = (t) =>
