@@ -95,6 +95,34 @@ test('mock HTTP save/replay/conflict and a fresh module reload preserve inputs w
       { bookshelf: db.get().bookshelf, results: db.get().quizResults, tasks: db.get().today.tasks },
       original,
     );
+    await t.test(
+      'hybrid routes real answer IDs to the server and leaves mock IDs to the mock handler',
+      async () => {
+        const { hybridHandler } = await vite.ssrLoadModule('/src/mocks/hybrid.js');
+        const realQuiz = '5b5d0cbf-92be-4e92-8e5a-069378b1b18d';
+        const realItem = 'ff823393-d7de-4ca2-a31f-53cf505005e2';
+        for (const [quiz, item, server] of [
+          [realQuiz, realItem, true],
+          [quizId, questionId, false],
+          [realQuiz, questionId, false],
+        ]) {
+          const result = await hybridHandler.run({
+            request: new Request(`http://localhost/api/quiz/${quiz}/answers/${item}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(first),
+            }),
+            requestId: `${quiz}-${item}`,
+          });
+          assert.equal(result?.response?.headers.get('x-msw-intention') === 'passthrough', server);
+        }
+        const existing = await hybridHandler.run({
+          request: new Request(`http://localhost/api/quiz/${realQuiz}`),
+          requestId: 'existing-get',
+        });
+        assert.equal(existing.response.headers.get('x-msw-intention'), 'passthrough');
+      },
+    );
     pagehide();
   } finally {
     server?.close();
