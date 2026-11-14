@@ -21,6 +21,7 @@ import {
   useStartSession,
 } from '@/hooks/useStudy.js';
 import { useUiStore } from '@/stores/uiStore.js';
+import { pagedRanges, rangeInputLabel, taskRangeLabel } from './recordInput.js';
 
 const SHOW_TIME_MS = 3000;
 const hm = (m) =>
@@ -80,7 +81,9 @@ function Focus({ session, onEnded }) {
   const end = useEndSession();
   const { refetch } = useActiveSession();
   const [shown, setShown] = useState(null); // [시간 보기]로 받은 분
-  const [reading, setReading] = useState(false); // [자료 열기] PDF 보기
+  const [reading, setReading] = useState(null); // 실제 materialId/page를 보존해 PDF를 열어요
+  const ranges = pagedRanges(session.task);
+  const defaultMaterial = session.material;
   const paused = session.status === 'paused';
   const busy = pause.isPending || resume.isPending || end.isPending;
   const fail = { onError: (e) => toast.error(e.message) };
@@ -92,10 +95,18 @@ function Focus({ session, onEnded }) {
   }, [shown]);
 
   const showTime = async () => {
-    const { data } = await refetch();
+    const { data, error } = await refetch();
+    if (error) toast.error(error.message);
     if (data) setShown(data.minutes);
   };
-  const finish = () => end.mutate(session.id, { onSuccess: onEnded, ...fail });
+  const finish = async () => {
+    try {
+      // active 캐시가 비면서 Focus가 unmount되어도 종료 화면으로 이동해요.
+      onEnded(await end.mutateAsync(session.id));
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
 
   return (
     <>
@@ -139,13 +150,13 @@ function Focus({ session, onEnded }) {
             </h1>
             <div className="mt-4 flex flex-wrap justify-center gap-2">
               <span className="badge num">
-                p.{session.task.from}–{session.task.to} · {session.task.pages}p
+                {taskRangeLabel(session.task)} · {session.task.pages}p
               </span>
               <span className="badge num">예상 {session.task.minutes}분</span>
             </div>
             <p className="display mt-10 text-[24px] leading-snug">{session.quote}</p>
             <div className="mt-9 flex flex-wrap justify-center gap-2">
-              <Button onClick={() => setReading(true)}>
+              <Button disabled={!defaultMaterial} onClick={() => setReading(defaultMaterial)}>
                 <FileText size={13} aria-hidden="true" />
                 자료 열기
               </Button>
@@ -157,6 +168,20 @@ function Focus({ session, onEnded }) {
                 종료
               </Button>
             </div>
+            {ranges.length > 1 && (
+              <div className="mt-4 flex flex-wrap justify-center gap-2">
+                {ranges.map((range, index) => (
+                  <Button
+                    key={range.id}
+                    size="sm"
+                    disabled={!range.materialId}
+                    onClick={() => setReading({ id: range.materialId, page: range.from })}
+                  >
+                    {rangeInputLabel(session.task, range, index)} 열기
+                  </Button>
+                ))}
+              </div>
+            )}
             <p className="mt-9 max-w-[520px] text-[11.5px] text-fg-2">
               공부하는 동안 시간 숫자는 보이지 않아요. 오른쪽 위 [시간 보기]를 누르면 3초 동안
               보여요.
@@ -174,11 +199,11 @@ function Focus({ session, onEnded }) {
       )}
       {reading && (
         <PdfPageDialog
-          materialId={session.material.id}
-          page={session.material.page}
+          materialId={reading.id}
+          page={reading.page}
           title={`${session.subjectName} 강의자료`}
           note="자료를 봐도 공부 측정은 계속돼요. 닫으면 공부 화면으로 돌아와요."
-          onClose={() => setReading(false)}
+          onClose={() => setReading(null)}
         />
       )}
       {session.checkIn && (
@@ -256,18 +281,23 @@ export default function S12Study() {
   const taskId = params.get('task');
   const doneId = params.get('done');
   const start = useStartSession();
-  const { data: active, isPending } = useActiveSession(!doneId);
+  const { data: active, isPending, isError, error, refetch } = useActiveSession(!doneId);
 
   // 들어올 때 한 번만 정해요: 같은 태스크가 진행 중이면 이어서, 아니면 시작.
   // (종료 직후 진행 중 측정이 비어도 다시 시작하지 않게)
-  const decided = useRef(false);
+  const decided = useRef(null);
   const { mutate } = start;
   useEffect(() => {
-    if (decided.current || doneId || !taskId || isPending) return;
-    decided.current = true;
+    if (decided.current === taskId || doneId || !taskId || isPending || isError) return;
+    decided.current = taskId;
     if (active?.taskId === taskId) return;
     mutate(taskId, { onError: (e) => toast.error(e.message) });
-  }, [doneId, taskId, isPending, active, mutate]);
+  }, [doneId, taskId, isPending, isError, active, mutate]);
+
+  useEffect(() => {
+    if (!doneId && active?.taskId === taskId && active.status === 'ended')
+      setParams({ task: taskId, done: active.id }, { replace: true });
+  }, [active, doneId, taskId, setParams]);
 
   if (doneId) return <DoneLoader id={doneId} />;
   if (!taskId)
@@ -277,12 +307,20 @@ export default function S12Study() {
         description="홈에서 태스크의 [시작]을 눌러 들어와요."
       />
     );
+  if (isError)
+    return (
+      <ErrorState
+        title="집중 상태를 불러오지 못했어요"
+        description={error.message}
+        onRetry={refetch}
+      />
+    );
   if (start.isError)
     return (
       <ErrorState
         title="집중 모드를 시작하지 못했어요"
         description={start.error.message}
-        onRetry={() => start.reset()}
+        onRetry={() => mutate(taskId, { onError: (failure) => toast.error(failure.message) })}
       />
     );
   const session = active?.taskId === taskId ? active : null;

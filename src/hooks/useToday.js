@@ -17,13 +17,17 @@ export const useToday = () =>
     retry: (n, e) => e?.code !== 'NO_PLAN' && n < 1,
   });
 
-// 기록하면 오늘 할 일 · 책 쌓기 · 퀴즈 열림이 같이 바뀌어요
+// 기록한 세션의 recorded/pending 상태까지 새로 받아요. 완료 콜백은 갱신 뒤 실행해요.
 function useTodayMutation(fn) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: fn,
     onSuccess: () =>
-      ['today', 'books', 'quiz'].forEach((k) => qc.invalidateQueries({ queryKey: [k] })),
+      Promise.all(
+        [QK.today, QK.books, QK.quiz, QK.study].map((queryKey) =>
+          qc.invalidateQueries({ queryKey }),
+        ),
+      ),
   });
 }
 

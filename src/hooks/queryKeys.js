@@ -10,6 +10,7 @@ export const QK = {
   planDraft: ['plan', 'draft'],
   resplit: ['plan', 'resplit'],
   quizToday: ['quiz', 'today'],
+  quiz: ['quiz'],
   quizSet: (subjectId) => ['quiz', 'set', subjectId],
   quizSetDetail: (subjectId, saved = false, quizId = null) => [
     'quiz',
@@ -25,6 +26,7 @@ export const QK = {
   month: (m) => ['week', 'month', m], // 'week'로 묶어서 계획이 바뀌면 같이 다시 받아요
   monthReport: (m) => ['week', 'report', m],
   activeSession: ['study', 'active'],
+  study: ['study'],
   studySession: (id) => ['study', 'session', id],
   notes: (group) => ['review', 'notes', group],
 };
