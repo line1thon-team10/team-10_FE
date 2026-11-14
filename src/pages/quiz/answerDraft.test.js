@@ -8,7 +8,7 @@ import {
   draftAnswers,
   editAnswerDraft,
   refreshAnswerDraft,
-  useSavedAnswer,
+  chooseSavedAnswer,
 } from './answerDraft.js';
 
 const set = {
@@ -143,7 +143,7 @@ test('conflict refresh keeps the writer input and updates its revision; server i
   assert.deepEqual(state, before);
   assert.throws(() => refreshAnswerDraft(state, { ...server, quizId: 'other-set' }), /같은 퀴즈/);
   assert.equal(
-    draftAnswers(useSavedAnswer(state, 'item-essay'))['item-essay'].text,
+    draftAnswers(chooseSavedAnswer(state, 'item-essay'))['item-essay'].text,
     '다른 창의 답',
   );
   assert.equal(draftAnswers(state)['item-essay'].text, '내 입력\n');

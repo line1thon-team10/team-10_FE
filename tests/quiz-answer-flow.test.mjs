@@ -6,6 +6,7 @@ import { createServer } from 'vite';
 import { createElement } from 'react';
 import { renderToString } from 'react-dom/server';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MemoryRouter } from 'react-router';
 import { toQuizSet } from '../src/api/adapters/quiz.js';
 import {
   acceptAnswerSave,
@@ -299,4 +300,49 @@ test('409 recovery fetches the same quiz and keeps typed input even if the first
       revision: 5,
     });
     assert.equal(answerRequest(state, questionId).revision, 6);
+  }));
+
+test('the rendered player restores choice zero and confidence without displaying answers or evidence', async () =>
+  withRuntime(async ({ vite }) => {
+    const { default: Quiz } = await vite.ssrLoadModule('/src/pages/quiz/S8Quiz.jsx');
+    const { QK } = await vite.ssrLoadModule('/src/hooks/queryKeys.js');
+    const qc = new QueryClient();
+    const question = fixture.questions[1];
+    qc.setQueryData(
+      QK.quizSetDetail(fixture.subjectId, false, fixture.quizId),
+      toQuizSet({
+        ...fixture,
+        questions: [
+          {
+            ...question,
+            page: 919,
+            explanation: 'DO_NOT_SHOW_EXPLANATION',
+            evidence: { quote: 'DO_NOT_SHOW_EVIDENCE' },
+            gradingStatus: 'DO_NOT_SHOW_GRADING',
+          },
+        ],
+        savedAnswers: [
+          { questionId: question.id, choice: 0, text: null, confidence: 'sure', revision: 2 },
+        ],
+      }),
+    );
+    try {
+      const html = renderToString(
+        createElement(
+          QueryClientProvider,
+          { client: qc },
+          createElement(
+            MemoryRouter,
+            { initialEntries: [`/quiz?subject=${fixture.subjectId}&quizId=${fixture.quizId}`] },
+            createElement(Quiz),
+          ),
+        ),
+      );
+      assert.match(html, new RegExp(`name="q-${question.id}"[^>]*checked=""`));
+      assert.match(html, new RegExp(`name="conf-${question.id}"[^>]*checked=""`));
+      assert.doesNotMatch(html, /919|DO_NOT_SHOW/);
+      assert.match(html, /제출하고 채점하기/);
+    } finally {
+      qc.clear();
+    }
   }));

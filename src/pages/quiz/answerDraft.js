@@ -80,7 +80,7 @@ export function refreshAnswerDraft(state, set, preserveQuestionId) {
   return { ...state, items };
 }
 
-export function useSavedAnswer(state, questionId) {
+export function chooseSavedAnswer(state, questionId) {
   const item = state.items[questionId];
   return {
     ...state,
