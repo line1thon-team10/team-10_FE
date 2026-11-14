@@ -87,7 +87,7 @@ export default function S1Schedule() {
           placeholder={
             data.subjects.length
               ? '답을 입력하거나 위 칩을 여러 개 골라 한 번에 보내요'
-              : '예: 월수금 저녁 6시부터 10시까지 카페 알바, 기말은 자료구조 11월 12일…'
+              : '예: 월수금 저녁 6시부터 10시까지 카페 알바, 기말은 인공지능 11월 12일…'
           }
         />
         <aside className="flex min-w-0 flex-col gap-4">

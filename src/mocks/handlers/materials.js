@@ -1,11 +1,14 @@
 import { HttpResponse, bypass, http } from 'msw';
 import { EP } from '@/api/endpoints.js';
+import { PACKAGE } from '../data/package.js';
 import { db } from '../db.js';
-import { MOCK_PDF } from '../logic.js';
+import { MOCK_PDF, PACKAGE_PDF } from '../logic.js';
 import { fail, ok } from './respond.js';
 
-// mock: PDF 분석(김현민)·저장(백엔드 B)을 흉내 내요. 파일 내용은 읽지 않고 데이터 세트 단원표를 돌려줘요.
-// 파일 이름에 '스캔'이 있으면 '글자 읽는 중'(글자 인식)으로 분석하고 퀴즈 없음으로 끝나요 (PDF-01·07).
+// mock: PDF 분석(김현민)·저장(백엔드 B)을 흉내 내요. 파일 내용은 읽지 않아요.
+// 데모 패키지와 같은 이름의 파일이면 그 JSON의 쪽수·단원·개념을 결과로 돌려주고 S4 단원도 그 값으로 바꿔요 (data/package.js).
+// 그 밖의 파일은 시드 과목 강의자료 단원표를 돌려줘요.
+// 파일 이름에 '스캔'이 있거나 scanned_document.pdf면 '글자 읽는 중'(글자 인식)으로 분석하고 퀴즈 없음으로 끝나요 (PDF-01·07).
 // 파일 이름에 '실패'가 있으면 첫 단계에서 실패해요 (S3-2 목차 직접 입력 시연용, 11/10 결정).
 const STEPS = ['텍스트 읽기', '목차 찾기', '개념 추출', '개념별 페이지 연결'];
 const OCR_STEPS = ['글자 읽는 중 (글자 인식)', ...STEPS.slice(1)];
@@ -13,6 +16,7 @@ const STEP_MS = 900;
 const setup = () => db.get().setup;
 const subjectsOf = () => (setup().subjects.length ? setup().subjects : db.get().subjects);
 let seq = 0;
+const isScan = (name) => /스캔/.test(name) || Boolean(PACKAGE[name]?.scan);
 
 function jobView(jobId) {
   const job = setup().jobs[jobId];
@@ -25,7 +29,16 @@ function jobView(jobId) {
   if (job.reused || step >= STEPS.length) status = 'done';
   if (job.fail && elapsed > STEP_MS * 1.3) status = 'failed';
   material.status = status;
-  if (status === 'done') material.pages = job.ocr ? db.get().scanFile.pages : sub.file.pages; // mock: 스캔본 쪽수는 시드 값
+  const pkg = PACKAGE[material.name];
+  if (status === 'done') {
+    material.pages = pkg?.pages ?? (job.ocr ? db.get().scanFile.pages : sub.file.pages); // mock: 스캔본 쪽수는 시드 값
+    // 패키지 강의자료(스캔본 아님)는 분석한 단원으로 S4를 채워요. 사용자가 S4에서 고친 뒤면 덮지 않아요
+    if (pkg && !pkg.scan && !job.unitsApplied && !setup().unitsEdited?.[job.subjectId]) {
+      setup().units[job.subjectId] = structuredClone(pkg.units);
+      job.unitsApplied = true;
+    }
+  }
+  const unitCount = pkg?.units.length ?? sub.units.length;
   return {
     jobId,
     materialId: job.materialId,
@@ -33,7 +46,7 @@ function jobView(jobId) {
     status, // running | done | failed
     ocr: Boolean(job.ocr),
     steps: (job.ocr ? OCR_STEPS : STEPS).map((name, i) =>
-      i === 1 && status === 'done' ? `${name} · ${sub.units.length}단원` : name,
+      i === 1 && status === 'done' ? `${name} · ${unitCount}단원` : name,
     ),
     current: status === 'done' ? STEPS.length : job.fail ? 0 : Math.min(step, STEPS.length - 1),
     failedStep: status === 'failed' ? 0 : null,
@@ -108,14 +121,14 @@ export const materialsHandlers = [
       pages: null,
       status: 'running',
       jobId,
-      quizless: /스캔/.test(file.name),
-      ocr: /스캔/.test(file.name),
+      quizless: isScan(file.name),
+      ocr: isScan(file.name),
     });
     setup().jobs[jobId] = {
       startedAt: Date.now(),
       subjectId,
       materialId,
-      ocr: /스캔/.test(file.name),
+      ocr: isScan(file.name),
       fail: /실패/.test(file.name),
       reused: Boolean(same),
     };
@@ -141,10 +154,12 @@ export const materialsHandlers = [
     return ok({ subjectId, unitNo, inExam: Boolean(inExam) });
   }),
 
-  // 원본 PDF (QZ-13 근거 · 집중 모드 자료 열기). mock은 목업 PDF를 돌려줘요
-  // TODO(확인필요): [기획 확인] 시연 PDF(김현민)를 받으면 public/mock 파일만 바꿔요
+  // 원본 PDF (QZ-13 근거 · 집중 모드 자료 열기). mock은 데모 패키지 PDF(public/mock)를 돌려줘요
   http.get(`${EP.materials}/:id/file`, async ({ params }) => {
-    const path = MOCK_PDF[params.id];
+    const uploaded = Object.values(setup().materials)
+      .flat()
+      .find((m) => m.id === params.id);
+    const path = MOCK_PDF[params.id] ?? PACKAGE_PDF[uploaded?.name];
     if (!path) return fail('NO_FILE', '이 자료는 원본 PDF가 아직 없어요', 404);
     const res = await fetch(bypass(new URL(path, location.origin)));
     return new HttpResponse(await res.arrayBuffer(), {

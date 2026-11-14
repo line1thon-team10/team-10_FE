@@ -134,7 +134,7 @@ function MoreResult({ m, onOpen }) {
 export default function S8_2Result() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
-  const subjectId = params.get('subject') ?? 'ds';
+  const subjectId = params.get('subject') ?? 'ai';
   const { data: r, isPending, isError, error, refetch } = useQuizResult(subjectId);
   const more = useMoreQuiz();
   const [pdf, setPdf] = useState(null); // { materialId, page, quote }

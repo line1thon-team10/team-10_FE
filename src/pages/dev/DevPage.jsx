@@ -34,7 +34,7 @@ function ScreenRow({ s }) {
     );
   else if (s.kind === 'toast')
     action = (
-      <Button size="sm" onClick={() => toast('책 1권 쌓였어요 · 컴퓨터네트워크 2단원 · 오늘 58%')}>
+      <Button size="sm" onClick={() => toast('책 1권 쌓였어요 · 인공지능 2단원 · 오늘 100%')}>
         알림 띄우기
       </Button>
     );
@@ -187,9 +187,9 @@ export default function DevPage() {
           <MockBadge />
         </div>
         <div className="flex flex-wrap gap-4">
-          <SubjectTag name="자료구조" color="#4F46E5" />
-          <SubjectTag name="운영체제" color="#2563EB" />
-          <SubjectTag name="컴퓨터네트워크" color="#7C3AED" />
+          <SubjectTag name="인공지능" color="#4F46E5" />
+          <SubjectTag name="데이터베이스" color="#2563EB" />
+          <SubjectTag name="운영체제" color="#7C3AED" />
         </div>
         <div className="grid gap-4 md:grid-cols-3">
           <div className="flex flex-col gap-2">
