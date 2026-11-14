@@ -14,10 +14,28 @@ export function useQuizSet(subjectId, saved = false, quizId = null) {
   const qc = useQueryClient();
   return useQuery({
     queryKey: QK.quizSetDetail(subjectId, saved, quizId),
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       const set = await getQuizSet(subjectId, saved, quizId);
-      if (!quizId) qc.setQueryData(QK.quizSetDetail(subjectId, saved, set.quizId), set);
-      return set;
+      // cancelQueries는 queryFn 안의 직접 캐시 쓰기까지 막지 않아요.
+      if (signal.aborted) return set;
+      const pinnedKey = QK.quizSetDetail(subjectId, saved, set.quizId);
+      const current = qc.getQueryData(pinnedKey);
+      const answers = new Map(set.savedAnswers.map((answer) => [answer.questionId, answer]));
+      for (const answer of current?.savedAnswers ?? []) {
+        if (
+          !answers.has(answer.questionId) ||
+          answers.get(answer.questionId).revision <= answer.revision
+        )
+          answers.set(answer.questionId, answer);
+      }
+      const latest = {
+        ...set,
+        savedAnswers: set.questions.flatMap((question) =>
+          answers.has(question.id) ? [answers.get(question.id)] : [],
+        ),
+      };
+      if (!quizId) qc.setQueryData(pinnedKey, latest);
+      return latest;
     },
     enabled: Boolean(subjectId),
     retry: false,

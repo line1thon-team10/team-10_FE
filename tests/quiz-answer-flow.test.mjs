@@ -281,6 +281,53 @@ test('409 recovery fetches the same quiz and keeps typed input even if the first
       await api.getQuizSet(fixture.subjectId, false, fixture.quizId),
       questionId,
     );
+
+    test('an uncancelled set read keeps newer pinned answers while recovering other saved items', async () =>
+      withRuntime(async ({ vite, http }) => {
+        const { useQuizSet } = await vite.ssrLoadModule('/src/hooks/useQuiz.js');
+        const { QK } = await vite.ssrLoadModule('/src/hooks/queryKeys.js');
+        const qc = new QueryClient();
+        const key = QK.quizSetDetail(fixture.subjectId, false, fixture.quizId);
+        const head = {
+          questionId: fixture.questions[1].id,
+          choice: 0,
+          text: null,
+          confidence: 'sure',
+          revision: 3,
+        };
+        const other = {
+          questionId: fixture.questions[0].id,
+          choice: null,
+          text: '',
+          confidence: 'unsure',
+          revision: 1,
+        };
+        qc.setQueryData(key, toQuizSet({ ...fixture, savedAnswers: [head] }));
+        function Probe() {
+          useQuizSet(fixture.subjectId);
+          return null;
+        }
+        renderToString(createElement(QueryClientProvider, { client: qc }, createElement(Probe)));
+        try {
+          http.defaults.adapter = async (config) =>
+            ok(config, { ...fixture, savedAnswers: [{ ...head, choice: 1, revision: 2 }, other] });
+          const query = qc
+            .getQueryCache()
+            .find({ queryKey: QK.quizSetDetail(fixture.subjectId), exact: true });
+          const recovered = await qc.fetchQuery(query.options);
+          assert.deepEqual(recovered.savedAnswers, [other, head]);
+          assert.deepEqual(qc.getQueryData(key).savedAnswers, [other, head]);
+          http.defaults.adapter = async (config) =>
+            ok(config, { ...fixture, savedAnswers: [{ ...head, choice: 1, revision: 4 }, other] });
+          await qc.fetchQuery(query.options);
+          assert.deepEqual(qc.getQueryData(key).savedAnswers, [
+            other,
+            { ...head, choice: 1, revision: 4 },
+          ]);
+        } finally {
+          qc.clear();
+        }
+      }));
     assert.deepEqual(requests[1].params, { quizId: fixture.quizId });
     assert.equal(draftAnswers(state)[questionId].text, ' 내 답\n');
     http.defaults.adapter = async (config) => {
