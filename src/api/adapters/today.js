@@ -1,5 +1,21 @@
-// 서버 응답 → 화면 모양 (홈 · 공부 기록)
-// TODO(확인필요): [백엔드 확정 필요] 아래 왼쪽(화면) 이름은 그대로 두고, 오른쪽 raw 필드만 명세에 맞춰 바꿔요.
+// 서버 계약 ↔ 화면 모양 (BE docs/api/study.md · 홈/공부 기록)
+
+export const toRange = (raw) => ({
+  id: raw.id,
+  materialId: raw.materialId,
+  unitId: raw.unitId,
+  conceptId: raw.conceptId ?? null,
+  from: raw.from,
+  to: raw.to,
+  doneTo: raw.doneTo ?? null,
+});
+
+// 선택 필드의 null은 서버에서 거절해요. []는 0쪽 정정이므로 그대로 보내요.
+export const toCompletionInput = ({ toPage, completedRanges, sessionId }) => ({
+  ...(toPage == null ? {} : { toPage }),
+  ...(completedRanges == null ? {} : { completedRanges }),
+  ...(sessionId == null ? {} : { sessionId }),
+});
 
 export const toSubject = (raw) => ({
   id: raw.id,
@@ -15,7 +31,8 @@ export const toTask = (raw) => ({
   title: raw.title,
   from: raw.from,
   to: raw.to,
-  pages: raw.to - raw.from + 1,
+  pages: raw.pages,
+  ranges: (raw.ranges ?? []).map(toRange),
   minutes: raw.minutes,
   reason: raw.reason, // 배치 이유 (PL-06, AI 문구)
   status: raw.status, // todo | partial | done | none
@@ -140,7 +157,14 @@ export const toFixResult = (raw) => ({
   taskId: raw.taskId,
   status: raw.status,
   doneTo: raw.doneTo,
+  donePages: raw.donePages,
+  ranges: (raw.ranges ?? []).map(toRange),
   rate: raw.rate,
 });
 
-export const toInterpret = (raw) => ({ from: raw.from, to: raw.to, label: raw.label });
+export const toInterpret = (raw) => ({
+  from: raw.from,
+  to: raw.to,
+  completedRanges: raw.completedRanges,
+  label: raw.label,
+});
