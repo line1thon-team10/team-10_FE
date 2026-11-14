@@ -1,18 +1,39 @@
 import assert from 'node:assert/strict';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
-const runtime = () =>
-  createServer({
-    root,
-    configFile: false,
-    appType: 'custom',
-    server: { middlewareMode: true, hmr: false },
-    resolve: { alias: { '@': `${root}/src` } },
-    logLevel: 'silent',
-  });
+async function runtime() {
+  const cacheDir = await mkdtemp(join(tmpdir(), 'team10-quiz-mock-test-'));
+  try {
+    const vite = await createServer({
+      root,
+      cacheDir,
+      configFile: false,
+      appType: 'custom',
+      server: { middlewareMode: true, hmr: false },
+      resolve: { alias: { '@': `${root}/src` } },
+      logLevel: 'silent',
+    });
+    return {
+      vite,
+      close: async () => {
+        try {
+          await vite.close();
+        } finally {
+          await rm(cacheDir, { recursive: true, force: true });
+        }
+      },
+    };
+  } catch (error) {
+    await rm(cacheDir, { recursive: true, force: true });
+    throw error;
+  }
+}
 
 test('mock HTTP save/replay/conflict and a fresh module reload preserve inputs without changing grading policy', async (t) => {
   const prior = Object.fromEntries(
@@ -42,7 +63,7 @@ test('mock HTTP save/replay/conflict and a fresh module reload preserve inputs w
   globalThis.addEventListener = (event, callback) => {
     if (event === 'pagehide') pagehide = callback;
   };
-  const vite = await runtime();
+  const { vite, close } = await runtime();
   let server;
   let quizId;
   let questionId;
@@ -126,9 +147,9 @@ test('mock HTTP save/replay/conflict and a fresh module reload preserve inputs w
     pagehide();
   } finally {
     server?.close();
-    await vite.close();
+    await close();
   }
-  const fresh = await runtime();
+  const { vite: fresh, close: closeFresh } = await runtime();
   try {
     const { quizSetView } = await fresh.ssrLoadModule('/src/mocks/logic.js');
     assert.equal(
@@ -137,6 +158,6 @@ test('mock HTTP save/replay/conflict and a fresh module reload preserve inputs w
     );
     assert.throws(() => quizSetView('os', quizId), { code: 'NO_QUIZ' });
   } finally {
-    await fresh.close();
+    await closeFresh();
   }
 });

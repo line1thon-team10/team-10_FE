@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
@@ -30,36 +32,33 @@ const ok = (config, data) => ({
   config,
 });
 async function withRuntime(run) {
-  const vite = await createServer({
-    root,
-    configFile: false,
-    appType: 'custom',
-    server: { middlewareMode: true, hmr: false },
-    resolve: { alias: { '@': `${root}/src` } },
-    esbuild: { jsx: 'automatic' },
-    logLevel: 'silent',
-  });
+  const cacheDir = await mkdtemp(join(tmpdir(), 'team10-quiz-flow-test-'));
+  let vite;
   try {
+    vite = await createServer({
+      root,
+      cacheDir,
+      configFile: false,
+      appType: 'custom',
+      server: { middlewareMode: true, hmr: false },
+      resolve: { alias: { '@': `${root}/src` } },
+      esbuild: { jsx: 'automatic' },
+      logLevel: 'silent',
+    });
     const api = await vite.ssrLoadModule('/src/api/quiz.js');
     const { http } = await vite.ssrLoadModule('/src/api/client.js');
     await run({ vite, api, http });
   } finally {
-    await vite.close();
+    try {
+      await vite?.close();
+    } finally {
+      await rm(cacheDir, { recursive: true, force: true });
+    }
   }
 }
 
-test('API uses the selected set and item IDs for saves, recovery and the existing final submit', async () => {
-  const vite = await createServer({
-    root,
-    configFile: false,
-    appType: 'custom',
-    server: { middlewareMode: true, hmr: false },
-    resolve: { alias: { '@': `${root}/src` } },
-    logLevel: 'silent',
-  });
-  try {
-    const api = await vite.ssrLoadModule('/src/api/quiz.js');
-    const { http } = await vite.ssrLoadModule('/src/api/client.js');
+test('API uses the selected set and item IDs for saves, recovery and the existing final submit', async () =>
+  withRuntime(async ({ api, http }) => {
     const requests = [];
     const answer = { choice: 0, text: null, confidence: 'sure', revision: 0 };
     http.defaults.adapter = async (config) => {
@@ -125,10 +124,7 @@ test('API uses the selected set and item IDs for saves, recovery and the existin
     assert.deepEqual(requests[3].body.answers, [
       { questionId: fixture.questions[1].id, choice: 0, text: null, confidence: 'sure' },
     ]);
-  } finally {
-    await vite.close();
-  }
-});
+  }));
 
 test('an unrelated set, item or invalid receipt cannot count as a successful save', async () =>
   withRuntime(async ({ api, http }) => {
