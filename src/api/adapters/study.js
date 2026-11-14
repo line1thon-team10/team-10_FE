@@ -1,5 +1,5 @@
 // 서버 응답 → 화면 모양 (S12 집중 모드 · S12-1 공부 끝)
-import { toRange } from './today.js';
+// TODO(확인필요): [백엔드 확정 필요] 측정 세션 형식 (백엔드 A)
 
 export const toSession = (raw) =>
   raw && {
@@ -7,14 +7,7 @@ export const toSession = (raw) =>
     taskId: raw.taskId,
     subjectId: raw.subjectId,
     subjectName: raw.subjectName,
-    task: {
-      title: raw.task.title,
-      from: raw.task.from,
-      to: raw.task.to,
-      pages: raw.task.pages,
-      ranges: (raw.task.ranges ?? []).map(toRange),
-      minutes: raw.task.minutes,
-    },
+    task: raw.task, // { title, from, to, pages, minutes(예상) }
     status: raw.status, // active | paused | ended
     quote: raw.quote, // 들어올 때 고른 문구 1개 (HM-10)
     material: raw.material, // [자료 열기] { id, page }

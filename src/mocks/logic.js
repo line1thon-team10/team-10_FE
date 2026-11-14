@@ -24,22 +24,6 @@ const quizKey = (s, subjectId) => `${s.today.date}:${subjectId}`;
 const findTask = (s, id) => [...s.today.tasks, ...s.pastTasks].find((t) => t.id === id);
 const unitOf = (s, subjectId, unitNo) => s.bookshelf[subjectId]?.find((u) => u.unitNo === unitNo);
 
-// mock 응답도 범위 계약을 제공해요. 서버 UUID 대신 쓰이는 목업 전용 식별자예요.
-const taskRanges = (s, task) => {
-  if (!Number.isInteger(task.from) || !Number.isInteger(task.to) || task.from > task.to) return [];
-  return [
-    {
-      id: `mock-range-${task.id}`,
-      materialId: s.subjects.find((subject) => subject.id === task.subjectId)?.file.id ?? null,
-      unitId: `mock-unit-${task.subjectId}-${task.unitNo}`,
-      conceptId: null,
-      from: task.from,
-      to: task.to,
-      doneTo: task.doneTo ?? null,
-    },
-  ];
-};
-
 // 끝난 책은 단원 등급 색, 등급이 없으면 '완료(퀴즈 전)' (4-5).
 // 오늘 끝낸 책은 그 과목 오늘 퀴즈를 내기 전까지 '완료(퀴즈 전)' 회색이에요 (와이어 P3)
 const beforeQuiz = (t, s) => s.today.tasks.includes(t) && !s.quizResults[quizKey(s, t.subjectId)];
@@ -93,13 +77,7 @@ export function buildToday() {
     subjects: s.subjects.map(({ id, name, color, examDate }) => ({ id, name, color, examDate })),
     tasks: tasks.map((t) => {
       const p = pendingOf(t);
-      return {
-        ...t,
-        pages: pagesOf(t),
-        ranges: taskRanges(s, t),
-        pendingSessionId: p?.id ?? null,
-        pendingMinutes: p?.minutes ?? null,
-      };
+      return { ...t, pendingSessionId: p?.id ?? null, pendingMinutes: p?.minutes ?? null };
     }),
     progress: {
       doneCount: tasks.filter((t) => t.status === 'done').length,
@@ -873,8 +851,6 @@ function sessionView(s, x) {
       from: task.from,
       to: task.to,
       pages: pagesOf(task),
-      donePages: task.donePages,
-      ranges: taskRanges(s, task),
       minutes: task.minutes,
     },
     status: x.status, // active | paused | ended

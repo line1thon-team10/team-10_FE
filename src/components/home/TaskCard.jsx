@@ -3,7 +3,6 @@ import { Link } from 'react-router';
 import { ROUTES } from '@/app/screens.js';
 import Button from '@/components/common/Button.jsx';
 import { RECORD_RESULT } from '@/config/labels.js';
-import { taskRangeLabel } from '@/pages/study/recordInput.js';
 
 // 오늘 할 일 한 줄 (HM-01, 디자인 TodayPanel): 과목 색 띠 · 범위 · 예상 시간 · AI 이유
 // [시작] → 집중 모드(S12) · [기록하기] → S7 / 완료 배지 / 부분 완료면 [페이지 고치기]
@@ -26,12 +25,14 @@ export default function TaskCard({ task, subject, onRecord }) {
           {task.carried && <span className="badge">어제에서 이월</span>}
         </p>
         <p className="num flex flex-wrap gap-x-2 text-[11.5px] text-fg-2">
-          <span>{taskRangeLabel(task)}</span>
+          <span>
+            p.{task.from}–{task.to}
+          </span>
           <span aria-hidden="true">·</span>
           <span>{task.pages}p</span>
           <span aria-hidden="true">·</span>
           <span>예상 {task.minutes}분</span>
-          {partial && <span className="text-brand-deep">· {task.donePages}p 했어요</span>}
+          {partial && <span className="text-brand-deep">· p.{task.doneTo}까지 했어요</span>}
           {task.status === 'none' && <span className="text-fg">· 못 했어요</span>}
           {task.measuredMinutes != null && <span>· 집중 {task.measuredMinutes}분</span>}
         </p>
@@ -51,10 +52,10 @@ export default function TaskCard({ task, subject, onRecord }) {
             {RECORD_RESULT[task.status]}
           </span>
         ) : null}
-        {task.status !== 'todo' && (
+        {partial && (
           <Button size="sm" onClick={() => onRecord(task.id)}>
             <PencilLine size={12} aria-hidden="true" />
-            {task.pages > 0 ? '페이지 고치기' : '기록 고치기'}
+            페이지 고치기
           </Button>
         )}
         {!done && !partial && task.pendingMinutes != null && (
@@ -62,7 +63,7 @@ export default function TaskCard({ task, subject, onRecord }) {
             기록 전 · {task.pendingMinutes ? `${task.pendingMinutes}분` : '1분 미만'}
           </span>
         )}
-        {task.status === 'todo' && (
+        {!done && !partial && (
           <>
             <Button size="sm" onClick={() => onRecord(task.id)}>
               <PencilLine size={12} aria-hidden="true" />

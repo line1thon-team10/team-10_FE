@@ -24,11 +24,10 @@ function useSessionMutation(fn) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: fn,
-    onSuccess: async (data) => {
-      await qc.cancelQueries({ queryKey: QK.activeSession });
+    onSuccess: (data) => {
       qc.setQueryData(QK.activeSession, data.status === 'ended' ? null : data);
       qc.setQueryData(QK.studySession(data.id), data);
-      if (data.status === 'ended') await qc.invalidateQueries({ queryKey: QK.today });
+      if (data.status === 'ended') qc.invalidateQueries({ queryKey: QK.today });
     },
   });
 }
