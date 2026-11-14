@@ -1,0 +1,85 @@
+{
+  "kind": "captured-local-http",
+  "backendSha": "9d1ddd7a40e37f74823950038581b18e1134fc58",
+  "database": "disposable SQLite",
+  "idsAreExamples": true,
+  "productionVerified": false,
+  "notes": [
+    "O-02 is present in this local SHA, not in checkpoint app4c20454.",
+    "General CRUD returns addedId:null; natural-language highlighting belongs to O-03."
+  ],
+  "cases": [
+    {
+      "case": "draft-calendar-empty",
+      "request": {
+        "method": "GET",
+        "path": "/api/onboarding/calendar"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Cache-Control": "no-store"
+        },
+        "body": {
+          "success": true,
+          "data": {
+            "weekStart": "2026-11-02",
+            "today": "2026-11-03",
+            "events": [],
+            "exams": [],
+            "summary": {
+              "fixedMinutes": 0.0,
+              "freeMinutes": 6300.0
+            },
+            "addedId": null
+          }
+        }
+      }
+    },
+    {
+      "case": "draft-calendar-weekly",
+      "request": {
+        "method": "POST",
+        "path": "/api/onboarding/events",
+        "body": {
+          "kind": "class",
+          "title": "예제 수업",
+          "days": [1, 3],
+          "start": "09:00",
+          "end": "11:00"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Cache-Control": "no-store"
+        },
+        "body": {
+          "success": true,
+          "data": {
+            "weekStart": "2026-11-02",
+            "today": "2026-11-03",
+            "events": [
+              {
+                "id": "260535b7-f56c-46db-a5a4-5fdb8aafdeaf",
+                "kind": "class",
+                "title": "예제 수업",
+                "days": [1, 3],
+                "date": null,
+                "start": "09:00",
+                "end": "11:00",
+                "added": false
+              }
+            ],
+            "exams": [],
+            "summary": {
+              "fixedMinutes": 240.0,
+              "freeMinutes": 6060.0
+            },
+            "addedId": null
+          }
+        }
+      }
+    }
+  ]
+}

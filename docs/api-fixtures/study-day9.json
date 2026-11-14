@@ -1,0 +1,650 @@
+{
+  "kind": "captured-local-http",
+  "backendSha": "9d1ddd7a40e37f74823950038581b18e1134fc58",
+  "database": "disposable SQLite",
+  "idsAreExamples": true,
+  "productionVerified": false,
+  "notes": [
+    "Initial focus elapsed time is 42 minutes and continues advancing; timestamps are examples.",
+    "The initial source has known D-03 notification follow-ups; this is observed behavior, not their acceptance oracle.",
+    "Replace example IDs with the current session's server response IDs."
+  ],
+  "cases": [
+    {
+      "case": "day9-today",
+      "request": {
+        "method": "GET",
+        "path": "/api/today"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Cache-Control": "no-store"
+        },
+        "body": {
+          "success": true,
+          "data": {
+            "date": "2026-11-09",
+            "subjects": [
+              {
+                "id": "cbee96ad-914c-4312-9185-0360cbcbaeb3",
+                "name": "인공지능",
+                "color": "#4F46E5",
+                "examDate": "2026-11-12"
+              },
+              {
+                "id": "bd961902-ff11-470d-884a-130d879d26c8",
+                "name": "데이터베이스",
+                "color": "#2563EB",
+                "examDate": "2026-11-16"
+              },
+              {
+                "id": "6f1e63d9-9739-42b1-9985-314c258735e2",
+                "name": "운영체제",
+                "color": "#7C3AED",
+                "examDate": "2026-11-18"
+              }
+            ],
+            "tasks": [
+              {
+                "id": "642ab41f-5ac6-42e6-bd7e-a898cdf8bee7",
+                "subjectId": "cbee96ad-914c-4312-9185-0360cbcbaeb3",
+                "title": "2단원 지도학습 알고리즘",
+                "ranges": [
+                  {
+                    "id": "cbb44ea3-1509-4c6a-8138-c1028903fd9e",
+                    "materialId": "2f1e33ef-719d-4f71-a998-5fac78d64460",
+                    "unitId": "eb9c92d1-f638-406d-a0ec-c68da347b971",
+                    "conceptId": null,
+                    "from": 12,
+                    "to": 20,
+                    "doneTo": null
+                  }
+                ],
+                "pages": 9,
+                "donePages": 0,
+                "from": 12,
+                "to": 20,
+                "doneTo": null,
+                "unitNo": 2,
+                "minutes": 25,
+                "reason": "시험 D-3, 지도학습 알고리즘",
+                "status": "todo",
+                "carried": false,
+                "supplement": false,
+                "measuredMinutes": null,
+                "pendingSessionId": null,
+                "pendingMinutes": null
+              },
+              {
+                "id": "1f67d6d5-95a9-4387-9217-b6cf840fb72e",
+                "subjectId": "bd961902-ff11-470d-884a-130d879d26c8",
+                "title": "2단원 SQL 조회와 조작",
+                "ranges": [
+                  {
+                    "id": "c9ec56ec-22fc-4c9a-9494-008f9b1320c1",
+                    "materialId": "3290dd2b-6c2e-421f-a125-0d7f744be4f2",
+                    "unitId": "90d83572-bcfd-4336-bf3c-9f6faf896296",
+                    "conceptId": null,
+                    "from": 12,
+                    "to": 20,
+                    "doneTo": 20
+                  }
+                ],
+                "pages": 9,
+                "donePages": 9,
+                "from": 12,
+                "to": 20,
+                "doneTo": 20,
+                "unitNo": 2,
+                "minutes": 25,
+                "reason": "SQL 조회와 조작",
+                "status": "done",
+                "carried": false,
+                "supplement": false,
+                "measuredMinutes": null,
+                "pendingSessionId": null,
+                "pendingMinutes": null
+              },
+              {
+                "id": "8f5aab00-8654-4da7-b0da-d2fc85392e88",
+                "subjectId": "6f1e63d9-9739-42b1-9985-314c258735e2",
+                "title": "2단원 CPU 스케줄링",
+                "ranges": [
+                  {
+                    "id": "4bbc2826-182f-4e36-8a9e-49fbade945e3",
+                    "materialId": "3bad57e2-62e9-476b-a728-8facdffd4879",
+                    "unitId": "cc5af751-ce2f-4962-ac1e-fc5de1cb28ed",
+                    "conceptId": null,
+                    "from": 12,
+                    "to": 20,
+                    "doneTo": 20
+                  }
+                ],
+                "pages": 9,
+                "donePages": 9,
+                "from": 12,
+                "to": 20,
+                "doneTo": 20,
+                "unitNo": 2,
+                "minutes": 25,
+                "reason": "CPU 스케줄링",
+                "status": "done",
+                "carried": false,
+                "supplement": false,
+                "measuredMinutes": null,
+                "pendingSessionId": null,
+                "pendingMinutes": null
+              }
+            ],
+            "progress": {
+              "doneCount": 2,
+              "totalCount": 3,
+              "donePages": 18,
+              "totalPages": 27,
+              "rate": 67
+            },
+            "subjectRates": {
+              "cbee96ad-914c-4312-9185-0360cbcbaeb3": 0,
+              "bd961902-ff11-470d-884a-130d879d26c8": 100,
+              "6f1e63d9-9739-42b1-9985-314c258735e2": 100
+            },
+            "quiz": {
+              "openRate": 70,
+              "open": false,
+              "remainPages": 1,
+              "openSubjects": [
+                {
+                  "subjectId": "bd961902-ff11-470d-884a-130d879d26c8",
+                  "count": 8
+                },
+                {
+                  "subjectId": "6f1e63d9-9739-42b1-9985-314c258735e2",
+                  "count": 6
+                }
+              ],
+              "totalCount": 20
+            },
+            "exams": [
+              {
+                "subjectId": "cbee96ad-914c-4312-9185-0360cbcbaeb3",
+                "dday": 3,
+                "readiness": 30
+              },
+              {
+                "subjectId": "bd961902-ff11-470d-884a-130d879d26c8",
+                "dday": 7,
+                "readiness": 27
+              },
+              {
+                "subjectId": "6f1e63d9-9739-42b1-9985-314c258735e2",
+                "dday": 9,
+                "readiness": 53
+              }
+            ],
+            "recentDays": [
+              {
+                "date": "2026-11-03",
+                "blocks": [
+                  {
+                    "state": "stable",
+                    "taskId": null
+                  }
+                ]
+              },
+              {
+                "date": "2026-11-04",
+                "blocks": [
+                  {
+                    "state": "risk",
+                    "taskId": null
+                  }
+                ]
+              },
+              {
+                "date": "2026-11-05",
+                "blocks": [
+                  {
+                    "state": "stable",
+                    "taskId": null
+                  }
+                ]
+              },
+              {
+                "date": "2026-11-06",
+                "blocks": []
+              },
+              {
+                "date": "2026-11-07",
+                "blocks": []
+              },
+              {
+                "date": "2026-11-08",
+                "blocks": []
+              },
+              {
+                "date": "2026-11-09",
+                "blocks": [
+                  {
+                    "state": "planned",
+                    "taskId": "642ab41f-5ac6-42e6-bd7e-a898cdf8bee7"
+                  },
+                  {
+                    "state": "done",
+                    "taskId": "1f67d6d5-95a9-4387-9217-b6cf840fb72e"
+                  },
+                  {
+                    "state": "done",
+                    "taskId": "8f5aab00-8654-4da7-b0da-d2fc85392e88"
+                  }
+                ]
+              }
+            ],
+            "notice": null,
+            "tutorSuggestions": [
+              "인공지능의 지도학습 알고리즘 핵심 개념을 설명해 줘.",
+              "데이터베이스의 SQL 조회와 조작 핵심 개념을 설명해 줘.",
+              "운영체제의 CPU 스케줄링 핵심 개념을 설명해 줘."
+            ],
+            "paceAlert": null,
+            "replan": null
+          }
+        }
+      }
+    },
+    {
+      "case": "day9-focus-active",
+      "request": {
+        "method": "GET",
+        "path": "/api/study/sessions/active"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Cache-Control": "no-store"
+        },
+        "body": {
+          "success": true,
+          "data": {
+            "id": "8be184ca-ac8c-4e03-a405-c009d958dd59",
+            "taskId": "642ab41f-5ac6-42e6-bd7e-a898cdf8bee7",
+            "subjectId": "cbee96ad-914c-4312-9185-0360cbcbaeb3",
+            "subjectName": "인공지능",
+            "task": {
+              "title": "2단원 지도학습 알고리즘",
+              "from": 12,
+              "to": 20,
+              "pages": 9,
+              "donePages": 0,
+              "doneTo": null,
+              "unitNo": 2,
+              "minutes": 25.0,
+              "ranges": [
+                {
+                  "id": "cbb44ea3-1509-4c6a-8138-c1028903fd9e",
+                  "materialId": "2f1e33ef-719d-4f71-a998-5fac78d64460",
+                  "unitId": "eb9c92d1-f638-406d-a0ec-c68da347b971",
+                  "conceptId": null,
+                  "from": 12,
+                  "to": 20,
+                  "doneTo": null
+                }
+              ]
+            },
+            "status": "active",
+            "quote": "지금은 이 범위만 보면 돼요.",
+            "material": {
+              "id": "2f1e33ef-719d-4f71-a998-5fac78d64460",
+              "page": 12
+            },
+            "minutes": 42,
+            "pausedMinutes": 0,
+            "todayMinutes": 42,
+            "subjectMinutes": 42,
+            "checkIn": false,
+            "autoStopped": false,
+            "excludeFromPace": false,
+            "recorded": false
+          }
+        }
+      }
+    },
+    {
+      "case": "day9-focus-end",
+      "request": {
+        "method": "POST",
+        "path": "/api/study/sessions/8be184ca-ac8c-4e03-a405-c009d958dd59/end"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Cache-Control": "no-store"
+        },
+        "body": {
+          "success": true,
+          "data": {
+            "id": "8be184ca-ac8c-4e03-a405-c009d958dd59",
+            "taskId": "642ab41f-5ac6-42e6-bd7e-a898cdf8bee7",
+            "subjectId": "cbee96ad-914c-4312-9185-0360cbcbaeb3",
+            "subjectName": "인공지능",
+            "task": {
+              "title": "2단원 지도학습 알고리즘",
+              "from": 12,
+              "to": 20,
+              "pages": 9,
+              "donePages": 0,
+              "doneTo": null,
+              "unitNo": 2,
+              "minutes": 25.0,
+              "ranges": [
+                {
+                  "id": "cbb44ea3-1509-4c6a-8138-c1028903fd9e",
+                  "materialId": "2f1e33ef-719d-4f71-a998-5fac78d64460",
+                  "unitId": "eb9c92d1-f638-406d-a0ec-c68da347b971",
+                  "conceptId": null,
+                  "from": 12,
+                  "to": 20,
+                  "doneTo": null
+                }
+              ]
+            },
+            "status": "ended",
+            "quote": "지금은 이 범위만 보면 돼요.",
+            "material": {
+              "id": "2f1e33ef-719d-4f71-a998-5fac78d64460",
+              "page": 12
+            },
+            "minutes": 42,
+            "pausedMinutes": 0,
+            "todayMinutes": 42,
+            "subjectMinutes": 42,
+            "checkIn": false,
+            "autoStopped": false,
+            "excludeFromPace": false,
+            "recorded": false
+          }
+        }
+      }
+    },
+    {
+      "case": "day9-partial-record",
+      "request": {
+        "method": "POST",
+        "path": "/api/records",
+        "body": {
+          "taskId": "642ab41f-5ac6-42e6-bd7e-a898cdf8bee7",
+          "sessionId": "8be184ca-ac8c-4e03-a405-c009d958dd59",
+          "result": "partial",
+          "toPage": 13
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Cache-Control": "no-store"
+        },
+        "body": {
+          "success": true,
+          "data": {
+            "event": {
+              "type": "box",
+              "reason": "dayClose",
+              "rate": 74,
+              "recordedCount": 3,
+              "totalCount": 3,
+              "donePages": 20,
+              "totalPages": 27,
+              "opened": []
+            }
+          }
+        }
+      }
+    },
+    {
+      "case": "day9-after-record",
+      "request": {
+        "method": "GET",
+        "path": "/api/today"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Cache-Control": "no-store"
+        },
+        "body": {
+          "success": true,
+          "data": {
+            "date": "2026-11-09",
+            "subjects": [
+              {
+                "id": "cbee96ad-914c-4312-9185-0360cbcbaeb3",
+                "name": "인공지능",
+                "color": "#4F46E5",
+                "examDate": "2026-11-12"
+              },
+              {
+                "id": "bd961902-ff11-470d-884a-130d879d26c8",
+                "name": "데이터베이스",
+                "color": "#2563EB",
+                "examDate": "2026-11-16"
+              },
+              {
+                "id": "6f1e63d9-9739-42b1-9985-314c258735e2",
+                "name": "운영체제",
+                "color": "#7C3AED",
+                "examDate": "2026-11-18"
+              }
+            ],
+            "tasks": [
+              {
+                "id": "642ab41f-5ac6-42e6-bd7e-a898cdf8bee7",
+                "subjectId": "cbee96ad-914c-4312-9185-0360cbcbaeb3",
+                "title": "2단원 지도학습 알고리즘",
+                "ranges": [
+                  {
+                    "id": "cbb44ea3-1509-4c6a-8138-c1028903fd9e",
+                    "materialId": "2f1e33ef-719d-4f71-a998-5fac78d64460",
+                    "unitId": "eb9c92d1-f638-406d-a0ec-c68da347b971",
+                    "conceptId": null,
+                    "from": 12,
+                    "to": 20,
+                    "doneTo": 13
+                  }
+                ],
+                "pages": 9,
+                "donePages": 2,
+                "from": 12,
+                "to": 20,
+                "doneTo": 13,
+                "unitNo": 2,
+                "minutes": 25,
+                "reason": "시험 D-3, 지도학습 알고리즘",
+                "status": "partial",
+                "carried": false,
+                "supplement": false,
+                "measuredMinutes": 42,
+                "pendingSessionId": null,
+                "pendingMinutes": null
+              },
+              {
+                "id": "1f67d6d5-95a9-4387-9217-b6cf840fb72e",
+                "subjectId": "bd961902-ff11-470d-884a-130d879d26c8",
+                "title": "2단원 SQL 조회와 조작",
+                "ranges": [
+                  {
+                    "id": "c9ec56ec-22fc-4c9a-9494-008f9b1320c1",
+                    "materialId": "3290dd2b-6c2e-421f-a125-0d7f744be4f2",
+                    "unitId": "90d83572-bcfd-4336-bf3c-9f6faf896296",
+                    "conceptId": null,
+                    "from": 12,
+                    "to": 20,
+                    "doneTo": 20
+                  }
+                ],
+                "pages": 9,
+                "donePages": 9,
+                "from": 12,
+                "to": 20,
+                "doneTo": 20,
+                "unitNo": 2,
+                "minutes": 25,
+                "reason": "SQL 조회와 조작",
+                "status": "done",
+                "carried": false,
+                "supplement": false,
+                "measuredMinutes": null,
+                "pendingSessionId": null,
+                "pendingMinutes": null
+              },
+              {
+                "id": "8f5aab00-8654-4da7-b0da-d2fc85392e88",
+                "subjectId": "6f1e63d9-9739-42b1-9985-314c258735e2",
+                "title": "2단원 CPU 스케줄링",
+                "ranges": [
+                  {
+                    "id": "4bbc2826-182f-4e36-8a9e-49fbade945e3",
+                    "materialId": "3bad57e2-62e9-476b-a728-8facdffd4879",
+                    "unitId": "cc5af751-ce2f-4962-ac1e-fc5de1cb28ed",
+                    "conceptId": null,
+                    "from": 12,
+                    "to": 20,
+                    "doneTo": 20
+                  }
+                ],
+                "pages": 9,
+                "donePages": 9,
+                "from": 12,
+                "to": 20,
+                "doneTo": 20,
+                "unitNo": 2,
+                "minutes": 25,
+                "reason": "CPU 스케줄링",
+                "status": "done",
+                "carried": false,
+                "supplement": false,
+                "measuredMinutes": null,
+                "pendingSessionId": null,
+                "pendingMinutes": null
+              }
+            ],
+            "progress": {
+              "doneCount": 2,
+              "totalCount": 3,
+              "donePages": 20,
+              "totalPages": 27,
+              "rate": 74
+            },
+            "subjectRates": {
+              "cbee96ad-914c-4312-9185-0360cbcbaeb3": 22,
+              "bd961902-ff11-470d-884a-130d879d26c8": 100,
+              "6f1e63d9-9739-42b1-9985-314c258735e2": 100
+            },
+            "quiz": {
+              "openRate": 70,
+              "open": true,
+              "remainPages": 0,
+              "openSubjects": [
+                {
+                  "subjectId": "cbee96ad-914c-4312-9185-0360cbcbaeb3",
+                  "count": 6
+                },
+                {
+                  "subjectId": "bd961902-ff11-470d-884a-130d879d26c8",
+                  "count": 8
+                },
+                {
+                  "subjectId": "6f1e63d9-9739-42b1-9985-314c258735e2",
+                  "count": 6
+                }
+              ],
+              "totalCount": 20
+            },
+            "exams": [
+              {
+                "subjectId": "cbee96ad-914c-4312-9185-0360cbcbaeb3",
+                "dday": 3,
+                "readiness": 37
+              },
+              {
+                "subjectId": "bd961902-ff11-470d-884a-130d879d26c8",
+                "dday": 7,
+                "readiness": 27
+              },
+              {
+                "subjectId": "6f1e63d9-9739-42b1-9985-314c258735e2",
+                "dday": 9,
+                "readiness": 53
+              }
+            ],
+            "recentDays": [
+              {
+                "date": "2026-11-03",
+                "blocks": [
+                  {
+                    "state": "stable",
+                    "taskId": null
+                  }
+                ]
+              },
+              {
+                "date": "2026-11-04",
+                "blocks": [
+                  {
+                    "state": "risk",
+                    "taskId": null
+                  }
+                ]
+              },
+              {
+                "date": "2026-11-05",
+                "blocks": [
+                  {
+                    "state": "stable",
+                    "taskId": null
+                  }
+                ]
+              },
+              {
+                "date": "2026-11-06",
+                "blocks": []
+              },
+              {
+                "date": "2026-11-07",
+                "blocks": []
+              },
+              {
+                "date": "2026-11-08",
+                "blocks": []
+              },
+              {
+                "date": "2026-11-09",
+                "blocks": [
+                  {
+                    "state": "doing",
+                    "taskId": "642ab41f-5ac6-42e6-bd7e-a898cdf8bee7"
+                  },
+                  {
+                    "state": "done",
+                    "taskId": "1f67d6d5-95a9-4387-9217-b6cf840fb72e"
+                  },
+                  {
+                    "state": "done",
+                    "taskId": "8f5aab00-8654-4da7-b0da-d2fc85392e88"
+                  }
+                ]
+              }
+            ],
+            "notice": null,
+            "tutorSuggestions": [
+              "인공지능의 지도학습 알고리즘 핵심 개념을 설명해 줘.",
+              "데이터베이스의 SQL 조회와 조작 핵심 개념을 설명해 줘.",
+              "운영체제의 CPU 스케줄링 핵심 개념을 설명해 줘."
+            ],
+            "paceAlert": null,
+            "replan": null
+          }
+        }
+      }
+    }
+  ]
+}
