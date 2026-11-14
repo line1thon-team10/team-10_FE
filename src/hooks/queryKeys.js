@@ -12,6 +12,13 @@ export const QK = {
   quizToday: ['quiz', 'today'],
   quiz: ['quiz'],
   quizSet: (subjectId) => ['quiz', 'set', subjectId],
+  quizSetDetail: (subjectId, saved = false, quizId = null) => [
+    'quiz',
+    'set',
+    subjectId,
+    saved,
+    quizId,
+  ],
   quizResult: (subjectId) => ['quiz', 'result', subjectId],
   books: ['books'],
   subjects: ['subjects'],

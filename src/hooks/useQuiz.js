@@ -1,15 +1,84 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { getQuizResult, getQuizSet, getQuizToday, postMore, postQuizSubmit } from '@/api/quiz.js';
+import {
+  getQuizResult,
+  getQuizSet,
+  getQuizToday,
+  postMore,
+  postQuizSubmit,
+  putQuizAnswer,
+} from '@/api/quiz.js';
 import { QK } from './queryKeys.js';
 
 export const useQuizToday = () => useQuery({ queryKey: QK.quizToday, queryFn: getQuizToday });
-export const useQuizSet = (subjectId, saved = false) =>
-  useQuery({
-    queryKey: [...QK.quizSet(subjectId), saved],
-    queryFn: () => getQuizSet(subjectId, saved),
+export function useQuizSet(subjectId, saved = false, quizId = null) {
+  const qc = useQueryClient();
+  return useQuery({
+    queryKey: QK.quizSetDetail(subjectId, saved, quizId),
+    queryFn: async ({ signal }) => {
+      const set = await getQuizSet(subjectId, saved, quizId);
+      // cancelQueries는 queryFn 안의 직접 캐시 쓰기까지 막지 않아요.
+      if (signal.aborted) return set;
+      const pinnedKey = QK.quizSetDetail(subjectId, saved, set.quizId);
+      const current = qc.getQueryData(pinnedKey);
+      const answers = new Map(set.savedAnswers.map((answer) => [answer.questionId, answer]));
+      for (const answer of current?.savedAnswers ?? []) {
+        if (
+          !answers.has(answer.questionId) ||
+          answers.get(answer.questionId).revision <= answer.revision
+        )
+          answers.set(answer.questionId, answer);
+      }
+      const latest = {
+        ...set,
+        savedAnswers: set.questions.flatMap((question) =>
+          answers.has(question.id) ? [answers.get(question.id)] : [],
+        ),
+      };
+      if (!quizId) qc.setQueryData(pinnedKey, latest);
+      return latest;
+    },
     enabled: Boolean(subjectId),
     retry: false,
+    refetchOnWindowFocus: false,
+    placeholderData: (previous) => (previous?.quizId === quizId ? previous : undefined),
   });
+}
+
+export function useSaveQuizAnswer() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: putQuizAnswer,
+    retry: false,
+    onSuccess: async (receipt, request) => {
+      await qc.cancelQueries({ queryKey: QK.quizSet(request.subjectId) });
+      qc.setQueriesData({ queryKey: QK.quizSet(request.subjectId) }, (set) => {
+        if (
+          !set ||
+          set.quizId !== receipt.quizId ||
+          !set.questions.some((q) => q.id === receipt.questionId)
+        )
+          return set;
+        const previous = set.savedAnswers.find((a) => a.questionId === receipt.questionId);
+        if (previous && previous.revision >= receipt.revision) return set;
+        const answer = {
+          questionId: receipt.questionId,
+          choice: request.choice,
+          text: request.text,
+          confidence: request.confidence,
+          revision: receipt.revision,
+        };
+        const answers = new Map(set.savedAnswers.map((a) => [a.questionId, a]));
+        answers.set(answer.questionId, answer);
+        return {
+          ...set,
+          savedAnswers: set.questions.flatMap((q) =>
+            answers.has(q.id) ? [answers.get(q.id)] : [],
+          ),
+        };
+      });
+    },
+  });
+}
 export const useQuizResult = (subjectId) =>
   useQuery({
     queryKey: QK.quizResult(subjectId),

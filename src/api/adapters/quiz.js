@@ -1,5 +1,4 @@
 // 서버 응답 → 화면 모양 (S8 오늘의 퀴즈 · S8-2 결과)
-// TODO(확인필요): [백엔드 확정 필요] 퀴즈 문항 JSON(김현민)과 채점 결과 형식(백엔드 B)이 나오면 여기만 맞춰요.
 
 export const toQuizToday = (raw) => ({
   date: raw.date,
@@ -23,6 +22,7 @@ export const toQuizToday = (raw) => ({
 });
 
 export const toQuizSet = (raw) => ({
+  quizId: raw.quizId,
   saved: Boolean(raw.saved), // 저장된 결과 (NF-10)
   subjectId: raw.subjectId,
   custom: Boolean(raw.custom), // 문제 뽑기·더 풀기로 만든 세트 (RV-02 · QZ-11)
@@ -31,16 +31,39 @@ export const toQuizSet = (raw) => ({
   round: raw.round, // 1회독 · 2회독 …
   difficulty: raw.difficulty, // 1회독은 하 고정 (QZ-09)
   composition: raw.composition,
+  savedAnswers: (raw.savedAnswers ?? []).map((a) => ({
+    questionId: a.questionId,
+    choice: a.choice,
+    text: a.text,
+    confidence: a.confidence,
+    revision: a.revision,
+  })),
   questions: raw.questions.map((q) => ({
     id: q.id,
     type: q.type, // choice(객관식·OX) | short(단답형) | essay(서술형)
     tag: q.tag, // '어제 오답' 등
     unitNo: q.unitNo,
-    page: q.page, // 근거 페이지 (QZ-03)
+    materialId: q.materialId,
+    unitId: q.unitId,
     prompt: q.prompt,
     options: q.options,
     mockFilled: q.mockFilled ?? [], // mock: 목업에서 채운 항목
   })),
+});
+
+// 문항별 저장에는 입력과 revision만 보내요. 0번 보기와 빈 답도 그대로 보존해요.
+export const fromAnswer = (answer) => ({
+  choice: answer.choice ?? null,
+  text: answer.text ?? null,
+  confidence: answer.confidence,
+  revision: answer.revision,
+});
+
+export const toSavedAnswer = (raw) => ({
+  quizId: raw.quizId,
+  questionId: raw.questionId,
+  saved: raw.saved,
+  revision: raw.revision,
 });
 
 // 화면 → 서버: 답 + 확신도 (QZ-05)
