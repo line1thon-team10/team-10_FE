@@ -49,8 +49,27 @@ async function bodyIdsAreUuid(request) {
   return body?.taskId == null || isUuid(body.taskId);
 }
 
+// S5 승인(목업)은 목업을 day9로 바꿔요. 승인 뒤 홈은 서버 화면이라 서버도 day9로 먼저 맞춰요 (11/14 지시문 5)
+async function seedServerDay9(request) {
+  const id = request.headers.get('X-Anonymous-Id');
+  return fetch(
+    bypass(
+      new Request(new URL('/api/demo/seed', request.url), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(id ? { 'X-Anonymous-Id': id } : {}) },
+        body: JSON.stringify({ seed: 'day9' }),
+      }),
+    ),
+  );
+}
+
 export const hybridHandler = http.all('/api/*', async ({ request }) => {
   const path = new URL(request.url).pathname;
+  if (request.method === 'POST' && path === '/api/plan/approve') {
+    const res = await seedServerDay9(request);
+    if (!res.ok) return res; // 서버를 못 맞추면 승인하지 않고 서버 오류를 그대로 보여요 (401이면 세션 재발급 뒤 다시 승인)
+    return; // 목업 승인 핸들러로
+  }
   // 서버 ID는 모두 UUID예요. 목업에서 만든 ID(t1, ds 등)로는 서버를 부르지 않아요.
   const params = SERVER_ROUTES.find((r) => r.method === request.method && r.re.test(path))
     ?.re.exec(path)
