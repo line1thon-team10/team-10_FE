@@ -21,6 +21,7 @@ import {
   useStartSession,
 } from '@/hooks/useStudy.js';
 import { useUiStore } from '@/stores/uiStore.js';
+import { pagedRanges, rangeInputLabel, taskRangeLabel } from './recordInput.js';
 
 const SHOW_TIME_MS = 3000;
 const hm = (m) =>
@@ -80,7 +81,9 @@ function Focus({ session, onEnded }) {
   const end = useEndSession();
   const { refetch } = useActiveSession();
   const [shown, setShown] = useState(null); // [시간 보기]로 받은 분
-  const [reading, setReading] = useState(false); // [자료 열기] PDF 보기
+  const [reading, setReading] = useState(null); // 실제 materialId/page를 보존해 PDF를 열어요
+  const ranges = pagedRanges(session.task);
+  const defaultMaterial = session.material;
   const paused = session.status === 'paused';
   const busy = pause.isPending || resume.isPending || end.isPending;
   const fail = { onError: (e) => toast.error(e.message) };
@@ -147,13 +150,13 @@ function Focus({ session, onEnded }) {
             </h1>
             <div className="mt-4 flex flex-wrap justify-center gap-2">
               <span className="badge num">
-                p.{session.task.from}–{session.task.to} · {session.task.pages}p
+                {taskRangeLabel(session.task)} · {session.task.pages}p
               </span>
               <span className="badge num">예상 {session.task.minutes}분</span>
             </div>
             <p className="display mt-10 text-[24px] leading-snug">{session.quote}</p>
             <div className="mt-9 flex flex-wrap justify-center gap-2">
-              <Button onClick={() => setReading(true)}>
+              <Button disabled={!defaultMaterial} onClick={() => setReading(defaultMaterial)}>
                 <FileText size={13} aria-hidden="true" />
                 자료 열기
               </Button>
@@ -165,6 +168,20 @@ function Focus({ session, onEnded }) {
                 종료
               </Button>
             </div>
+            {ranges.length > 1 && (
+              <div className="mt-4 flex flex-wrap justify-center gap-2">
+                {ranges.map((range, index) => (
+                  <Button
+                    key={range.id}
+                    size="sm"
+                    disabled={!range.materialId}
+                    onClick={() => setReading({ id: range.materialId, page: range.from })}
+                  >
+                    {rangeInputLabel(session.task, range, index)} 열기
+                  </Button>
+                ))}
+              </div>
+            )}
             <p className="mt-9 max-w-[520px] text-[11.5px] text-fg-2">
               공부하는 동안 시간 숫자는 보이지 않아요. 오른쪽 위 [시간 보기]를 누르면 3초 동안
               보여요.
@@ -182,11 +199,11 @@ function Focus({ session, onEnded }) {
       )}
       {reading && (
         <PdfPageDialog
-          materialId={session.material.id}
-          page={session.material.page}
+          materialId={reading.id}
+          page={reading.page}
           title={`${session.subjectName} 강의자료`}
           note="자료를 봐도 공부 측정은 계속돼요. 닫으면 공부 화면으로 돌아와요."
-          onClose={() => setReading(false)}
+          onClose={() => setReading(null)}
         />
       )}
       {session.checkIn && (
